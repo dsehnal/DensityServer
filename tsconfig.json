@@ -1,0 +1,23 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "sourceMap": false,
+    "declaration": false,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "alwaysStrict": true,
+    "allowJs": true,
+    "lib": [ "es5", "es2015.collection", "es2015.promise" ],
+    "target": "es5",
+    "outDir": "build"
+  },
+  // "files": [
+  //   "./src/pack.ts",
+  //   "./src/server.ts"
+  // ]
+  "include": ["./src/**/*.ts", "./src/**/*.js"]
+}
