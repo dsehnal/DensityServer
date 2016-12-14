@@ -44,7 +44,7 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
 
 <div style='text-align: justify; padding: 24px 0; border-bottom: 1px solid #eee'>
   <b>DensityServer</b> is an application for serving slices of molecular density data. The main use case of the server is for 
-  browser-based viewing of the data. It uses the <a href='https://github.com/dsehnal/LiteMol' target='_blank' style='font-weight: bold'>BinaryCIF</a> 
+  browser-based viewing of the data. It uses the <a href='https://github.com/dsehnal/BinaryCIF' target='_blank' style='font-weight: bold'>BinaryCIF</a> 
   format to deliver the data to the client. 
   The server support is integrated into the <a href='https://github.com/dsehnal/LiteMol' target='_blank' style='font-weight: bold'>LiteMol</a> viewer.
 </div>
