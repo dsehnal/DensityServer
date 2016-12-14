@@ -155,7 +155,7 @@ export async function readSlice(data: Data, sliceIndex: number) {
     function updateSigma() {
         let sigma = header.sigma;
         let min = header.min;
-        let max = header.min;
+        let max = header.max;
         for (let i = 0; i < sliceCount; i++) {
             let v = values[i];
             let t = mean - v;

@@ -134,7 +134,7 @@ function readSlice(data, sliceIndex) {
         function updateSigma() {
             var sigma = header.sigma;
             var min = header.min;
-            var max = header.min;
+            var max = header.max;
             for (var i = 0; i < sliceCount; i++) {
                 var v = values[i];
                 var t = mean - v;
