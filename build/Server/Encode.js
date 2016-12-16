@@ -67,8 +67,8 @@ function _density_data(ctx) {
             string: function (ctx, i) { return '' + Math.round(precision * ctx[i]) / precision; },
             number: function (ctx, i) { return ctx[i]; },
             typedArray: Float32Array,
-            // encode into 254 steps because 1-byte integer packing is then always applied.
-            encoder: E.by(E.intervalQuantizaiton(min, max, 254)).and(E.integerPacking)
+            // encode into 255 steps and store each value in 1 byte.
+            encoder: E.by(E.intervalQuantizaiton(min, max, 255, Uint8Array)).and(E.byteArray)
         }];
     return {
         data: data,
