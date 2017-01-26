@@ -29,8 +29,8 @@ export interface Box {
 
 export interface Info {
     blockCount: number[],
-    cellDimensions: number[],
-
+    cellDimensions: number[],    
+    
     isAsymmetric: boolean,
 
     /**
@@ -43,7 +43,9 @@ export interface Info {
     /**
      * Transform from orthogonal to the scaled fraction coordinates
      */
-    toFrac: number[]
+    toFrac: number[],
+
+    fromFrac: number[]
 }
 
 export interface Context {

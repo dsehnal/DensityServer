@@ -36,21 +36,12 @@ export module Coords {
         return transformInPlace([x[0], x[1], x[2]], matrix);
     }
 
-    export function toAxisOrder(order: number[], coord: number[]) {
-        return [coord[order[0]], coord[order[1]], coord[order[2]]];
+    export function mapIndices(map: number[], coord: number[]) {
+        return [coord[map[0]], coord[map[1]], coord[map[2]]];
     }
 
-    // export function normalize(coord: number[], grid: number[]) {
-    //     return map((c, i) => {
-    //         let d = 0;
-    //         if (c < 0) d = Math.ceil(Math.abs(c) / grid[i])
-    //         else if (c > grid[i]) d = -Math.ceil(Math.abs(c - grid[i]) / grid[i])
-    //         return c + d * grid[i];
-    //     }, coord);
-    // }
-
     export function makeSpacegroup(header: Data.Header) {
-        let { cellAngles, cellSize, gridSize } = header;
+        let { cellAngles, cellSize, gridSize, axisOrder } = header;
 
         let alpha = (Math.PI / 180.0) * cellAngles[0],
             beta = (Math.PI / 180.0) * cellAngles[1],
@@ -76,7 +67,7 @@ export module Coords {
         ]);
         let toFrac = LA.Matrix4.invert(LA.Matrix4.empty(), fromFrac)!;
 
-        return { toFrac, cellDimensions: [xScale, yScale, zScale] };
+        return { toFrac, fromFrac, cellDimensions: [xScale, yScale, zScale] };
     }
 }
 
@@ -170,7 +161,10 @@ export module Box {
         }
     }
 
-    function normalize(box: Data.Box, grid: number[]) {
+    /**
+     * Validates intervals and snaps to integer coordinates.
+     */
+    export function normalize(box: Data.Box) {
         return snap(validate(box));
     }
 
@@ -194,14 +188,14 @@ export module Box {
             [r[0], l[1], r[2]],
             [l[0], r[1], r[2]],
             [r[0], r[1], r[2]],
-        ].map(c => Coords.transform(Coords.toAxisOrder(axisOrder, c), toFrac));
+        ].map(c => Coords.mapIndices(axisOrder, Coords.transform(c, toFrac)));
 
         let mapped: Data.Box = {
             a: corners.reduce((m, c) => Coords.map((v, i) => Math.min(v, m[i]), c) , corners[0]),
             b: corners.reduce((m, c) => Coords.map((v, i) => Math.max(v, m[i]), c) , corners[0])
-        }
+        };
 
-        return normalize(mapped, grid);
+        return normalize(mapped);
     }
 }
 
@@ -270,7 +264,6 @@ export module Query {
         let { dataBox, grid, blockCount } = ctx.info;
         let overlaps = Box.zero();        
         if (!findOverlapTransformRange(region, dataBox, grid, overlaps)) return [];
-
         let addedBlocks = new Set<number>();
         let blocks: number[][] = [];
         let delta = [0,0,0];

@@ -35,20 +35,12 @@ var Coords;
         return transformInPlace([x[0], x[1], x[2]], matrix);
     }
     Coords.transform = transform;
-    function toAxisOrder(order, coord) {
-        return [coord[order[0]], coord[order[1]], coord[order[2]]];
+    function mapIndices(map, coord) {
+        return [coord[map[0]], coord[map[1]], coord[map[2]]];
     }
-    Coords.toAxisOrder = toAxisOrder;
-    // export function normalize(coord: number[], grid: number[]) {
-    //     return map((c, i) => {
-    //         let d = 0;
-    //         if (c < 0) d = Math.ceil(Math.abs(c) / grid[i])
-    //         else if (c > grid[i]) d = -Math.ceil(Math.abs(c - grid[i]) / grid[i])
-    //         return c + d * grid[i];
-    //     }, coord);
-    // }
+    Coords.mapIndices = mapIndices;
     function makeSpacegroup(header) {
-        var cellAngles = header.cellAngles, cellSize = header.cellSize, gridSize = header.gridSize;
+        var cellAngles = header.cellAngles, cellSize = header.cellSize, gridSize = header.gridSize, axisOrder = header.axisOrder;
         var alpha = (Math.PI / 180.0) * cellAngles[0], beta = (Math.PI / 180.0) * cellAngles[1], gamma = (Math.PI / 180.0) * cellAngles[2];
         var xScale = cellSize[0] / gridSize[0], yScale = cellSize[1] / gridSize[1], zScale = cellSize[2] / gridSize[2];
         var z1 = Math.cos(beta), z2 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma), z3 = Math.sqrt(1.0 - z1 * z1 - z2 * z2);
@@ -60,7 +52,7 @@ var Coords;
             [0, 0, 0, 1.0]
         ]);
         var toFrac = LA.Matrix4.invert(LA.Matrix4.empty(), fromFrac);
-        return { toFrac: toFrac, cellDimensions: [xScale, yScale, zScale] };
+        return { toFrac: toFrac, fromFrac: fromFrac, cellDimensions: [xScale, yScale, zScale] };
     }
     Coords.makeSpacegroup = makeSpacegroup;
 })(Coords = exports.Coords || (exports.Coords = {}));
@@ -146,9 +138,13 @@ var Box;
             }, box.b),
         };
     }
-    function normalize(box, grid) {
+    /**
+     * Validates intervals and snaps to integer coordinates.
+     */
+    function normalize(box) {
         return snap(validate(box));
     }
+    Box.normalize = normalize;
     /**
      * Map a box from orthogonal to "scaled" fractional coordinates.
      *
@@ -169,12 +165,12 @@ var Box;
             [r[0], l[1], r[2]],
             [l[0], r[1], r[2]],
             [r[0], r[1], r[2]],
-        ].map(function (c) { return Coords.transform(Coords.toAxisOrder(axisOrder, c), toFrac); });
+        ].map(function (c) { return Coords.mapIndices(axisOrder, Coords.transform(c, toFrac)); });
         var mapped = {
             a: corners.reduce(function (m, c) { return Coords.map(function (v, i) { return Math.min(v, m[i]); }, c); }, corners[0]),
             b: corners.reduce(function (m, c) { return Coords.map(function (v, i) { return Math.max(v, m[i]); }, c); }, corners[0])
         };
-        return normalize(mapped, grid);
+        return normalize(mapped);
     }
     Box.map = map;
 })(Box = exports.Box || (exports.Box = {}));

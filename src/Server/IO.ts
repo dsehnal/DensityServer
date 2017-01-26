@@ -65,20 +65,21 @@ function createInfo(header: Data.Header): Data.Info {
     let { blockSize, extent, gridSize, origin } = header;
 
     let spacegroup = Coords.makeSpacegroup(header);
-    let grid = Coords.toAxisOrder(header.axisOrder, gridSize);
+
+    let grid = Coords.mapIndices(header.axisOrder, gridSize);
     let a = Coords.map(
         v => Math.round(v), 
-        Coords.transform(Coords.toAxisOrder(header.axisOrder, origin), spacegroup.toFrac));
-    
+        Coords.mapIndices(header.axisOrder, Coords.transform(origin, spacegroup.toFrac)));
+
     return {
         isAsymmetric: header.spacegroupNumber <= 1,
         blockCount: Coords.map(e => Math.ceil(e / blockSize) | 0, extent),
         ...spacegroup,
         grid,
-        dataBox: {
+        dataBox: Box.normalize({
             a,
             b: Coords.add(a, extent)
-        }
+        })
     };
 }
 
@@ -88,7 +89,6 @@ export async function open(filename: string) {
     try {
         let header = await readHeader(file);
         let info = createInfo(header);
-
         return <Data.Context>{ file, header, info }
     } catch (e) {
         File.close(file);
