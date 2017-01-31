@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -159,8 +159,7 @@ function writeFloat(ctx, value, position) {
             switch (_a.label) {
                 case 0:
                     ctx.smallBuffer.writeFloatLE(value, 0);
-                    if (!(position === void 0))
-                        return [3 /*break*/, 2];
+                    if (!(position === void 0)) return [3 /*break*/, 2];
                     return [4 /*yield*/, writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 4)];
                 case 1:
                     written = _a.sent();

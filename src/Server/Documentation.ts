@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
 import VERSION from './Version'
@@ -110,7 +110,7 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
   </div>
 </div>
 
-<div style="color: #999;font-size:smaller;margin: 20px 0; text-align: right">&copy; 2016 David Sehnal | Node ${process.version}</div>
+<div style="color: #999;font-size:smaller;margin: 20px 0; text-align: right">&copy; 2016 &ndash; now, David Sehnal | Node ${process.version}</div>
 
 </body>
 </html>

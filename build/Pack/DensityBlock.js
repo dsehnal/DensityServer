@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
@@ -68,8 +68,7 @@ function writeHeader(ctx) {
                     _i = 0, _a = header.grid;
                     _x.label = 4;
                 case 4:
-                    if (!(_i < _a.length))
-                        return [3 /*break*/, 7];
+                    if (!(_i < _a.length)) return [3 /*break*/, 7];
                     v = _a[_i];
                     return [4 /*yield*/, File.writeInt(ctx.file, v)];
                 case 5:
@@ -87,8 +86,7 @@ function writeHeader(ctx) {
                     _b = 0, _c = header.axisOrder;
                     _x.label = 9;
                 case 9:
-                    if (!(_b < _c.length))
-                        return [3 /*break*/, 12];
+                    if (!(_b < _c.length)) return [3 /*break*/, 12];
                     v = _c[_b];
                     return [4 /*yield*/, File.writeInt(ctx.file, v)];
                 case 10:
@@ -101,8 +99,7 @@ function writeHeader(ctx) {
                     _d = 0, _e = header.extent;
                     _x.label = 13;
                 case 13:
-                    if (!(_d < _e.length))
-                        return [3 /*break*/, 16];
+                    if (!(_d < _e.length)) return [3 /*break*/, 16];
                     v = _e[_d];
                     return [4 /*yield*/, File.writeInt(ctx.file, v)];
                 case 14:
@@ -115,8 +112,7 @@ function writeHeader(ctx) {
                     _f = 0, _g = header.origin;
                     _x.label = 17;
                 case 17:
-                    if (!(_f < _g.length))
-                        return [3 /*break*/, 20];
+                    if (!(_f < _g.length)) return [3 /*break*/, 20];
                     v = _g[_f];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v)];
                 case 18:
@@ -134,8 +130,7 @@ function writeHeader(ctx) {
                     _h = 0, _j = header.cellSize;
                     _x.label = 22;
                 case 22:
-                    if (!(_h < _j.length))
-                        return [3 /*break*/, 25];
+                    if (!(_h < _j.length)) return [3 /*break*/, 25];
                     v = _j[_h];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v)];
                 case 23:
@@ -148,8 +143,7 @@ function writeHeader(ctx) {
                     _k = 0, _l = header.cellAngles;
                     _x.label = 26;
                 case 26:
-                    if (!(_k < _l.length))
-                        return [3 /*break*/, 29];
+                    if (!(_k < _l.length)) return [3 /*break*/, 29];
                     v = _l[_k];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v)];
                 case 27:
@@ -162,8 +156,7 @@ function writeHeader(ctx) {
                     _m = 0, _o = ctx.sources;
                     _x.label = 30;
                 case 30:
-                    if (!(_m < _o.length))
-                        return [3 /*break*/, 33];
+                    if (!(_m < _o.length)) return [3 /*break*/, 33];
                     v = _o[_m];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v.header.mean)];
                 case 31:
@@ -177,8 +170,7 @@ function writeHeader(ctx) {
                     _p = 0, _q = ctx.sources;
                     _x.label = 34;
                 case 34:
-                    if (!(_p < _q.length))
-                        return [3 /*break*/, 37];
+                    if (!(_p < _q.length)) return [3 /*break*/, 37];
                     v = _q[_p];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v.header.sigma)];
                 case 35:
@@ -191,8 +183,7 @@ function writeHeader(ctx) {
                     _r = 0, _s = ctx.sources;
                     _x.label = 38;
                 case 38:
-                    if (!(_r < _s.length))
-                        return [3 /*break*/, 41];
+                    if (!(_r < _s.length)) return [3 /*break*/, 41];
                     v = _s[_r];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v.header.min)];
                 case 39:
@@ -205,8 +196,7 @@ function writeHeader(ctx) {
                     _t = 0, _u = ctx.sources;
                     _x.label = 42;
                 case 42:
-                    if (!(_t < _u.length))
-                        return [3 /*break*/, 45];
+                    if (!(_t < _u.length)) return [3 /*break*/, 45];
                     v = _u[_t];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v.header.max)];
                 case 43:
@@ -219,8 +209,7 @@ function writeHeader(ctx) {
                     _v = 0, _w = ctx.sources;
                     _x.label = 46;
                 case 46:
-                    if (!(_v < _w.length))
-                        return [3 /*break*/, 49];
+                    if (!(_v < _w.length)) return [3 /*break*/, 49];
                     v = _w[_v];
                     return [4 /*yield*/, File.writeString(ctx.file, v.header.name, 32)];
                 case 47:
@@ -244,8 +233,7 @@ function writeInfo(ctx) {
                     _i = 0, _a = ctx.sources;
                     _f.label = 1;
                 case 1:
-                    if (!(_i < _a.length))
-                        return [3 /*break*/, 4];
+                    if (!(_i < _a.length)) return [3 /*break*/, 4];
                     v = _a[_i];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v.header.sigma, ctx.sigmasOffset + o)];
                 case 2:
@@ -259,8 +247,7 @@ function writeInfo(ctx) {
                     _b = 0, _c = ctx.sources;
                     _f.label = 5;
                 case 5:
-                    if (!(_b < _c.length))
-                        return [3 /*break*/, 8];
+                    if (!(_b < _c.length)) return [3 /*break*/, 8];
                     v = _c[_b];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v.header.min, ctx.sigmasOffset + o)];
                 case 6:
@@ -274,8 +261,7 @@ function writeInfo(ctx) {
                     _d = 0, _e = ctx.sources;
                     _f.label = 9;
                 case 9:
-                    if (!(_d < _e.length))
-                        return [3 /*break*/, 12];
+                    if (!(_d < _e.length)) return [3 /*break*/, 12];
                     v = _e[_d];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v.header.max, ctx.sigmasOffset + o)];
                 case 10:
@@ -331,8 +317,7 @@ function processSlice(ctx, cube, sliceIndex) {
                     _i = 0, _a = ctx.sources;
                     _d.label = 1;
                 case 1:
-                    if (!(_i < _a.length))
-                        return [3 /*break*/, 4];
+                    if (!(_i < _a.length)) return [3 /*break*/, 4];
                     src = _a[_i];
                     return [4 /*yield*/, CCP4.readSlice(src, sliceIndex)];
                 case 2:
@@ -345,18 +330,15 @@ function processSlice(ctx, cube, sliceIndex) {
                     v = 0;
                     _d.label = 5;
                 case 5:
-                    if (!(v < cube.numV))
-                        return [3 /*break*/, 12];
+                    if (!(v < cube.numV)) return [3 /*break*/, 12];
                     u = 0;
                     _d.label = 6;
                 case 6:
-                    if (!(u < cube.numU))
-                        return [3 /*break*/, 11];
+                    if (!(u < cube.numU)) return [3 /*break*/, 11];
                     _b = 0, _c = ctx.sources;
                     _d.label = 7;
                 case 7:
-                    if (!(_b < _c.length))
-                        return [3 /*break*/, 10];
+                    if (!(_b < _c.length)) return [3 /*break*/, 10];
                     src = _c[_b];
                     numBytes = fillCube(src.slice, cube, u, v);
                     return [4 /*yield*/, File.write(ctx.file, cube.buffer, numBytes)];
@@ -390,8 +372,7 @@ function processBlocks(numSlices, ctx) {
                     i = 0;
                     _a.label = 1;
                 case 1:
-                    if (!(i < numSlices))
-                        return [3 /*break*/, 4];
+                    if (!(i < numSlices)) return [3 /*break*/, 4];
                     return [4 /*yield*/, processSlice(ctx, cube, i)];
                 case 2:
                     _a.sent();
@@ -428,8 +409,7 @@ function create(filename, sourceDensities, blockSize) {
                     _i = 0, sourceDensities_1 = sourceDensities;
                     _g.label = 2;
                 case 2:
-                    if (!(_i < sourceDensities_1.length))
-                        return [3 /*break*/, 5];
+                    if (!(_i < sourceDensities_1.length)) return [3 /*break*/, 5];
                     s = sourceDensities_1[_i];
                     _b = (_a = sources).push;
                     return [4 /*yield*/, CCP4.open(s.name, s.filename, blockSize)];

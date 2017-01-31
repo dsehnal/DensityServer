@@ -12,6 +12,8 @@
     "alwaysStrict": true,
     "allowJs": true,
     "lib": [ "es5", "es2015.collection", "es2015.promise" ],
+    "types": [ "node", "express", "compression" ],
+    "skipDefaultLibCheck": true,
     "target": "es5",
     "outDir": "build"
   },
