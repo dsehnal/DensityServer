@@ -109,7 +109,7 @@ function createInfo(header) {
     var spacegroup = Transforms_1.Coords.makeSpacegroup(header);
     var grid = Transforms_1.Coords.mapIndices(header.axisOrder, gridSize);
     var a = Transforms_1.Coords.map(function (v) { return Math.round(v); }, Transforms_1.Coords.mapIndices(header.axisOrder, Transforms_1.Coords.transform(origin, spacegroup.toFrac)));
-    return __assign({ isAsymmetric: header.spacegroupNumber <= 1, blockCount: Transforms_1.Coords.map(function (e) { return Math.ceil(e / blockSize) | 0; }, extent) }, spacegroup, { grid: grid, dataBox: Transforms_1.Box.normalize({
+    return __assign({ isAsymmetric: header.spacegroupNumber <= 0, blockCount: Transforms_1.Coords.map(function (e) { return Math.ceil(e / blockSize) | 0; }, extent) }, spacegroup, { grid: grid, dataBox: Transforms_1.Box.normalize({
             a: a,
             b: Transforms_1.Coords.add(a, extent)
         }) });

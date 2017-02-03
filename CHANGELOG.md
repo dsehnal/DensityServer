@@ -1,3 +1,6 @@
+# 0.8.3
+* Allow periodic boundary for P 1 spacegroup.
+
 # 0.8.2
 * Fixed axis ordering issue.
 

@@ -55,7 +55,7 @@ export async function readHeader(file: number) {
         maximums: getArray(readFloat, 21 + 3 * numDensities, numDensities),
         names: getArray(readString, 21 + 4 * numDensities, numDensities, 8),
 
-        dataByteOffset: headerBaseSize + 4 * 4 * numDensities + 32 * numDensities 
+        dataByteOffset: headerBaseSize + 4 * 4 * numDensities + 32 * numDensities
     };
 
     return header;
@@ -72,7 +72,7 @@ function createInfo(header: Data.Header): Data.Info {
         Coords.mapIndices(header.axisOrder, Coords.transform(origin, spacegroup.toFrac)));
 
     return {
-        isAsymmetric: header.spacegroupNumber <= 1,
+        isAsymmetric: header.spacegroupNumber <= 0,
         blockCount: Coords.map(e => Math.ceil(e / blockSize) | 0, extent),
         ...spacegroup,
         grid,
