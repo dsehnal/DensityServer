@@ -2,9 +2,13 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
+import * as File from '../Utils/File'
+
+export const enum FormatId { Float32 = 0, Int8 = 1 }
+
 export interface Header {
     numDensities: number,
-    formatId: number,
+    formatId: FormatId,
     axisOrder: number[],
     gridSize: number[],
     blockSize: number,
@@ -20,6 +24,11 @@ export interface Header {
     names: string[],
 
     dataByteOffset: number
+}
+
+export function getElementByteSize(header: Header) {
+    if (header.formatId === FormatId.Float32) return 4;
+    return 1;
 }
 
 export interface Box {

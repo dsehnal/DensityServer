@@ -2,6 +2,7 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 "use strict";
+var Data = require("./DataModel");
 var LA = require("../Utils/LinearAlgebra");
 var Coords;
 (function (Coords) {
@@ -95,11 +96,11 @@ var Box;
         var dimensions = Coords.map(function (e, i) { return Math.min(blockSize, e - coord[i] * blockSize); }, extent);
         var N = ctx.header.numDensities;
         var offsets = [
-            4 * N * blockSize * dimensions[1] * dimensions[2] * coord[0],
-            4 * N * blockSize * extent[0] * dimensions[2] * coord[1],
-            4 * N * blockSize * extent[0] * extent[1] * coord[2]
+            N * blockSize * dimensions[1] * dimensions[2] * coord[0],
+            N * blockSize * extent[0] * dimensions[2] * coord[1],
+            N * blockSize * extent[0] * extent[1] * coord[2]
         ];
-        var dataOffset = header.dataByteOffset + (offsets[0] + offsets[1] + offsets[2]);
+        var dataOffset = header.dataByteOffset + Data.getElementByteSize(ctx.header) * (offsets[0] + offsets[1] + offsets[2]);
         var box = {
             a: Coords.map(function (c, i) { return ctx.info.dataBox.a[i] + blockSize * c; }, coord),
             b: Coords.map(function (c, i) { return ctx.info.dataBox.a[i] + blockSize * c + dimensions[i]; }, coord)

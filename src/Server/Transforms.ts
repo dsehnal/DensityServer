@@ -114,12 +114,13 @@ export module Box {
         let dimensions = Coords.map((e, i) => Math.min(blockSize, e - coord[i] * blockSize), extent);
 
         let N = ctx.header.numDensities;
+        
         let offsets = [
-            4 * N * blockSize * dimensions[1] * dimensions[2] * coord[0],
-            4 * N * blockSize * extent[0] * dimensions[2] * coord[1],
-            4 * N * blockSize * extent[0] * extent[1] * coord[2]
+            N * blockSize * dimensions[1] * dimensions[2] * coord[0],
+            N * blockSize * extent[0] * dimensions[2] * coord[1],
+            N * blockSize * extent[0] * extent[1] * coord[2]
         ];
-        let dataOffset = header.dataByteOffset + (offsets[0] + offsets[1] + offsets[2]);
+        let dataOffset = header.dataByteOffset + Data.getElementByteSize(ctx.header) * (offsets[0] + offsets[1] + offsets[2]);
         
         let box: Data.Box = {
             a: Coords.map((c, i) => ctx.info.dataBox.a[i] + blockSize * c, coord),

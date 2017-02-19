@@ -1,3 +1,6 @@
+# 0.8.4
+* Add support for converting CCP4 mode 0 maps.
+
 # 0.8.3
 * Allow periodic boundary for P 1 spacegroup.
 

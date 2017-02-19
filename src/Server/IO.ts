@@ -99,8 +99,8 @@ export async function open(filename: string) {
 export async function readBlock(ctx: Data.Context, coord: number[]) {
     let { box, dimensions, dataOffset } = Box.getBlockMetrics(ctx, coord);
     let count = dimensions[0] * dimensions[1] * dimensions[2];
-    let data = File.createFloat32ArrayContext(ctx.header.numDensities * count);
-    let values = await File.readFloat32Array(data, ctx.file, dataOffset, ctx.header.numDensities * count);
+    let data = File.createTypedArrayBufferContext(ctx.header.numDensities * count, ctx.header.formatId === Data.FormatId.Float32 ? File.ValueType.Float32 : File.ValueType.Int8);
+    let values = await File.readTypedArray(data, ctx.file, dataOffset, ctx.header.numDensities * count);
 
     return <Data.MultiBlock>{
         coord,

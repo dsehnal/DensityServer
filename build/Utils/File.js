@@ -39,7 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var fs = require("fs");
 var path = require("path");
-var isNativeEndian = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
+var isNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
 function openRead(filename) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
@@ -214,42 +214,54 @@ function write(ctx, value, size) {
     });
 }
 exports.write = write;
-function createFloat32ArrayContext(size) {
-    var arrayBuffer = new ArrayBuffer(4 * size);
+function getElementByteSize(type) {
+    if (type === 0 /* Float32 */)
+        return 4;
+    return 1;
+}
+function makeTypedArray(type, buffer) {
+    if (type === 0 /* Float32 */)
+        return new Float32Array(buffer);
+    return new Int8Array(buffer);
+}
+function createTypedArrayBufferContext(size, type) {
+    var elementByteSize = getElementByteSize(type);
+    var arrayBuffer = new ArrayBuffer(elementByteSize * size);
     var readBuffer = new Buffer(arrayBuffer);
-    var valuesBuffer = isNativeEndian ? arrayBuffer : new ArrayBuffer(4 * size);
+    var valuesBuffer = isNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
     return {
+        type: type,
+        elementByteSize: elementByteSize,
         readBuffer: readBuffer,
         valuesBuffer: new Uint8Array(valuesBuffer),
-        values: new Float32Array(valuesBuffer)
+        values: makeTypedArray(type, valuesBuffer)
     };
 }
-exports.createFloat32ArrayContext = createFloat32ArrayContext;
-function readFloat32Array(ctx, file, position, count) {
-    return __awaiter(this, void 0, void 0, function () {
-        function fixEndian() {
-            var source = ctx.readBuffer;
-            var target = ctx.valuesBuffer;
-            for (var o = 0; o < byteCount; o += 4) {
-                target[o + 3] = source[o + 0];
-                target[o + 2] = source[o + 1];
-                target[o + 1] = source[o + 2];
-                target[o + 0] = source[o + 3];
-            }
+exports.createTypedArrayBufferContext = createTypedArrayBufferContext;
+function flipByteOrder(source, target, byteCount, elementByteSize) {
+    for (var i = 0, n = byteCount; i < n; i += elementByteSize) {
+        for (var j = 0; j < elementByteSize; j++) {
+            target[i + elementByteSize - j - 1] = source[i + j];
         }
+    }
+}
+function readTypedArray(ctx, file, position, count, littleEndian) {
+    return __awaiter(this, void 0, void 0, function () {
         var byteCount;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    byteCount = 4 * count;
+                    byteCount = ctx.elementByteSize * count;
                     return [4 /*yield*/, readBuffer(file, position, ctx.readBuffer, byteCount)];
                 case 1:
                     _a.sent();
-                    if (!isNativeEndian)
-                        fixEndian();
+                    if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== isNativeEndianLittle) || !isNativeEndianLittle)) {
+                        // fix the endian 
+                        flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize);
+                    }
                     return [2 /*return*/, ctx.values];
             }
         });
     });
 }
-exports.readFloat32Array = readFloat32Array;
+exports.readTypedArray = readTypedArray;

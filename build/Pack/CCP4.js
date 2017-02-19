@@ -51,7 +51,7 @@ function compareProp(a, b) {
     return a === b;
 }
 function compareHeaders(a, b) {
-    for (var _i = 0, _a = ['grid', 'axisOrder', 'extent', 'origin', 'spacegroupNumber', 'cellSize', 'cellAngles']; _i < _a.length; _i++) {
+    for (var _i = 0, _a = ['grid', 'axisOrder', 'extent', 'origin', 'spacegroupNumber', 'cellSize', 'cellAngles', 'mode']; _i < _a.length; _i++) {
         var p = _a[_i];
         if (!compareProp(a[p], b[p]))
             return false;
@@ -78,10 +78,10 @@ function readHeader(name, file) {
                     _a = _b.sent(), bytesRead = _a.bytesRead, data = _a.buffer;
                     littleEndian = true;
                     mode = data.readInt32LE(3 * 4);
-                    if (mode !== 2) {
+                    if (mode !== 0 && mode !== 2) {
                         littleEndian = false;
                         mode = data.readInt32BE(3 * 4, true);
-                        if (mode !== 2) {
+                        if (mode !== 0 && mode !== 2) {
                             throw Error('Only CCP4 modes 0 and 2 are supported.');
                         }
                     }
@@ -89,6 +89,7 @@ function readHeader(name, file) {
                     readFloat = littleEndian ? function (o) { return data.readFloatLE(o * 4); } : function (o) { return data.readFloatBE(o * 4); };
                     header = {
                         name: name,
+                        mode: mode,
                         grid: getArray(readInt, 7, 3),
                         axisOrder: getArray(readInt, 16, 3).map(function (i) { return i - 1; }),
                         extent: getArray(readInt, 0, 3),
@@ -160,11 +161,11 @@ function readSlice(data, sliceIndex) {
                     extent = header.extent, mean = header.mean;
                     sliceSize = extent[0] * extent[1];
                     sliceOffsetIndex = sliceIndex * slice.sliceHeight;
-                    sliceByteOffset = 4 * sliceSize * sliceOffsetIndex;
+                    sliceByteOffset = slice.data.elementByteSize * sliceSize * sliceOffsetIndex;
                     sliceHeight = Math.min(slice.sliceHeight, extent[2] - sliceOffsetIndex);
                     sliceCount = sliceHeight * sliceSize;
                     slice.height = sliceHeight;
-                    return [4 /*yield*/, File.readFloat32Array(slice.data, data.file, header.dataOffset + sliceByteOffset, sliceCount)];
+                    return [4 /*yield*/, File.readTypedArray(slice.data, data.file, header.dataOffset + sliceByteOffset, sliceCount, header.littleEndian)];
                 case 1:
                     values = _a.sent();
                     updateSigma();
@@ -183,7 +184,7 @@ function createSliceContext(header, height, isNativeEndian) {
     return {
         height: 0,
         sliceHeight: height,
-        data: File.createFloat32ArrayContext(size)
+        data: File.createTypedArrayBufferContext(size, header.mode === 2 /* Float32 */ ? 0 /* Float32 */ : 1 /* Int8 */)
     };
 }
 function open(name, filename, sliceHeight) {

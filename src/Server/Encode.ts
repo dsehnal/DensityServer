@@ -88,21 +88,32 @@ function _density_data(ctx: DataContext) {
     let mean = ctx.density.header.means[ctx.dataIndex];
     let sigma = ctx.density.header.sigmas[ctx.dataIndex];
     let precision = 1000000;
+    let encoder: E;
+    let typedArray: any;
 
-    let min = data[0], max = data[0];
-    for (let i = 0, n = data.length; i < n; i++) {
-        let v = data[i];
-        if (v < min) min = v;
-        else if (v > max) max = v;
+    if (ctx.density.header.formatId === Data.FormatId.Float32) {
+        let min: number, max: number;
+        min = data[0], max = data[0];
+        for (let i = 0, n = data.length; i < n; i++) {
+            let v = data[i];
+            if (v < min) min = v;
+            else if (v > max) max = v;
+        }
+        typedArray = Float32Array;
+        // encode into 255 steps and store each value in 1 byte.
+        encoder = E.by(E.intervalQuantizaiton(min, max, 255, Uint8Array)).and(E.byteArray);
+    } else {
+        typedArray = Int8Array;
+        // just encode the bytes
+        encoder = E.by(E.byteArray)
     }
 
     let fields: FieldDesc<typeof data>[] = [{ 
         name: 'values', 
         string: (ctx, i) => '' + Math.round(precision * ctx[i]) / precision, 
         number: (ctx, i) => ctx[i], 
-        typedArray: Float32Array, 
-        // encode into 255 steps and store each value in 1 byte.
-        encoder: E.by(E.intervalQuantizaiton(min, max, 255, Uint8Array)).and(E.byteArray)
+        typedArray, 
+        encoder
     }];
 
     return <CategoryInstance<typeof data>>{
@@ -144,7 +155,6 @@ function _density_server_result(ctx: ServerContext) {
 }
 
 function write(writer: Writer, result: Data.QueryResult) {
-
     writer.startDataBlock('SERVER');
     writer.writeCategory(_density_server_result, [{ params: result.params, isEmpty: !result.data || !result.data.result, error: result.error }]);
 

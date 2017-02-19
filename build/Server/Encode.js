@@ -3,6 +3,7 @@
  */
 "use strict";
 var CIF = require("../lib/CIFTools");
+var Data = require("./DataModel");
 var Version_1 = require("./Version");
 var E = CIF.Binary.Encoder;
 function string(ctx, name, v) {
@@ -54,21 +55,33 @@ function _density_data(ctx) {
     var mean = ctx.density.header.means[ctx.dataIndex];
     var sigma = ctx.density.header.sigmas[ctx.dataIndex];
     var precision = 1000000;
-    var min = data[0], max = data[0];
-    for (var i = 0, n = data.length; i < n; i++) {
-        var v = data[i];
-        if (v < min)
-            min = v;
-        else if (v > max)
-            max = v;
+    var encoder;
+    var typedArray;
+    if (ctx.density.header.formatId === 0 /* Float32 */) {
+        var min = void 0, max = void 0;
+        min = data[0], max = data[0];
+        for (var i = 0, n = data.length; i < n; i++) {
+            var v = data[i];
+            if (v < min)
+                min = v;
+            else if (v > max)
+                max = v;
+        }
+        typedArray = Float32Array;
+        // encode into 255 steps and store each value in 1 byte.
+        encoder = E.by(E.intervalQuantizaiton(min, max, 255, Uint8Array)).and(E.byteArray);
+    }
+    else {
+        typedArray = Int8Array;
+        // just encode the bytes
+        encoder = E.by(E.byteArray);
     }
     var fields = [{
             name: 'values',
             string: function (ctx, i) { return '' + Math.round(precision * ctx[i]) / precision; },
             number: function (ctx, i) { return ctx[i]; },
-            typedArray: Float32Array,
-            // encode into 255 steps and store each value in 1 byte.
-            encoder: E.by(E.intervalQuantizaiton(min, max, 255, Uint8Array)).and(E.byteArray)
+            typedArray: typedArray,
+            encoder: encoder
         }];
     return {
         data: data,

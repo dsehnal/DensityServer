@@ -5,8 +5,11 @@
 import * as fs from 'fs'
 import * as File from '../Utils/File'
 
+export const enum Mode { Int8 = 0, Float32 = 2 }
+
 export interface Header {
     name: string,
+    mode: Mode,
     grid: number[],
     axisOrder: number[],
     extent: number[],
@@ -23,7 +26,7 @@ export interface Header {
 }
 
 export interface SliceContext {   
-    data: File.Float32ArrayContext,
+    data: File.TypedArrayBufferContext,
     height: number,
     sliceHeight: number
 }
@@ -48,7 +51,7 @@ function compareProp(a: any, b: any) {
 }
 
 export function compareHeaders(a: Header, b: Header) {
-    for (let p of [ 'grid', 'axisOrder', 'extent', 'origin', 'spacegroupNumber', 'cellSize', 'cellAngles' ]) {
+    for (let p of [ 'grid', 'axisOrder', 'extent', 'origin', 'spacegroupNumber', 'cellSize', 'cellAngles', 'mode' ]) {
         if (!compareProp((a as any)[p], (b as any)[p])) return false;
     }
     return true;
@@ -69,10 +72,10 @@ async function readHeader(name: string, file: number) {
     let littleEndian = true;
 
     let mode = data.readInt32LE(3 * 4);
-    if (mode !== 2) {
+    if (mode !== 0 && mode !== 2) {
         littleEndian = false;
         mode = data.readInt32BE(3 * 4, true);
-        if (mode !== 2) {
+        if (mode !== 0 && mode !== 2) {
             throw Error('Only CCP4 modes 0 and 2 are supported.');
         }
     }
@@ -82,6 +85,7 @@ async function readHeader(name: string, file: number) {
 
     let header: Header = {
         name,
+        mode,
         grid: getArray(readInt, 7, 3),
         axisOrder: getArray(readInt, 16, 3).map(i => i - 1),
         extent: getArray(readInt, 0, 3),
@@ -142,11 +146,11 @@ export async function readSlice(data: Data, sliceIndex: number) {
 
     let slice = data.slice;
     let header = data.header;
-    let values: Float32Array;
+    let values: File.ValueArray;
     let { extent, mean } = header;
     let sliceSize = extent[0] * extent[1];    
     let sliceOffsetIndex = sliceIndex * slice.sliceHeight;
-    let sliceByteOffset = 4 * sliceSize * sliceOffsetIndex;
+    let sliceByteOffset = slice.data.elementByteSize * sliceSize * sliceOffsetIndex;
     let sliceHeight = Math.min(slice.sliceHeight, extent[2] - sliceOffsetIndex);
     let sliceCount = sliceHeight * sliceSize;
 
@@ -168,7 +172,7 @@ export async function readSlice(data: Data, sliceIndex: number) {
         header.max = max;
     }
 
-    values = await File.readFloat32Array(slice.data, data.file, header.dataOffset + sliceByteOffset, sliceCount);
+    values = await File.readTypedArray(slice.data, data.file, header.dataOffset + sliceByteOffset, sliceCount, header.littleEndian);
     updateSigma();
 
     if (sliceIndex >= data.numSlices - 1) {
@@ -185,7 +189,7 @@ function createSliceContext(header: Header, height: number, isNativeEndian: bool
     return {
         height: 0,
         sliceHeight: height,
-        data: File.createFloat32ArrayContext(size)
+        data: File.createTypedArrayBufferContext(size, header.mode === Mode.Float32 ? File.ValueType.Float32 : File.ValueType.Int8)
     };
 }
 

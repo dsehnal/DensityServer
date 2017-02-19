@@ -59,11 +59,11 @@ function writeHeader(ctx) {
                     // 1     N = Num densities
                     _x.sent();
                     ////////////////////////////////////////////////////////
-                    // 0:1   Format ID (0 = float32 values)
-                    return [4 /*yield*/, File.writeInt(ctx.file, 0)];
+                    // 0:1   Format ID (0 = float32 values, 1 = int8 values)
+                    return [4 /*yield*/, File.writeInt(ctx.file, header.mode == 2 /* Float32 */ ? 0 : 1)];
                 case 3:
                     ////////////////////////////////////////////////////////
-                    // 0:1   Format ID (0 = float32 values)
+                    // 0:1   Format ID (0 = float32 values, 1 = int8 values)
                     _x.sent();
                     _i = 0, _a = header.grid;
                     _x.label = 4;
@@ -279,7 +279,7 @@ function writeInfo(ctx) {
 function createCubeContext(ctx) {
     var src = ctx.sources[0];
     return {
-        buffer: new Buffer(new ArrayBuffer(4 * ctx.blockSize * ctx.blockSize * ctx.blockSize)),
+        buffer: new Buffer(new ArrayBuffer(src.slice.data.elementByteSize * ctx.blockSize * ctx.blockSize * ctx.blockSize)),
         size: ctx.blockSize,
         extent: src.header.extent,
         numU: Math.ceil(src.header.extent[0] / ctx.blockSize) | 0,
@@ -296,13 +296,18 @@ function fillCube(slice, _a, u, v) {
     var cK = Math.min(size, extent[1] - oK);
     var cL = slice.height;
     var values = slice.data.values;
+    var elementByteSize = slice.data.elementByteSize;
+    var isFloat = slice.data.type === 0 /* Float32 */;
     var offset = 0;
     for (var l = 0; l < cL; l++) {
         for (var k = 0; k < cK; k++) {
             for (var h = 0; h < cH; h++) {
                 var t = values[oH + h + (k + oK) * sizeH + l * sizeHK];
-                buffer.writeFloatLE(t, offset, true);
-                offset += 4;
+                if (isFloat)
+                    buffer.writeFloatLE(t, offset, true);
+                else
+                    buffer.writeInt8(t, offset, true);
+                offset += elementByteSize;
             }
         }
     }

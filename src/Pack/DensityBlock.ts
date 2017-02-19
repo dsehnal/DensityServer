@@ -36,8 +36,8 @@ async function writeHeader(ctx: DensityBlockContext) {
 
     ////////////////////////////////////////////////////////
 
-    // 0:1   Format ID (0 = float32 values)
-    await File.writeInt(ctx.file, 0);
+    // 0:1   Format ID (0 = float32 values, 1 = int8 values)
+    await File.writeInt(ctx.file, header.mode == CCP4.Mode.Float32 ? 0 : 1);
 
     // 1:3   Grid size
     for (let v of header.grid) await File.writeInt(ctx.file, v);
@@ -98,9 +98,9 @@ async function writeInfo(ctx: DensityBlockContext) {
 }
 
 function createCubeContext(ctx: DensityBlockContext): CubeContext {
-    let src = ctx.sources[0];
+    let src = ctx.sources[0];    
     return {
-        buffer: new Buffer(new ArrayBuffer(4 * ctx.blockSize * ctx.blockSize * ctx.blockSize)),
+        buffer: new Buffer(new ArrayBuffer(src.slice.data.elementByteSize * ctx.blockSize * ctx.blockSize * ctx.blockSize)),
         size: ctx.blockSize,
         extent: src.header.extent,
         numU: Math.ceil(src.header.extent[0] / ctx.blockSize) | 0,
@@ -120,15 +120,19 @@ function fillCube(slice: CCP4.SliceContext, { size, buffer, extent }: CubeContex
 
     let values = slice.data.values; 
 
-    let offset = 0;
+    let elementByteSize = slice.data.elementByteSize;
+
+    let isFloat = slice.data.type === File.ValueType.Float32;
+    let offset = 0;   
     for (let l = 0; l < cL; l++) {
         for (let k = 0; k < cK; k++) {
             for (let h = 0; h < cH; h++) {
                 let t = values[oH + h + (k + oK) * sizeH + l * sizeHK];
-                buffer.writeFloatLE(t, offset, true);               
-                offset += 4;
+                if (isFloat) buffer.writeFloatLE(t, offset, true);
+                else buffer.writeInt8(t, offset, true);
+                offset += elementByteSize;
             }
-        }
+        }        
     }
 
     return offset;

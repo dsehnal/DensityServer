@@ -46,6 +46,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 var File = require("../Utils/File");
+var Data = require("./DataModel");
 var Transforms_1 = require("./Transforms");
 function getArray(r, offset, count, step) {
     if (step === void 0) { step = 1; }
@@ -148,8 +149,8 @@ function readBlock(ctx, coord) {
                 case 0:
                     _a = Transforms_1.Box.getBlockMetrics(ctx, coord), box = _a.box, dimensions = _a.dimensions, dataOffset = _a.dataOffset;
                     count = dimensions[0] * dimensions[1] * dimensions[2];
-                    data = File.createFloat32ArrayContext(ctx.header.numDensities * count);
-                    return [4 /*yield*/, File.readFloat32Array(data, ctx.file, dataOffset, ctx.header.numDensities * count)];
+                    data = File.createTypedArrayBufferContext(ctx.header.numDensities * count, ctx.header.formatId === 0 /* Float32 */ ? 0 /* Float32 */ : 1 /* Int8 */);
+                    return [4 /*yield*/, File.readTypedArray(data, ctx.file, dataOffset, ctx.header.numDensities * count)];
                 case 1:
                     values = _b.sent();
                     return [2 /*return*/, {

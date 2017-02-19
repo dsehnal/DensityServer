@@ -5,7 +5,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-const isNativeEndian = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
+const isNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
 
 export async function openRead(filename: string) {
     return new Promise<number>((res, rej) => {
@@ -131,39 +131,57 @@ export async function write(ctx: WriteContext, value: Buffer, size: number) {
     ctx.position += written;
 }
 
-export interface Float32ArrayContext {
+
+export const enum ValueType { Float32 = 0, Int8 = 1 }
+export type ValueArray = Float32Array | Int8Array
+
+export interface TypedArrayBufferContext {
+    type: ValueType,
+    elementByteSize: number,
     readBuffer: Buffer,
     valuesBuffer: Uint8Array,
-    values: Float32Array
+    values: ValueArray
 } 
 
-export function createFloat32ArrayContext(size: number): Float32ArrayContext {
-    let arrayBuffer = new ArrayBuffer(4 * size);
+function getElementByteSize(type: ValueType) {
+    if (type === ValueType.Float32) return 4;
+    return 1;
+}
+
+function makeTypedArray(type: ValueType, buffer: ArrayBuffer): ValueArray {
+    if (type === ValueType.Float32) return new Float32Array(buffer);
+    return new Int8Array(buffer);
+}
+
+export function createTypedArrayBufferContext(size: number, type: ValueType): TypedArrayBufferContext {
+    let elementByteSize = getElementByteSize(type);
+    let arrayBuffer = new ArrayBuffer(elementByteSize * size);
     let readBuffer = new Buffer(arrayBuffer); 
-    let valuesBuffer = isNativeEndian ? arrayBuffer : new ArrayBuffer(4 * size);
+    let valuesBuffer = isNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
     return {
+        type,
+        elementByteSize,
         readBuffer,
         valuesBuffer: new Uint8Array(valuesBuffer),
-        values: new Float32Array(valuesBuffer)
+        values: makeTypedArray(type, valuesBuffer)
     };
 }
 
-export async function readFloat32Array(ctx: Float32ArrayContext, file: number, position: number, count: number) {
-    let byteCount = 4 * count;
-
-    function fixEndian() {
-        let source = ctx.readBuffer;
-        let target = ctx.valuesBuffer;
-        for (let o = 0; o < byteCount; o += 4) { 
-            target[o + 3] = source[o + 0];
-            target[o + 2] = source[o + 1];
-            target[o + 1] = source[o + 2];
-            target[o + 0] = source[o + 3];
+function flipByteOrder(source: Buffer, target: Uint8Array, byteCount: number, elementByteSize: number) {
+    for (let i = 0, n = byteCount; i < n; i += elementByteSize) {
+        for (let j = 0; j < elementByteSize; j++) { 
+            target[i + elementByteSize - j - 1] = source[i + j];
         }
     }
+}
 
-    await readBuffer(file, position, ctx.readBuffer, byteCount);
-
-    if (!isNativeEndian) fixEndian();
+export async function readTypedArray(ctx: TypedArrayBufferContext, file: number, position: number, count: number, littleEndian?: boolean) {
+    let byteCount = ctx.elementByteSize * count;
+    
+    await readBuffer(file, position, ctx.readBuffer, byteCount);    
+    if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== isNativeEndianLittle) || !isNativeEndianLittle)) {
+        // fix the endian 
+        flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize);
+    }
     return ctx.values;
 }
