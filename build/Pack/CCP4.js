@@ -160,9 +160,9 @@ function readSlice(data, sliceIndex) {
                     header = data.header;
                     extent = header.extent, mean = header.mean;
                     sliceSize = extent[0] * extent[1];
-                    sliceOffsetIndex = sliceIndex * slice.sliceHeight;
+                    sliceOffsetIndex = sliceIndex * slice.blockSize;
                     sliceByteOffset = slice.data.elementByteSize * sliceSize * sliceOffsetIndex;
-                    sliceHeight = Math.min(slice.sliceHeight, extent[2] - sliceOffsetIndex);
+                    sliceHeight = Math.min(slice.blockSize, extent[2] - sliceOffsetIndex);
                     sliceCount = sliceHeight * sliceSize;
                     slice.height = sliceHeight;
                     return [4 /*yield*/, File.readTypedArray(slice.data, data.file, header.dataOffset + sliceByteOffset, sliceCount, header.littleEndian)];
@@ -178,18 +178,18 @@ function readSlice(data, sliceIndex) {
     });
 }
 exports.readSlice = readSlice;
-function createSliceContext(header, height, isNativeEndian) {
+function createSliceContext(header, blockSize) {
     var extent = header.extent;
-    var size = height * extent[0] * extent[1];
+    var size = blockSize * extent[0] * extent[1];
     return {
         height: 0,
-        sliceHeight: height,
+        blockSize: blockSize,
         data: File.createTypedArrayBufferContext(size, header.mode === 2 /* Float32 */ ? 0 /* Float32 */ : 1 /* Int8 */)
     };
 }
-function open(name, filename, sliceHeight) {
+function open(name, filename, blockSize) {
     return __awaiter(this, void 0, void 0, function () {
-        var file, header, isNativeEndian;
+        var file, header;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, File.openRead(filename)];
@@ -198,13 +198,11 @@ function open(name, filename, sliceHeight) {
                     return [4 /*yield*/, readHeader(name, file)];
                 case 2:
                     header = _a.sent();
-                    isNativeEndian = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
                     return [2 /*return*/, {
                             header: header,
                             file: file,
-                            slice: createSliceContext(header, sliceHeight, isNativeEndian),
-                            numSlices: Math.ceil(header.extent[2] / sliceHeight) | 0,
-                            isNativeEndian: isNativeEndian
+                            slice: createSliceContext(header, blockSize),
+                            numSlices: Math.ceil(header.extent[2] / blockSize) | 0
                         }];
             }
         });

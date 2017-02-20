@@ -27,16 +27,18 @@ export interface Header {
 
 export interface SliceContext {   
     data: File.TypedArrayBufferContext,
+
+    /** Height of the current slice that was read */
     height: number,
-    sliceHeight: number
+
+    blockSize: number
 }
 
 export interface Data {
     header: Header,
     file: number,
     slice: SliceContext,
-    numSlices: number,
-    isNativeEndian: boolean
+    numSlices: number
 }
 
 function compareProp(a: any, b: any) {
@@ -149,9 +151,9 @@ export async function readSlice(data: Data, sliceIndex: number) {
     let values: File.ValueArray;
     let { extent, mean } = header;
     let sliceSize = extent[0] * extent[1];    
-    let sliceOffsetIndex = sliceIndex * slice.sliceHeight;
+    let sliceOffsetIndex = sliceIndex * slice.blockSize;
     let sliceByteOffset = slice.data.elementByteSize * sliceSize * sliceOffsetIndex;
-    let sliceHeight = Math.min(slice.sliceHeight, extent[2] - sliceOffsetIndex);
+    let sliceHeight = Math.min(slice.blockSize, extent[2] - sliceOffsetIndex);
     let sliceCount = sliceHeight * sliceSize;
 
     slice.height = sliceHeight;    
@@ -182,27 +184,25 @@ export async function readSlice(data: Data, sliceIndex: number) {
     return sliceHeight;
 }
 
-function createSliceContext(header: Header, height: number, isNativeEndian: boolean): SliceContext {
+function createSliceContext(header: Header, blockSize: number): SliceContext {
     let { extent } = header;
-    let size = height * extent[0] * extent[1];
+    let size = blockSize * extent[0] * extent[1];
 
     return {
         height: 0,
-        sliceHeight: height,
+        blockSize: blockSize,
         data: File.createTypedArrayBufferContext(size, header.mode === Mode.Float32 ? File.ValueType.Float32 : File.ValueType.Int8)
     };
 }
 
-export async function open(name: string, filename: string, sliceHeight: number): Promise<Data> {
+export async function open(name: string, filename: string, blockSize: number): Promise<Data> {
     let file = await File.openRead(filename);
     let header = await readHeader(name, file);
-    let isNativeEndian = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
     return <Data>{ 
         header, 
         file, 
-        slice: createSliceContext(header, sliceHeight, isNativeEndian),
-        numSlices: Math.ceil(header.extent[2] / sliceHeight) | 0,
-        isNativeEndian 
+        slice: createSliceContext(header, blockSize),
+        numSlices: Math.ceil(header.extent[2] / blockSize) | 0
     };
 }
 
