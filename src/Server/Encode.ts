@@ -5,6 +5,7 @@
 import * as CIF from '../lib/CIFTools'
 import * as Data from  './DataModel'
 import VERSION from './Version'
+import * as BlockFormat from '../Common/BlockFormat'
 
 interface DataContext {
     density: Data.Context,
@@ -42,10 +43,6 @@ function _density_info(ctx: DataContext) {
     let fields: FieldDesc<DataContext>[] = [
         string(ctx, 'name', ctx => ctx.density.header.names[ctx.dataIndex]),
         
-        int32(ctx, 'grid[0]', ctx => ctx.density.header.gridSize[0]),
-        int32(ctx, 'grid[1]', ctx => ctx.density.header.gridSize[1]),
-        int32(ctx, 'grid[2]', ctx => ctx.density.header.gridSize[2]),
-        
         int32(ctx, 'axis_order[0]', ctx => ctx.density.header.axisOrder[0]),
         int32(ctx, 'axis_order[1]', ctx => ctx.density.header.axisOrder[1]),
         int32(ctx, 'axis_order[2]', ctx => ctx.density.header.axisOrder[2]),
@@ -54,9 +51,13 @@ function _density_info(ctx: DataContext) {
         int32(ctx, 'origin[1]', ctx => ctx.data.box.a[1]),
         int32(ctx, 'origin[2]', ctx => ctx.data.box.a[2]),
 
-        int32(ctx, 'extent[0]', ctx => ctx.data.box.b[0] - ctx.data.box.a[0]),
-        int32(ctx, 'extent[1]', ctx => ctx.data.box.b[1] - ctx.data.box.a[1]),
-        int32(ctx, 'extent[2]', ctx => ctx.data.box.b[2] - ctx.data.box.a[2]),
+        int32(ctx, 'dimensions[0]', ctx => ctx.data.box.b[0] - ctx.data.box.a[0]),
+        int32(ctx, 'dimensions[1]', ctx => ctx.data.box.b[1] - ctx.data.box.a[1]),
+        int32(ctx, 'dimensions[2]', ctx => ctx.data.box.b[2] - ctx.data.box.a[2]),
+
+        int32(ctx, 'samples[0]', ctx => ctx.data.samples[0]),
+        int32(ctx, 'samples[1]', ctx => ctx.data.samples[1]),
+        int32(ctx, 'samples[2]', ctx => ctx.data.samples[2]),
 
         int32(ctx, 'spacegroup_number', ctx => ctx.density.header.spacegroupNumber),
 
@@ -91,7 +92,7 @@ function _density_data(ctx: DataContext) {
     let encoder: E;
     let typedArray: any;
 
-    if (ctx.density.header.formatId === Data.FormatId.Float32) {
+    if (ctx.density.header.formatId === BlockFormat.FormatId.Float32) {
         let min: number, max: number;
         min = data[0], max = data[0];
         for (let i = 0, n = data.length; i < n; i++) {

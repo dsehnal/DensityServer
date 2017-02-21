@@ -38,32 +38,34 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 var File = require("../Utils/File");
-var BlockWriter = require("./BlockWriter");
-function processSlice(ctx) {
+var Writer = require("./Writer");
+function processLayer(ctx) {
     return __awaiter(this, void 0, void 0, function () {
-        var v, u, _i, _a, src, numBytes;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var extent, _a, readHeight, valuesOffset, v, u, _i, _b, src, numBytes;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
+                    extent = ctx.sources[0].header.extent;
+                    _a = ctx.sources[0].layer, readHeight = _a.readHeight, valuesOffset = _a.valuesOffset;
                     v = 0;
-                    _b.label = 1;
+                    _c.label = 1;
                 case 1:
                     if (!(v < ctx.blockCounts[0])) return [3 /*break*/, 8];
                     u = 0;
-                    _b.label = 2;
+                    _c.label = 2;
                 case 2:
                     if (!(u < ctx.blockCounts[1])) return [3 /*break*/, 7];
-                    _i = 0, _a = ctx.sources;
-                    _b.label = 3;
+                    _i = 0, _b = ctx.sources;
+                    _c.label = 3;
                 case 3:
-                    if (!(_i < _a.length)) return [3 /*break*/, 6];
-                    src = _a[_i];
-                    numBytes = BlockWriter.fillCube(ctx, src.slice.data.values, u, v, src.slice.height);
+                    if (!(_i < _b.length)) return [3 /*break*/, 6];
+                    src = _b[_i];
+                    numBytes = Writer.fillCube(ctx, src.layer.buffer.values, valuesOffset, u, v, readHeight);
                     return [4 /*yield*/, File.write(ctx.file, ctx.cubeBuffer, numBytes)];
                 case 4:
-                    _b.sent();
-                    BlockWriter.updateProgress(ctx.progress, 1);
-                    _b.label = 5;
+                    _c.sent();
+                    Writer.updateProgress(ctx.progress, 1);
+                    _c.label = 5;
                 case 5:
                     _i++;
                     return [3 /*break*/, 3];
@@ -78,26 +80,27 @@ function processSlice(ctx) {
         });
     });
 }
-exports.processSlice = processSlice;
+exports.processLayer = processLayer;
 function createContext(filename, progress, sources, blockSize) {
     return __awaiter(this, void 0, void 0, function () {
-        var sampleCounts, blockCounts, _a;
+        var samples, blockCounts, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    sampleCounts = sources[0].header.extent;
-                    blockCounts = [Math.ceil(sampleCounts[0] / blockSize) | 0, Math.ceil(sampleCounts[1] / blockSize) | 0, Math.ceil(sampleCounts[2] / blockSize) | 0];
+                    samples = sources[0].header.extent;
+                    blockCounts = [Math.ceil(samples[0] / blockSize) | 0, Math.ceil(samples[1] / blockSize) | 0, Math.ceil(samples[2] / blockSize) | 0];
                     progress.max += blockCounts[0] * blockCounts[1] * blockCounts[2] * sources.length;
                     _a = {};
                     return [4 /*yield*/, File.createFile(filename)];
                 case 1: return [2 /*return*/, (_a.file = _b.sent(),
                         _a.sigmasOffset = 0,
                         _a.sources = sources,
+                        _a.blockHeader = void 0,
                         _a.progress = progress,
                         _a.blockSize = blockSize,
-                        _a.sampleCounts = sampleCounts,
-                        _a.blockCounts = [Math.ceil(sampleCounts[0] / blockSize) | 0, Math.ceil(sampleCounts[1] / blockSize) | 0, Math.ceil(sampleCounts[2] / blockSize) | 0],
-                        _a.cubeBuffer = new Buffer(new ArrayBuffer(sources[0].slice.data.elementByteSize * blockSize * blockSize * blockSize)),
+                        _a.samples = samples,
+                        _a.blockCounts = [Math.ceil(samples[0] / blockSize) | 0, Math.ceil(samples[1] / blockSize) | 0, Math.ceil(samples[2] / blockSize) | 0],
+                        _a.cubeBuffer = new Buffer(new ArrayBuffer(sources[0].layer.buffer.elementByteSize * blockSize * blockSize * blockSize)),
                         _a)];
             }
         });

@@ -4,6 +4,7 @@
 
 import * as Data from './DataModel'
 import * as LA from '../Utils/LinearAlgebra'
+import * as BlockFormat from '../Common/BlockFormat'
 
 const enum Constants {
     Delta = 1e-4
@@ -40,16 +41,14 @@ export module Coords {
         return [coord[map[0]], coord[map[1]], coord[map[2]]];
     }
 
-    export function makeSpacegroup(header: Data.Header) {
-        let { cellAngles, cellSize, gridSize, axisOrder } = header;
+    export function makeSkewMatrices(header: BlockFormat.Header) {
+        let { cellAngles, cellSize } = header;
 
         let alpha = (Math.PI / 180.0) * cellAngles[0],
             beta = (Math.PI / 180.0) * cellAngles[1],
             gamma = (Math.PI / 180.0) * cellAngles[2];
 
-        let xScale = cellSize[0] / gridSize[0],
-            yScale = cellSize[1] / gridSize[1],
-            zScale = cellSize[2] / gridSize[2];
+        let xScale = cellSize[0], yScale = cellSize[1], zScale = cellSize[2];
 
         let z1 = Math.cos(beta),
             z2 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma),
@@ -67,12 +66,11 @@ export module Coords {
         ]);
         let toFrac = LA.Matrix4.invert(LA.Matrix4.empty(), fromFrac)!;
 
-        return { toFrac, fromFrac, cellDimensions: [xScale, yScale, zScale] };
+        return { toFrac, fromFrac };
     }
 }
 
 export module Box {
-
     export function zero(): Data.Box {
         return { a: [0,0,0], b: [0,0,0] };
     }
@@ -105,22 +103,21 @@ export module Box {
         if (info.blockCount.some((v, i) => coord[i] >= v)) {
             throw Error(`Block coordinate exceeds block count.`);
         }
+        let { blockSize, samples } = header;
+    
+        let sizeH = samples[0];
+        let sizeHK = samples[0] * samples[1];
 
-        let { blockSize, extent } = header;
-
-        let sizeH = extent[0];
-        let sizeHK = extent[0] * extent[1];
-
-        let dimensions = Coords.map((e, i) => Math.min(blockSize, e - coord[i] * blockSize), extent);
+        let dimensions = Coords.map((e, i) => Math.min(blockSize, e - coord[i] * blockSize), samples);
 
         let N = ctx.header.numDensities;
         
         let offsets = [
             N * blockSize * dimensions[1] * dimensions[2] * coord[0],
-            N * blockSize * extent[0] * dimensions[2] * coord[1],
-            N * blockSize * extent[0] * extent[1] * coord[2]
+            N * blockSize * samples[0] * dimensions[2] * coord[1],
+            N * blockSize * samples[0] * samples[1] * coord[2]
         ];
-        let dataOffset = header.dataByteOffset + Data.getElementByteSize(ctx.header) * (offsets[0] + offsets[1] + offsets[2]);
+        let dataOffset = header.dataByteOffset + BlockFormat.getElementByteSize(ctx.header) * (offsets[0] + offsets[1] + offsets[2]);
         
         let box: Data.Box = {
             a: Coords.map((c, i) => ctx.info.dataBox.a[i] + blockSize * c, coord),
@@ -147,37 +144,22 @@ export module Box {
         return box;
     }
 
-    function snap(box: Data.Box): Data.Box {
-        return {
-            a: Coords.map(v => {
-                let c = Math.ceil(v);
-                if (c - v < Constants.Delta) return c;
-                return Math.floor(v);
-            }, box.a),
-            b: Coords.map(v => {
-                let f = Math.floor(v);
-                if (v - f < Constants.Delta) return f;
-                return Math.ceil(v);
-            }, box.b),
-        }
-    }
-
     /**
      * Validates intervals and snaps to integer coordinates.
      */
     export function normalize(box: Data.Box) {
-        return snap(validate(box));
+        return validate(box);
     }
 
     /**
-     * Map a box from orthogonal to "scaled" fractional coordinates.
+     * Map a box from orthogonal to fractional coordinates.
      * 
      * Axis order is changed to that of the underlying density and
      * the coordinates are snapped to the grid points.
      */
     export function map(ctx: Data.Context, box: Data.Box) {
         box = validate(box);
-        let { toFrac, grid } = ctx.info;
+        let { toFrac } = ctx.info;
         let { axisOrder } = ctx.header;
         let { a: l, b: r } = box;
         let corners = [
@@ -205,10 +187,10 @@ export module Query {
         return (coord[0] + blockCount[0] * (coord[1] + coord[2] * blockCount[1]));
     }
 
-    function overlapMultiplierRange(a: number, b: number, u: number, v: number, g: number, out: number[]): boolean {
-        let x = Math.ceil((u - b) / g) | 0, y=  Math.floor((v - a) / g) | 0;
-        if (b + x * g < u) x++;
-        if (a + y * g > v) y--;
+    function overlapMultiplierRange(a: number, b: number, u: number, v: number, out: number[]): boolean {
+        let x = Math.ceil(u - b) | 0, y =  Math.floor(v - a) | 0;
+        if (b + x < u) x++;
+        if (a + y > v) y--;
         if (x > y) return false;
         out[0] = x; 
         out[1] = y;
@@ -217,23 +199,19 @@ export module Query {
 
     const _tempRange = [0,0];
     /**
-     * Find a 3D integer  range of multipliers of grid sizes that when added map 
-     * source to target.
-     * 
-     * @example
-     *   in 1D
-     *   source: [1,2], target: [10,16], grid: 5 => [2,3]    
+     * Find a 3D integer range of multipliers of grid sizes that when added map 
+     * source to target.  
      */
-    export function findOverlapTransformRange(source: Data.Box, target: Data.Box, grid: number[], out: Data.Box) {
+    export function findOverlapTransformRange(source: Data.Box, target: Data.Box, out: Data.Box) {
         for (let i = 0; i < 3; i++) {
-            if (!overlapMultiplierRange(source.a[i], source.b[i], target.a[i], target.b[i], grid[i], _tempRange)) return false;
+            if (!overlapMultiplierRange(source.a[i], source.b[i], target.a[i], target.b[i], _tempRange)) return false;
             out.a[i] = _tempRange[0];
             out.b[i] = _tempRange[1];
         }
         return true;
     }
     
-    function getBlockIndex(coord: number[], origin: number[], blockSize: number) {
+    function getNormalizedBlockIndex(coord: number[], origin: number[], blockSize: number[]) {
         let index = [0,0,0];
         for (let i = 0; i < 3; i++) {
             let d = (coord[i] - origin[i]) | 0;
@@ -262,20 +240,20 @@ export module Query {
     }
 
     function findBlocksSymmetric(ctx: Data.Context, region: Data.Box) {        
-        let { dataBox, grid, blockCount } = ctx.info;
+        let { dataBox, blockCount } = ctx.info;
         let overlaps = Box.zero();        
-        if (!findOverlapTransformRange(region, dataBox, grid, overlaps)) return [];
+        if (!findOverlapTransformRange(region, dataBox, overlaps)) return [];
         let addedBlocks = new Set<number>();
         let blocks: number[][] = [];
         let delta = [0,0,0];
         let { a, b } = overlaps;
  
         for (let k = a[2]; k <= b[2]; k++) {
-            delta[2] = k * grid[2];
+            delta[2] = k;
             for (let j = a[1]; j <= b[1]; j++) {
-                delta[1] = j * grid[1];
+                delta[1] = j;
                 for (let i = a[0]; i <= b[0]; i++) {
-                    delta[0] = i * grid[0];
+                    delta[0] = i;
                     for (let block of findBlocksAsymmetric(ctx, Box.shift(region, delta))) {
                         let hash = getBlockHash(block, blockCount);
                         if (!addedBlocks.has(hash)) {
@@ -301,43 +279,6 @@ export module Query {
         if (ctx.info.isAsymmetric) return findBlocksAsymmetric(ctx, region);
         return findBlocksSymmetric(ctx, region);
     } 
-
-    export function fillData1(block: Data.MultiBlock, data: Data.QueryData) {
-        let region = Box.intersect(block.box, data.box);
-        if (!region) return;
-
-        let dataDims = Box.dims(data.box);
-        let dataH = dataDims[0];
-        let dataHK = dataDims[0] * dataDims[1];
-
-        let [dH, dK, dL] = Coords.sub(region.a, data.box.a);
-        let dataOffset = dH + dK * dataH + dL * dataHK;
-
-        let blockSize = block.dimensions[0] * block.dimensions[1] * block.dimensions[2];
-        let blockValues = block.values;
-        let blockH = block.dimensions[0];
-        let blockHK = block.dimensions[0] * block.dimensions[1];
-
-        let [bH, bK, bL] = Coords.sub(region.a, block.box.a);
-        let blockOffset = bH + bK * blockH + bL * blockHK;
-
-        function fill() {
-            let [cH, cK, cL] = Box.dims(region!);
-            for (let index = 0; index < data.values.length; index++) {
-                let values = data.values[index];
-                for (let l = 0; l < cL; l++) {
-                    for (let k = 0; k < cK; k++) {
-                        for (let h = 0; h < cH; h++) {
-                            let v = blockValues[blockSize * index + blockOffset + h + k * blockH + l * blockHK];
-                            values[dataOffset + h + k * dataH + l * dataHK] = v;
-                        }
-                    }
-                }
-            }
-        }
-
-        fill();
-    }
 
     export function fillData(data: Data.QueryData, block: Data.MultiBlock, dataShift: number[]) {
 

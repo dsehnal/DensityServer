@@ -38,6 +38,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 var File = require("../Utils/File");
+function createLayerContext(header, blockSize) {
+    var extent = header.extent;
+    var size = 2 * blockSize * extent[0] * extent[1];
+    var buffer = File.createTypedArrayBufferContext(size, header.mode === 2 /* Float32 */ ? 0 /* Float32 */ : 1 /* Int8 */);
+    return {
+        buffer: buffer,
+        blockSize: blockSize,
+        startSlice: 0,
+        endSlice: 0,
+        values: buffer.values,
+        valuesOffset: 0,
+        readCount: 0,
+        readHeight: 0,
+        isFinished: false
+    };
+}
 function compareProp(a, b) {
     if (a instanceof Array && b instanceof Array) {
         if (a.length !== b.length)
@@ -68,7 +84,7 @@ function getArray(r, offset, count) {
 }
 function readHeader(name, file) {
     return __awaiter(this, void 0, void 0, function () {
-        var headerSize, _a, bytesRead, data, littleEndian, mode, readInt, readFloat, header, alpha, beta, gamma, xScale, yScale, zScale, z1, z2, z3, xAxis, yAxis, zAxis, indices, origin2k, origin, nxyzStart;
+        var headerSize, _a, bytesRead, data, littleEndian, mode, readInt, readFloat, origin2k, nxyzStart, header;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -87,13 +103,15 @@ function readHeader(name, file) {
                     }
                     readInt = littleEndian ? function (o) { return data.readInt32LE(o * 4); } : function (o) { return data.readInt32BE(o * 4); };
                     readFloat = littleEndian ? function (o) { return data.readFloatLE(o * 4); } : function (o) { return data.readFloatBE(o * 4); };
+                    origin2k = getArray(readFloat, 49, 3);
+                    nxyzStart = getArray(readInt, 4, 3);
                     header = {
                         name: name,
                         mode: mode,
                         grid: getArray(readInt, 7, 3),
                         axisOrder: getArray(readInt, 16, 3).map(function (i) { return i - 1; }),
                         extent: getArray(readInt, 0, 3),
-                        origin: [0, 0, 0],
+                        origin: origin2k[0] === 0.0 && origin2k[1] === 0.0 && origin2k[2] === 0.0 ? nxyzStart : origin2k,
                         spacegroupNumber: readInt(22),
                         cellSize: getArray(readFloat, 10, 3),
                         cellAngles: getArray(readFloat, 13, 3),
@@ -104,39 +122,18 @@ function readHeader(name, file) {
                         littleEndian: littleEndian,
                         dataOffset: headerSize + readInt(23) /* symBytes */
                     };
-                    alpha = (Math.PI / 180.0) * header.cellAngles[0], beta = (Math.PI / 180.0) * header.cellAngles[1], gamma = (Math.PI / 180.0) * header.cellAngles[2];
-                    xScale = header.cellSize[0] / header.grid[0], yScale = header.cellSize[1] / header.grid[1], zScale = header.cellSize[2] / header.grid[2];
-                    z1 = Math.cos(beta), z2 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma), z3 = Math.sqrt(1.0 - z1 * z1 - z2 * z2);
-                    xAxis = [xScale, 0.0, 0.0], yAxis = [Math.cos(gamma) * yScale, Math.sin(gamma) * yScale, 0.0], zAxis = [z1 * zScale, z2 * zScale, z3 * zScale];
-                    indices = [0, 0, 0];
-                    indices[header.axisOrder[0]] = 0;
-                    indices[header.axisOrder[1]] = 1;
-                    indices[header.axisOrder[2]] = 2;
-                    origin2k = getArray(readFloat, 49, 3);
-                    nxyzStart = getArray(readInt, 4, 3);
-                    if (origin2k[0] === 0.0 && origin2k[1] === 0.0 && origin2k[2] === 0.0) {
-                        origin = [
-                            xAxis[0] * nxyzStart[indices[0]] + yAxis[0] * nxyzStart[indices[1]] + zAxis[0] * nxyzStart[indices[2]],
-                            yAxis[1] * nxyzStart[indices[1]] + zAxis[1] * nxyzStart[indices[2]],
-                            zAxis[2] * nxyzStart[indices[2]]
-                        ];
-                    }
-                    else {
-                        origin = [origin2k[indices[0]], origin2k[indices[1]], origin2k[indices[2]]];
-                    }
-                    header.origin = origin;
                     return [2 /*return*/, header];
             }
         });
     });
 }
-function readSlice(data, sliceIndex) {
+function readLayer(data, sliceIndex) {
     return __awaiter(this, void 0, void 0, function () {
         function updateSigma() {
             var sigma = header.sigma;
             var min = header.min;
             var max = header.max;
-            for (var i = 0; i < sliceCount; i++) {
+            for (var i = valuesOffset, _ii = valuesOffset + sliceCount; i < _ii; i++) {
                 var v = values[i];
                 var t = mean - v;
                 sigma += t * t;
@@ -149,44 +146,43 @@ function readSlice(data, sliceIndex) {
             header.min = min;
             header.max = max;
         }
-        var slice, header, values, extent, mean, sliceSize, sliceOffsetIndex, sliceByteOffset, sliceHeight, sliceCount;
+        var layer, header, extent, mean, sliceSize, sliceOffsetIndex, sliceByteOffset, sliceHeight, sliceCount, valuesOffset, values;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     if (sliceIndex >= data.numSlices) {
+                        data.layer.isFinished = true;
                         return [2 /*return*/, 0];
                     }
-                    slice = data.slice;
+                    layer = data.layer;
                     header = data.header;
                     extent = header.extent, mean = header.mean;
                     sliceSize = extent[0] * extent[1];
-                    sliceOffsetIndex = sliceIndex * slice.blockSize;
-                    sliceByteOffset = slice.data.elementByteSize * sliceSize * sliceOffsetIndex;
-                    sliceHeight = Math.min(slice.blockSize, extent[2] - sliceOffsetIndex);
+                    sliceOffsetIndex = sliceIndex * layer.blockSize;
+                    sliceByteOffset = layer.buffer.elementByteSize * sliceSize * sliceOffsetIndex;
+                    sliceHeight = Math.min(layer.blockSize, extent[2] - sliceOffsetIndex);
                     sliceCount = sliceHeight * sliceSize;
-                    slice.height = sliceHeight;
-                    return [4 /*yield*/, File.readTypedArray(slice.data, data.file, header.dataOffset + sliceByteOffset, sliceCount, header.littleEndian)];
+                    valuesOffset = (layer.readCount % 2) * layer.blockSize * sliceSize;
+                    return [4 /*yield*/, File.readTypedArray(layer.buffer, data.file, header.dataOffset + sliceByteOffset, sliceCount, valuesOffset, header.littleEndian)];
                 case 1:
                     values = _a.sent();
                     updateSigma();
+                    layer.readCount++;
+                    if (layer.readCount > 2)
+                        layer.startSlice += layer.blockSize;
+                    layer.endSlice += sliceHeight;
+                    layer.readHeight = sliceHeight;
+                    layer.valuesOffset = valuesOffset;
                     if (sliceIndex >= data.numSlices - 1) {
                         header.sigma = Math.sqrt(header.sigma / (extent[0] * extent[1] * extent[2]));
+                        layer.isFinished = true;
                     }
                     return [2 /*return*/, sliceHeight];
             }
         });
     });
 }
-exports.readSlice = readSlice;
-function createSliceContext(header, blockSize) {
-    var extent = header.extent;
-    var size = blockSize * extent[0] * extent[1];
-    return {
-        height: 0,
-        blockSize: blockSize,
-        data: File.createTypedArrayBufferContext(size, header.mode === 2 /* Float32 */ ? 0 /* Float32 */ : 1 /* Int8 */)
-    };
-}
+exports.readLayer = readLayer;
 function open(name, filename, blockSize) {
     return __awaiter(this, void 0, void 0, function () {
         var file, header;
@@ -201,7 +197,7 @@ function open(name, filename, blockSize) {
                     return [2 /*return*/, {
                             header: header,
                             file: file,
-                            slice: createSliceContext(header, blockSize),
+                            layer: createLayerContext(header, blockSize),
                             numSlices: Math.ceil(header.extent[2] / blockSize) | 0
                         }];
             }

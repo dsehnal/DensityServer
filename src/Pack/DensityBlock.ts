@@ -4,7 +4,8 @@
 
 import * as CCP4 from './CCP4'
 import * as File from '../Utils/File'
-import * as BlockWriter from './BlockWriter'
+import * as Writer from './Writer'
+import * as BlockFormat from '../Common/BlockFormat'
 
 import * as Convert from './Convert'
 import * as Downsample from './Downsample'
@@ -23,7 +24,7 @@ function getDownsampleRates(src: CCP4.Header, blockSize: number) {
 
 async function createContexts(folder: string, sources: CCP4.Data[], blockSize: number, downsample: boolean) {
     const src = sources[0];
-    const progress: BlockWriter.GlobalProgress = { current: 0, max: 0 };
+    const progress: Writer.GlobalProgress = { current: 0, max: 0 };
 
     const convert = await Convert.createContext(path.join(folder, '1.mdb'), progress, sources, blockSize);
 
@@ -35,20 +36,32 @@ async function createContexts(folder: string, sources: CCP4.Data[], blockSize: n
     return { convert, downsamples };
 }
 
-async function processBlocks({ convert, downsamples }: { convert: BlockWriter.Context, downsamples: Downsample.Context[] }) {
+async function processBlocks({ convert, downsamples }: { convert: Writer.Context, downsamples: Downsample.Context[] }) {
     const numSlices = convert.sources[0].numSlices;
     
     for (let i = 0; i < numSlices; i++) {
         for (const src of convert.sources) {
-            await CCP4.readSlice(src, i);
+            await CCP4.readLayer(src, i);
         }
-        await Convert.processSlice(convert);
-        for (const sample of downsamples) await Downsample.processSlice(sample);
+        await Convert.processLayer(convert);
+        for (const sample of downsamples) await Downsample.processLayer(sample);
     }
 }
 
+async function createJsonInfo(filename: string, contexts: { convert: Writer.Context, downsamples: Downsample.Context[] }) {
+    const header = { ...contexts.convert.blockHeader };
+    delete header.dataByteOffset;
+    (header as any).samplingRates = [1, ...contexts.downsamples.map(s => s.sampleRate)];
+    return new Promise((res, rej) => {
+        const json = JSON.stringify(header, null, 2);
+        fs.writeFile(filename, json, err => {
+            if (err) rej(err);
+            else res();
+        })
+    });
+}
+ 
 async function create(folder: string, sourceDensities: { name: string, filename: string }[], blockSize: number, downsample = false) {
-
     const startedTime = getTime();
 
     if (!sourceDensities.length) {
@@ -73,7 +86,9 @@ async function create(folder: string, sourceDensities: { name: string, filename:
         process.stdout.write('   done.\n');
 
         process.stdout.write('Writing header... ');
-        for (const ctx of all) await BlockWriter.writeHeader(ctx);
+        for (const ctx of all) {
+            ctx.blockHeader = await Writer.writeHeader(ctx);
+        }
         process.stdout.write(' done.\n');
 
         process.stdout.write('Writing data...    0%');
@@ -81,13 +96,19 @@ async function create(folder: string, sourceDensities: { name: string, filename:
         process.stdout.write('\rWriting data...    done.\n');
 
         process.stdout.write('Updating info...   ');
-        for (const ctx of all) await BlockWriter.writeInfo(ctx);
+        for (const ctx of all) await Writer.writeInfo(ctx);
+        await createJsonInfo(path.join(folder, 'info.json'), contexts);
         process.stdout.write('done.\n');
 
-        let time = getTime() - startedTime;
+        const time = getTime() - startedTime;
         console.log(`[Done] ${time.toFixed(0)}ms.`);
     } finally {
         for (let f of files) File.close(f);
+
+        // const ff = await File.openRead(path.join(folder, '1.mdb'));
+        // const hh = await BlockFormat.readHeader(ff);
+        // File.close(ff);
+        // console.log(hh);
     }
 } 
 

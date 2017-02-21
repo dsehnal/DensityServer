@@ -46,67 +46,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 var File = require("../Utils/File");
-var Data = require("./DataModel");
 var Transforms_1 = require("./Transforms");
-function getArray(r, offset, count, step) {
-    if (step === void 0) { step = 1; }
-    var ret = [];
-    for (var i = 0; i < count; i++) {
-        ret[i] = r(offset + i * step);
-    }
-    return ret;
-}
-function readHeader(file) {
-    return __awaiter(this, void 0, void 0, function () {
-        var maxDensityCount, headerBaseSize, readSize, data, littleEndian, numDensities, readInt, readFloat, readString, header;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    maxDensityCount = 4;
-                    headerBaseSize = 23 * 4;
-                    readSize = headerBaseSize + 4 * 4 * maxDensityCount + 32 * maxDensityCount;
-                    return [4 /*yield*/, File.readBuffer(file, 0, readSize)];
-                case 1:
-                    data = (_a.sent()).buffer;
-                    littleEndian = data.readInt32LE(0) === 0x1237;
-                    numDensities = littleEndian ? data.readInt32LE(4) : data.readUInt32BE(4);
-                    if (numDensities > maxDensityCount) {
-                        throw Error('At most 4 density fields are supported per single file.');
-                    }
-                    readInt = littleEndian ? function (o) { return data.readInt32LE(8 + o * 4); } : function (o) { return data.readInt32BE(8 + o * 4); };
-                    readFloat = littleEndian ? function (o) { return data.readFloatLE(8 + o * 4); } : function (o) { return data.readFloatBE(8 + o * 4); };
-                    readString = function (o) {
-                        var bytes = [];
-                        for (var i = 0; i < 32; i++)
-                            bytes.push(data.readUInt8(8 + 4 * o + i));
-                        return String.fromCharCode.apply(null, bytes).trim();
-                    };
-                    header = {
-                        numDensities: numDensities,
-                        formatId: readInt(0),
-                        gridSize: getArray(readInt, 1, 3),
-                        blockSize: readInt(4),
-                        axisOrder: getArray(readInt, 5, 3),
-                        extent: getArray(readInt, 8, 3),
-                        origin: getArray(readFloat, 11, 3),
-                        spacegroupNumber: readInt(14),
-                        cellSize: getArray(readFloat, 15, 3),
-                        cellAngles: getArray(readFloat, 18, 3),
-                        means: getArray(readFloat, 21, numDensities),
-                        sigmas: getArray(readFloat, 21 + numDensities, numDensities),
-                        minimums: getArray(readFloat, 21 + 2 * numDensities, numDensities),
-                        maximums: getArray(readFloat, 21 + 3 * numDensities, numDensities),
-                        names: getArray(readString, 21 + 4 * numDensities, numDensities, 8),
-                        dataByteOffset: headerBaseSize + 4 * 4 * numDensities + 32 * numDensities
-                    };
-                    return [2 /*return*/, header];
-            }
-        });
-    });
-}
-exports.readHeader = readHeader;
+var BlockFormat = require("../Common/BlockFormat");
 function createInfo(header) {
-    var blockSize = header.blockSize, extent = header.extent, gridSize = header.gridSize, origin = header.origin;
+    // TODO FIX
+    var blockSize = header.blockSize, /*extent, gridSize,*/ origin = header.origin;
+    var extent = [10, 10, 10];
+    var gridSize = [10, 10, 10];
     var spacegroup = Transforms_1.Coords.makeSpacegroup(header);
     var grid = Transforms_1.Coords.mapIndices(header.axisOrder, gridSize);
     var a = Transforms_1.Coords.map(function (v) { return Math.round(v); }, Transforms_1.Coords.mapIndices(header.axisOrder, Transforms_1.Coords.transform(origin, spacegroup.toFrac)));
@@ -126,7 +72,7 @@ function open(filename) {
                     _a.label = 2;
                 case 2:
                     _a.trys.push([2, 4, , 5]);
-                    return [4 /*yield*/, readHeader(file)];
+                    return [4 /*yield*/, BlockFormat.readHeader(file)];
                 case 3:
                     header = _a.sent();
                     info = createInfo(header);
@@ -150,7 +96,7 @@ function readBlock(ctx, coord) {
                     _a = Transforms_1.Box.getBlockMetrics(ctx, coord), box = _a.box, dimensions = _a.dimensions, dataOffset = _a.dataOffset;
                     count = dimensions[0] * dimensions[1] * dimensions[2];
                     data = File.createTypedArrayBufferContext(ctx.header.numDensities * count, ctx.header.formatId === 0 /* Float32 */ ? 0 /* Float32 */ : 1 /* Int8 */);
-                    return [4 /*yield*/, File.readTypedArray(data, ctx.file, dataOffset, ctx.header.numDensities * count)];
+                    return [4 /*yield*/, File.readTypedArray(data, ctx.file, dataOffset, ctx.header.numDensities * count, 0)];
                 case 1:
                     values = _b.sent();
                     return [2 /*return*/, {

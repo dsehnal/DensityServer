@@ -24,7 +24,7 @@ export async function openRead(filename: string) {
     });
 }
 
-export function readBuffer(file: number, position: number, sizeOrBuffer: Buffer | number, size?: number): Promise<{ bytesRead: number, buffer: Buffer }> {
+export function readBuffer(file: number, position: number, sizeOrBuffer: Buffer | number, size?: number, byteOffset?: number): Promise<{ bytesRead: number, buffer: Buffer }> {
     return new Promise((res, rej) => {
         if (typeof sizeOrBuffer === 'number') {
             let buff = new Buffer(new ArrayBuffer(sizeOrBuffer));
@@ -41,7 +41,7 @@ export function readBuffer(file: number, position: number, sizeOrBuffer: Buffer 
                 return;
             }
 
-            fs.read(file, sizeOrBuffer, 0, size, position, (err, bytesRead, buffer) => {
+            fs.read(file, sizeOrBuffer, byteOffset ? +byteOffset : 0, size, position, (err, bytesRead, buffer) => {
                 if (err) {
                     rej(err);
                     return;
@@ -114,6 +114,16 @@ export async function writeFloat(ctx: WriteContext, value: number, position?:num
     }
 }
 
+export async function writeDouble(ctx: WriteContext, value: number, position?:number) {
+    ctx.smallBuffer.writeDoubleLE(value, 0);
+    if (position === void 0) {
+        let written = await writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 8);
+        ctx.position += written;
+    } else {
+        await writeBuffer(ctx.file, position, ctx.smallBuffer, 8);
+    }
+}
+
 export async function writeString(ctx: WriteContext, value: string, width: number) {
     if (value.length > width || width > smallBufferSize) throw Error('The string exceeds the maximum length.');
     for (let i = 0; i < value.length; i++) {
@@ -167,21 +177,22 @@ export function createTypedArrayBufferContext(size: number, type: ValueType): Ty
     };
 }
 
-function flipByteOrder(source: Buffer, target: Uint8Array, byteCount: number, elementByteSize: number) {
+function flipByteOrder(source: Buffer, target: Uint8Array, byteCount: number, elementByteSize: number, offset: number) {
     for (let i = 0, n = byteCount; i < n; i += elementByteSize) {
         for (let j = 0; j < elementByteSize; j++) { 
-            target[i + elementByteSize - j - 1] = source[i + j];
+            target[offset + i + elementByteSize - j - 1] = source[offset + i + j];
         }
     }
 }
 
-export async function readTypedArray(ctx: TypedArrayBufferContext, file: number, position: number, count: number, littleEndian?: boolean) {
+export async function readTypedArray(ctx: TypedArrayBufferContext, file: number, position: number, count: number, valueOffset: number, littleEndian?: boolean) {
     let byteCount = ctx.elementByteSize * count;
+    let byteOffset = ctx.elementByteSize * valueOffset;
     
-    await readBuffer(file, position, ctx.readBuffer, byteCount);    
+    await readBuffer(file, position, ctx.readBuffer, byteCount, byteOffset);    
     if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== isNativeEndianLittle) || !isNativeEndianLittle)) {
         // fix the endian 
-        flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize);
+        flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize, byteOffset);
     }
     return ctx.values;
 }

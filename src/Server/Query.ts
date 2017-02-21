@@ -34,7 +34,7 @@ export async function info(filename: string | undefined) {
 
         return {
             isAvailable: true,
-            maxQueryRegion: info.cellDimensions.map(d => Math.floor(d * md - 0.1)),
+            maxQueryRegion: [1000,1000,1000], // TODO info.cellDimensions.map(d => Math.floor(d * md - 0.1)),
             dataInfo            
         }
     } catch (e) {
@@ -87,10 +87,11 @@ async function _query(filename: string, params: Data.QueryParams, stream: CIFToo
 }
 
 function validateRegion(ctx: Data.Context, box: Data.Box) {
-    let d = Box.dims(box), m = ServerConfig.maxRequestDimension;
-    if (d.some(d => d > m)) {
-        throw `The query dimensions ([${d[0]},${d[1]},${d[2]}]; in cell count) exceed the maximum supported values ([${m},${m},${m}]).`;
-    }
+    // TODO
+    // let d = Box.dims(box), m = ServerConfig.maxRequestDimension;
+    // if (d.some(d => d > m)) {
+    //     throw `The query dimensions ([${d[0]},${d[1]},${d[2]}]; in cell count) exceed the maximum supported values ([${m},${m},${m}]).`;
+    // }
 }
 
 function createQueryData(ctx: Data.Context, mapped: Data.Box): Data.QueryData | undefined {
@@ -105,7 +106,7 @@ function createQueryData(ctx: Data.Context, mapped: Data.Box): Data.QueryData | 
     let size = dimensions[0] * dimensions[1] * dimensions[2];
     let values: Float32Array[] = [];
     for (let i = 0; i < ctx.header.numDensities; i++) values.push(new Float32Array(size));
-    return { box, values };    
+    return { box, samples: [1, 1, 1], values };    
 }
 
 async function processBlock(ctx: Data.Context, data: Data.QueryData, coord: number[]) {
@@ -116,9 +117,8 @@ async function processBlock(ctx: Data.Context, data: Data.QueryData, coord: numb
         return;
     } 
 
-    let { grid } = ctx.info;
     let overlaps = Box.zero();        
-    if (!Query.findOverlapTransformRange(data.box, block.box, grid, overlaps)) {
+    if (!Query.findOverlapTransformRange(data.box, block.box, overlaps)) {
         return;
     }
 
@@ -126,11 +126,11 @@ async function processBlock(ctx: Data.Context, data: Data.QueryData, coord: numb
     let { a, b } = overlaps;
 
     for (let k = a[2]; k <= b[2]; k++) {
-        delta[2] = k * grid[2];
+        delta[2] = k;
         for (let j = a[1]; j <= b[1]; j++) {
-            delta[1] = j * grid[1];
+            delta[1] = j;
             for (let i = a[0]; i <= b[0]; i++) {
-                delta[0] = i * grid[0];
+                delta[0] = i;
                 Query.fillData(data, block, delta);
             }
         }

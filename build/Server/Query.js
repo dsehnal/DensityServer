@@ -174,7 +174,7 @@ function createQueryData(ctx, mapped) {
     var values = [];
     for (var i = 0; i < ctx.header.numDensities; i++)
         values.push(new Float32Array(size));
-    return { box: box, values: values };
+    return { box: box, samples: [1, 1, 1], values: values };
 }
 function processBlock(ctx, data, coord) {
     return __awaiter(this, void 0, void 0, function () {

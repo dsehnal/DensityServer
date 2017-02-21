@@ -2,6 +2,14 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -39,10 +47,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var CCP4 = require("./CCP4");
 var File = require("../Utils/File");
-var BlockWriter = require("./BlockWriter");
+var Writer = require("./Writer");
 var Convert = require("./Convert");
 var Downsample = require("./Downsample");
 var path = require("path");
+var fs = require("fs");
 function getTime() {
     var t = process.hrtime();
     return t[0] * 1000 + t[1] / 1000000;
@@ -100,14 +109,14 @@ function processBlocks(_a) {
                 case 2:
                     if (!(_i < _a.length)) return [3 /*break*/, 5];
                     src = _a[_i];
-                    return [4 /*yield*/, CCP4.readSlice(src, i)];
+                    return [4 /*yield*/, CCP4.readLayer(src, i)];
                 case 3:
                     _c.sent();
                     _c.label = 4;
                 case 4:
                     _i++;
                     return [3 /*break*/, 2];
-                case 5: return [4 /*yield*/, Convert.processSlice(convert)];
+                case 5: return [4 /*yield*/, Convert.processLayer(convert)];
                 case 6:
                     _c.sent();
                     _b = 0, downsamples_1 = downsamples;
@@ -115,7 +124,7 @@ function processBlocks(_a) {
                 case 7:
                     if (!(_b < downsamples_1.length)) return [3 /*break*/, 10];
                     sample = downsamples_1[_b];
-                    return [4 /*yield*/, Downsample.processSlice(sample)];
+                    return [4 /*yield*/, Downsample.processLayer(sample)];
                 case 8:
                     _c.sent();
                     _c.label = 9;
@@ -130,12 +139,31 @@ function processBlocks(_a) {
         });
     });
 }
+function createJsonInfo(filename, contexts) {
+    return __awaiter(this, void 0, void 0, function () {
+        var header;
+        return __generator(this, function (_a) {
+            header = __assign({}, contexts.convert.blockHeader);
+            delete header.dataByteOffset;
+            header.samplingRates = [1].concat(contexts.downsamples.map(function (s) { return s.sampleRate; }));
+            return [2 /*return*/, new Promise(function (res, rej) {
+                    var json = JSON.stringify(header, null, 2);
+                    fs.writeFile(filename, json, function (err) {
+                        if (err)
+                            rej(err);
+                        else
+                            res();
+                    });
+                })];
+        });
+    });
+}
 function create(folder, sourceDensities, blockSize, downsample) {
     if (downsample === void 0) { downsample = false; }
     return __awaiter(this, void 0, void 0, function () {
-        var startedTime, files, sources_1, _i, sourceDensities_1, s, _a, _b, _c, isOk, contexts, all, _d, sources_2, s, _e, all_1, ctx, _f, all_2, ctx, _g, all_3, ctx, time, _h, files_1, f;
-        return __generator(this, function (_j) {
-            switch (_j.label) {
+        var startedTime, files, sources_1, _i, sourceDensities_1, s, _a, _b, _c, isOk, contexts, all, _d, sources_2, s, _e, all_1, ctx, _f, all_2, ctx, _g, _h, all_3, ctx, time, _j, files_1, f;
+        return __generator(this, function (_k) {
+            switch (_k.label) {
                 case 0:
                     startedTime = getTime();
                     if (!sourceDensities.length) {
@@ -144,20 +172,20 @@ function create(folder, sourceDensities, blockSize, downsample) {
                     console.log("Block Size: " + blockSize + ".");
                     process.stdout.write('Initializing... ');
                     files = [];
-                    _j.label = 1;
+                    _k.label = 1;
                 case 1:
-                    _j.trys.push([1, , 16, 17]);
+                    _k.trys.push([1, , 17, 18]);
                     sources_1 = [];
                     _i = 0, sourceDensities_1 = sourceDensities;
-                    _j.label = 2;
+                    _k.label = 2;
                 case 2:
                     if (!(_i < sourceDensities_1.length)) return [3 /*break*/, 5];
                     s = sourceDensities_1[_i];
                     _b = (_a = sources_1).push;
                     return [4 /*yield*/, CCP4.open(s.name, s.filename, blockSize)];
                 case 3:
-                    _b.apply(_a, [_j.sent()]);
-                    _j.label = 4;
+                    _b.apply(_a, [_k.sent()]);
+                    _k.label = 4;
                 case 4:
                     _i++;
                     return [3 /*break*/, 2];
@@ -168,7 +196,7 @@ function create(folder, sourceDensities, blockSize, downsample) {
                     }
                     return [4 /*yield*/, createContexts(folder, sources_1, blockSize, downsample)];
                 case 6:
-                    contexts = _j.sent();
+                    contexts = _k.sent();
                     all = [contexts.convert].concat(contexts.downsamples);
                     for (_d = 0, sources_2 = sources_1; _d < sources_2.length; _d++) {
                         s = sources_2[_d];
@@ -181,14 +209,15 @@ function create(folder, sourceDensities, blockSize, downsample) {
                     process.stdout.write('   done.\n');
                     process.stdout.write('Writing header... ');
                     _f = 0, all_2 = all;
-                    _j.label = 7;
+                    _k.label = 7;
                 case 7:
                     if (!(_f < all_2.length)) return [3 /*break*/, 10];
                     ctx = all_2[_f];
-                    return [4 /*yield*/, BlockWriter.writeHeader(ctx)];
+                    _g = ctx;
+                    return [4 /*yield*/, Writer.writeHeader(ctx)];
                 case 8:
-                    _j.sent();
-                    _j.label = 9;
+                    _g.blockHeader = _k.sent();
+                    _k.label = 9;
                 case 9:
                     _f++;
                     return [3 /*break*/, 7];
@@ -197,33 +226,35 @@ function create(folder, sourceDensities, blockSize, downsample) {
                     process.stdout.write('Writing data...    0%');
                     return [4 /*yield*/, processBlocks(contexts)];
                 case 11:
-                    _j.sent();
+                    _k.sent();
                     process.stdout.write('\rWriting data...    done.\n');
                     process.stdout.write('Updating info...   ');
-                    _g = 0, all_3 = all;
-                    _j.label = 12;
+                    _h = 0, all_3 = all;
+                    _k.label = 12;
                 case 12:
-                    if (!(_g < all_3.length)) return [3 /*break*/, 15];
-                    ctx = all_3[_g];
-                    return [4 /*yield*/, BlockWriter.writeInfo(ctx)];
+                    if (!(_h < all_3.length)) return [3 /*break*/, 15];
+                    ctx = all_3[_h];
+                    return [4 /*yield*/, Writer.writeInfo(ctx)];
                 case 13:
-                    _j.sent();
-                    _j.label = 14;
+                    _k.sent();
+                    _k.label = 14;
                 case 14:
-                    _g++;
+                    _h++;
                     return [3 /*break*/, 12];
-                case 15:
+                case 15: return [4 /*yield*/, createJsonInfo(path.join(folder, 'info.json'), contexts)];
+                case 16:
+                    _k.sent();
                     process.stdout.write('done.\n');
                     time = getTime() - startedTime;
                     console.log("[Done] " + time.toFixed(0) + "ms.");
-                    return [3 /*break*/, 17];
-                case 16:
-                    for (_h = 0, files_1 = files; _h < files_1.length; _h++) {
-                        f = files_1[_h];
+                    return [3 /*break*/, 18];
+                case 17:
+                    for (_j = 0, files_1 = files; _j < files_1.length; _j++) {
+                        f = files_1[_j];
                         File.close(f);
                     }
                     return [7 /*endfinally*/];
-                case 17: return [2 /*return*/];
+                case 18: return [2 /*return*/];
             }
         });
     });

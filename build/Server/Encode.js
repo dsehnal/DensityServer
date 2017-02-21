@@ -3,8 +3,8 @@
  */
 "use strict";
 var CIF = require("../lib/CIFTools");
-var Data = require("./DataModel");
 var Version_1 = require("./Version");
+var BlockFormat = require("../Common/BlockFormat");
 var E = CIF.Binary.Encoder;
 function string(ctx, name, v) {
     return { name: name, string: v };
@@ -19,9 +19,9 @@ function float64(ctx, name, v, precision) {
 function _density_info(ctx) {
     var fields = [
         string(ctx, 'name', function (ctx) { return ctx.density.header.names[ctx.dataIndex]; }),
-        int32(ctx, 'grid[0]', function (ctx) { return ctx.density.header.gridSize[0]; }),
-        int32(ctx, 'grid[1]', function (ctx) { return ctx.density.header.gridSize[1]; }),
-        int32(ctx, 'grid[2]', function (ctx) { return ctx.density.header.gridSize[2]; }),
+        // int32(ctx, 'grid[0]', ctx => ctx.density.header.gridSize[0]),
+        // int32(ctx, 'grid[1]', ctx => ctx.density.header.gridSize[1]),
+        // int32(ctx, 'grid[2]', ctx => ctx.density.header.gridSize[2]),
         int32(ctx, 'axis_order[0]', function (ctx) { return ctx.density.header.axisOrder[0]; }),
         int32(ctx, 'axis_order[1]', function (ctx) { return ctx.density.header.axisOrder[1]; }),
         int32(ctx, 'axis_order[2]', function (ctx) { return ctx.density.header.axisOrder[2]; }),
@@ -31,6 +31,9 @@ function _density_info(ctx) {
         int32(ctx, 'extent[0]', function (ctx) { return ctx.data.box.b[0] - ctx.data.box.a[0]; }),
         int32(ctx, 'extent[1]', function (ctx) { return ctx.data.box.b[1] - ctx.data.box.a[1]; }),
         int32(ctx, 'extent[2]', function (ctx) { return ctx.data.box.b[2] - ctx.data.box.a[2]; }),
+        int32(ctx, 'samples[0]', function (ctx) { return ctx.data.samples[0]; }),
+        int32(ctx, 'samples[1]', function (ctx) { return ctx.data.samples[1]; }),
+        int32(ctx, 'samples[2]', function (ctx) { return ctx.data.samples[2]; }),
         int32(ctx, 'spacegroup_number', function (ctx) { return ctx.density.header.spacegroupNumber; }),
         float64(ctx, 'cell_size[0]', function (ctx) { return ctx.density.header.cellSize[0]; }, 1000),
         float64(ctx, 'cell_size[1]', function (ctx) { return ctx.density.header.cellSize[1]; }, 1000),

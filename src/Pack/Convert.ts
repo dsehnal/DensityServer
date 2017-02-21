@@ -4,34 +4,38 @@
 
 import * as CCP4 from './CCP4'
 import * as File from '../Utils/File'
-import * as BlockWriter from './BlockWriter'
+import * as Writer from './Writer'
 
-export async function processSlice(ctx: BlockWriter.Context) {
+export async function processLayer(ctx: Writer.Context) {
+    const { extent } = ctx.sources[0].header;
+    const { readHeight, valuesOffset } = ctx.sources[0].layer;
+
     for (let v = 0; v < ctx.blockCounts[0]; v++) {
         for (let u = 0; u < ctx.blockCounts[1]; u++) {
             for (let src of ctx.sources) {
-                let numBytes = BlockWriter.fillCube(ctx, src.slice.data.values, u, v, src.slice.height);
+                let numBytes = Writer.fillCube(ctx, src.layer.buffer.values, valuesOffset, u, v, readHeight);
                 await File.write(ctx.file, ctx.cubeBuffer, numBytes);
-                BlockWriter.updateProgress(ctx.progress, 1);
+                Writer.updateProgress(ctx.progress, 1);
             }
         }
     }
 } 
 
-export async function createContext(filename: string, progress: BlockWriter.GlobalProgress, sources: CCP4.Data[], blockSize: number) {
-    const sampleCounts = sources[0].header.extent;
-    const blockCounts = [Math.ceil(sampleCounts[0] / blockSize) | 0, Math.ceil(sampleCounts[1] / blockSize) | 0, Math.ceil(sampleCounts[2] / blockSize) | 0];
+export async function createContext(filename: string, progress: Writer.GlobalProgress, sources: CCP4.Data[], blockSize: number): Promise<Writer.Context> {
+    const samples = sources[0].header.extent;
+    const blockCounts = [Math.ceil(samples[0] / blockSize) | 0, Math.ceil(samples[1] / blockSize) | 0, Math.ceil(samples[2] / blockSize) | 0];
     progress.max += blockCounts[0] * blockCounts[1] * blockCounts[2] * sources.length;
 
-    return <BlockWriter.Context>{
+    return {
         file: await File.createFile(filename),
         sigmasOffset: 0,
         sources,
+        blockHeader: void 0,
         progress,
 
         blockSize, 
-        sampleCounts,
-        blockCounts: [Math.ceil(sampleCounts[0] / blockSize) | 0, Math.ceil(sampleCounts[1] / blockSize) | 0, Math.ceil(sampleCounts[2] / blockSize) | 0],
-        cubeBuffer: new Buffer(new ArrayBuffer(sources[0].slice.data.elementByteSize * blockSize * blockSize * blockSize))
+        samples,
+        blockCounts: [Math.ceil(samples[0] / blockSize) | 0, Math.ceil(samples[1] / blockSize) | 0, Math.ceil(samples[2] / blockSize) | 0],
+        cubeBuffer: new Buffer(new ArrayBuffer(sources[0].layer.buffer.elementByteSize * blockSize * blockSize * blockSize))
     };
 }

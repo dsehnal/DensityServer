@@ -25,19 +25,51 @@ export interface Header {
     dataOffset: number 
 }
 
-export interface SliceContext {   
-    data: File.TypedArrayBufferContext,
+/** Represents a circular buffer for 2 * blockSize layers */
+export interface LayerContext {   
+    buffer: File.TypedArrayBufferContext,
 
-    /** Height of the current slice that was read */
-    height: number,
+    blockSize: number,
 
-    blockSize: number
+    /** Index of the first slice that is available */
+    startSlice: number,
+
+    /** Number of slices available in the buffer */
+    endSlice: number,
+
+    values: File.ValueArray,
+    valuesOffset: number,
+
+    readCount: number,
+    readHeight: number,
+
+    /** Have all the input slice been read? */
+    isFinished: boolean
+}
+
+
+function createLayerContext(header: Header, blockSize: number): LayerContext {
+    const { extent } = header;
+    const size = 2 * blockSize * extent[0] * extent[1];
+    const buffer = File.createTypedArrayBufferContext(size, header.mode === Mode.Float32 ? File.ValueType.Float32 : File.ValueType.Int8);
+
+    return {
+        buffer,
+        blockSize,
+        startSlice: 0,
+        endSlice: 0,
+        values: buffer.values,
+        valuesOffset: 0,
+        readCount: 0,
+        readHeight: 0,
+        isFinished: false
+    };
 }
 
 export interface Data {
     header: Header,
     file: number,
-    slice: SliceContext,
+    layer: LayerContext,
     numSlices: number
 }
 
@@ -69,7 +101,7 @@ function getArray(r: (offset: number) => number, offset: number, count: number) 
 
 async function readHeader(name: string, file: number) {
     const headerSize = 1024;
-    let { bytesRead, buffer: data } = await File.readBuffer(file, 0, headerSize);        
+    const { bytesRead, buffer: data } = await File.readBuffer(file, 0, headerSize);        
 
     let littleEndian = true;
 
@@ -82,16 +114,70 @@ async function readHeader(name: string, file: number) {
         }
     }
 
-    let readInt = littleEndian ? (o: number) => data.readInt32LE(o * 4) : (o: number) => data.readInt32BE(o * 4); 
-    let readFloat = littleEndian ? (o: number) => data.readFloatLE(o * 4) : (o: number) => data.readFloatBE(o * 4);
+    const readInt = littleEndian ? (o: number) => data.readInt32LE(o * 4) : (o: number) => data.readInt32BE(o * 4); 
+    const readFloat = littleEndian ? (o: number) => data.readFloatLE(o * 4) : (o: number) => data.readFloatBE(o * 4);
 
-    let header: Header = {
+    // const header: Header = {
+    //     name,
+    //     mode,
+    //     grid: getArray(readInt, 7, 3),
+    //     axisOrder: getArray(readInt, 16, 3).map(i => i - 1),
+    //     extent: getArray(readInt, 0, 3),
+    //     origin: [0, 0, 0],
+    //     spacegroupNumber: readInt(22),
+    //     cellSize: getArray(readFloat, 10, 3),
+    //     cellAngles: getArray(readFloat, 13, 3),
+    //     mean: readFloat(21),
+    //     sigma: 0.0,
+    //     min: Number.POSITIVE_INFINITY,
+    //     max: Number.NEGATIVE_INFINITY,
+    //     littleEndian,
+    //     dataOffset: headerSize + readInt(23) /* symBytes */
+    // };
+
+    // let alpha = (Math.PI / 180.0) * header.cellAngles[0],
+    //     beta = (Math.PI / 180.0) * header.cellAngles[1],
+    //     gamma = (Math.PI / 180.0) * header.cellAngles[2];
+
+    // let xScale = header.cellSize[0] / header.grid[0],
+    //     yScale = header.cellSize[1] / header.grid[1],
+    //     zScale = header.cellSize[2] / header.grid[2];
+
+    // let z1 = Math.cos(beta),
+    //     z2 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma),
+    //     z3 = Math.sqrt(1.0 - z1 * z1 - z2 * z2);
+
+    // let xAxis = [xScale, 0.0, 0.0],
+    //     yAxis = [Math.cos(gamma) * yScale, Math.sin(gamma) * yScale, 0.0],
+    //     zAxis = [z1 * zScale, z2 * zScale, z3 * zScale];
+    
+    // let indices = [0, 0, 0];
+    // indices[header.axisOrder[0]] = 0;
+    // indices[header.axisOrder[1]] = 1;
+    // indices[header.axisOrder[2]] = 2;
+                
+    // let origin2k = getArray(readFloat, 49, 3);
+    // let origin: number[];
+    // let nxyzStart = getArray(readInt, 4, 3);
+    // if (origin2k[0] === 0.0 && origin2k[1] === 0.0 && origin2k[2] === 0.0) {
+    //     origin = [
+    //         xAxis[0] * nxyzStart[indices[0]] + yAxis[0] * nxyzStart[indices[1]] + zAxis[0] * nxyzStart[indices[2]],
+    //                                            yAxis[1] * nxyzStart[indices[1]] + zAxis[1] * nxyzStart[indices[2]],
+    //                                                                               zAxis[2] * nxyzStart[indices[2]]
+    //     ];
+    // } else {
+    //     origin = [origin2k[indices[0]], origin2k[indices[1]], origin2k[indices[2]]];
+    // }
+
+    const origin2k = getArray(readFloat, 49, 3);
+    const nxyzStart = getArray(readInt, 4, 3);
+    const header: Header = {
         name,
         mode,
         grid: getArray(readInt, 7, 3),
         axisOrder: getArray(readInt, 16, 3).map(i => i - 1),
         extent: getArray(readInt, 0, 3),
-        origin: [0, 0, 0],
+        origin: origin2k[0] === 0.0 && origin2k[1] === 0.0 && origin2k[2] === 0.0 ? nxyzStart : origin2k,
         spacegroupNumber: readInt(22),
         cellSize: getArray(readFloat, 10, 3),
         cellAngles: getArray(readFloat, 13, 3),
@@ -103,66 +189,33 @@ async function readHeader(name: string, file: number) {
         dataOffset: headerSize + readInt(23) /* symBytes */
     };
 
-    let alpha = (Math.PI / 180.0) * header.cellAngles[0],
-        beta = (Math.PI / 180.0) * header.cellAngles[1],
-        gamma = (Math.PI / 180.0) * header.cellAngles[2];
-
-    let xScale = header.cellSize[0] / header.grid[0],
-        yScale = header.cellSize[1] / header.grid[1],
-        zScale = header.cellSize[2] / header.grid[2];
-
-    let z1 = Math.cos(beta),
-        z2 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma),
-        z3 = Math.sqrt(1.0 - z1 * z1 - z2 * z2);
-
-    let xAxis = [xScale, 0.0, 0.0],
-        yAxis = [Math.cos(gamma) * yScale, Math.sin(gamma) * yScale, 0.0],
-        zAxis = [z1 * zScale, z2 * zScale, z3 * zScale];
-    
-    let indices = [0, 0, 0];
-    indices[header.axisOrder[0]] = 0;
-    indices[header.axisOrder[1]] = 1;
-    indices[header.axisOrder[2]] = 2;
-                
-    let origin2k = getArray(readFloat, 49, 3);
-    let origin: number[];
-    let nxyzStart = getArray(readInt, 4, 3);
-    if (origin2k[0] === 0.0 && origin2k[1] === 0.0 && origin2k[2] === 0.0) {
-        origin = [
-            xAxis[0] * nxyzStart[indices[0]] + yAxis[0] * nxyzStart[indices[1]] + zAxis[0] * nxyzStart[indices[2]],
-                                               yAxis[1] * nxyzStart[indices[1]] + zAxis[1] * nxyzStart[indices[2]],
-                                                                                  zAxis[2] * nxyzStart[indices[2]]
-        ];
-    } else {
-        origin = [origin2k[indices[0]], origin2k[indices[1]], origin2k[indices[2]]];
-    }
-
-    header.origin = origin;
     return header;
 }
 
-export async function readSlice(data: Data, sliceIndex: number) {
+export async function readLayer(data: Data, sliceIndex: number) {
     if (sliceIndex >= data.numSlices) {
+        data.layer.isFinished = true;
         return 0;
     }
 
-    let slice = data.slice;
-    let header = data.header;
+    const layer = data.layer;
+    const header = data.header;
+    const { extent, mean } = header;
+    const sliceSize = extent[0] * extent[1];    
+    const sliceOffsetIndex = sliceIndex * layer.blockSize;
+    const sliceByteOffset = layer.buffer.elementByteSize * sliceSize * sliceOffsetIndex;
+    const sliceHeight = Math.min(layer.blockSize, extent[2] - sliceOffsetIndex);
+    const sliceCount = sliceHeight * sliceSize;
+
+    // are we in the top or bottom layer?
+    const valuesOffset = (layer.readCount % 2) * layer.blockSize * sliceSize;
     let values: File.ValueArray;
-    let { extent, mean } = header;
-    let sliceSize = extent[0] * extent[1];    
-    let sliceOffsetIndex = sliceIndex * slice.blockSize;
-    let sliceByteOffset = slice.data.elementByteSize * sliceSize * sliceOffsetIndex;
-    let sliceHeight = Math.min(slice.blockSize, extent[2] - sliceOffsetIndex);
-    let sliceCount = sliceHeight * sliceSize;
-
-    slice.height = sliceHeight;    
-
+    
     function updateSigma() {
         let sigma = header.sigma;
         let min = header.min;
         let max = header.max;
-        for (let i = 0; i < sliceCount; i++) {
+        for (let i = valuesOffset, _ii = valuesOffset + sliceCount; i < _ii; i++) {
             let v = values[i];
             let t = mean - v;
             sigma += t * t;
@@ -174,25 +227,21 @@ export async function readSlice(data: Data, sliceIndex: number) {
         header.max = max;
     }
 
-    values = await File.readTypedArray(slice.data, data.file, header.dataOffset + sliceByteOffset, sliceCount, header.littleEndian);
+    values = await File.readTypedArray(layer.buffer, data.file, header.dataOffset + sliceByteOffset, sliceCount, valuesOffset, header.littleEndian);
     updateSigma();
+
+    layer.readCount++;
+    if (layer.readCount > 2) layer.startSlice += layer.blockSize;
+    layer.endSlice += sliceHeight;
+    layer.readHeight = sliceHeight;
+    layer.valuesOffset = valuesOffset;
 
     if (sliceIndex >= data.numSlices - 1) {
         header.sigma = Math.sqrt(header.sigma / (extent[0] * extent[1] * extent[2]));
+        layer.isFinished = true;
     }
 
     return sliceHeight;
-}
-
-function createSliceContext(header: Header, blockSize: number): SliceContext {
-    let { extent } = header;
-    let size = blockSize * extent[0] * extent[1];
-
-    return {
-        height: 0,
-        blockSize: blockSize,
-        data: File.createTypedArrayBufferContext(size, header.mode === Mode.Float32 ? File.ValueType.Float32 : File.ValueType.Int8)
-    };
 }
 
 export async function open(name: string, filename: string, blockSize: number): Promise<Data> {
@@ -201,7 +250,7 @@ export async function open(name: string, filename: string, blockSize: number): P
     return <Data>{ 
         header, 
         file, 
-        slice: createSliceContext(header, blockSize),
+        layer: createLayerContext(header, blockSize),
         numSlices: Math.ceil(header.extent[2] / blockSize) | 0
     };
 }

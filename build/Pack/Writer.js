@@ -39,6 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var CCP4 = require("./CCP4");
 var File = require("../Utils/File");
+var BlockFormat = require("../Common/BlockFormat");
 var FORMAT_VERSION = 1;
 function createCubeContext(params) {
     return {
@@ -50,22 +51,22 @@ function createCubeContext(params) {
     };
 }
 exports.createCubeContext = createCubeContext;
-function fillCube(ctx, values, u, v, height) {
+function fillCube(ctx, values, valuesOffset, u, v, height) {
     var oH = ctx.blockSize * u;
     var oK = ctx.blockSize * v;
-    var sizeH = ctx.sampleCounts[0];
-    var sizeHK = ctx.sampleCounts[0] * ctx.sampleCounts[1];
-    var cH = Math.min(ctx.blockSize, ctx.sampleCounts[0] - oH);
-    var cK = Math.min(ctx.blockSize, ctx.sampleCounts[1] - oK);
+    var sizeH = ctx.samples[0];
+    var sizeHK = ctx.samples[0] * ctx.samples[1];
+    var cH = Math.min(ctx.blockSize, ctx.samples[0] - oH);
+    var cK = Math.min(ctx.blockSize, ctx.samples[1] - oK);
     var cL = height;
-    var elementByteSize = ctx.sources[0].slice.data.elementByteSize;
-    var isFloat = ctx.sources[0].slice.data.type === 0 /* Float32 */;
+    var elementByteSize = ctx.sources[0].layer.buffer.elementByteSize;
+    var isFloat = ctx.sources[0].layer.buffer.type === 0 /* Float32 */;
     var buffer = ctx.cubeBuffer;
     var offset = 0;
     for (var l = 0; l < cL; l++) {
         for (var k = 0; k < cK; k++) {
             for (var h = 0; h < cH; h++) {
-                var t = values[oH + h + (k + oK) * sizeH + l * sizeHK];
+                var t = values[valuesOffset + oH + h + (k + oK) * sizeH + l * sizeHK];
                 if (isFloat)
                     buffer.writeFloatLE(t, offset, true);
                 else
@@ -77,205 +78,213 @@ function fillCube(ctx, values, u, v, height) {
     return offset;
 }
 exports.fillCube = fillCube;
+function makeHeader(ctx) {
+    var header = ctx.sources[0].header;
+    var headers = ctx.sources.map(function (d) { return d.header; });
+    var grid = header.grid;
+    function normalize(data) {
+        return [data[0] / grid[0], data[1] / grid[1], data[2] / grid[2]];
+    }
+    return {
+        version: FORMAT_VERSION,
+        numDensities: ctx.sources.length,
+        formatId: header.mode == 2 /* Float32 */ ? 0 /* Float32 */ : 2 /* Int8 */,
+        blockSize: ctx.blockSize,
+        axisOrder: header.axisOrder,
+        samples: ctx.samples,
+        dimensions: normalize(header.extent),
+        origin: normalize(header.origin),
+        spacegroupNumber: header.spacegroupNumber,
+        cellSize: header.cellSize,
+        cellAngles: header.cellAngles,
+        means: headers.map(function (h) { return h.mean; }),
+        sigmas: headers.map(function (h) { return h.sigma; }),
+        minimums: headers.map(function (h) { return h.min; }),
+        maximums: headers.map(function (h) { return h.max; }),
+        names: headers.map(function (h) { return h.name; }),
+        dataByteOffset: 0
+    };
+}
 function writeHeader(ctx) {
     return __awaiter(this, void 0, void 0, function () {
-        var header, headers, _i, _a, v, _b, _c, v, _d, _e, v, _f, _g, v, _h, _j, v, _k, _l, v, _m, _o, v, _p, headers_1, h, _q, headers_2, h, _r, headers_3, h, _s, headers_4, h, _t, headers_5, h;
-        return __generator(this, function (_u) {
-            switch (_u.label) {
+        var header, _i, _a, v, _b, _c, v, _d, _e, v, _f, _g, v, _h, _j, v, _k, _l, v, _m, _o, v, _p, _q, v, _r, _s, v, _t, _u, v, _v, _w, n;
+        return __generator(this, function (_x) {
+            switch (_x.label) {
                 case 0:
-                    header = ctx.sources[0].header;
-                    headers = ctx.sources.map(function (d) { return d.header; });
-                    // Layout
-                    // 1     Magic constant/byte order
-                    return [4 /*yield*/, File.writeInt(ctx.file, 0x1237)];
-                case 1:
-                    // Layout
-                    // 1     Magic constant/byte order
-                    _u.sent();
-                    // 1     Format Version
+                    header = makeHeader(ctx);
+                    // 0:1   Format Version
                     return [4 /*yield*/, File.writeInt(ctx.file, FORMAT_VERSION)];
+                case 1:
+                    // 0:1   Format Version
+                    _x.sent();
+                    // 1:1   N = Num densities
+                    return [4 /*yield*/, File.writeInt(ctx.file, header.numDensities)];
                 case 2:
-                    // 1     Format Version
-                    _u.sent();
-                    // 1     N = Num densities
-                    return [4 /*yield*/, File.writeInt(ctx.file, ctx.sources.length)];
+                    // 1:1   N = Num densities
+                    _x.sent();
+                    // 2:1   Format ID (0 = float32 values, 1 = int8 values)
+                    return [4 /*yield*/, File.writeInt(ctx.file, header.formatId)];
                 case 3:
-                    // 1     N = Num densities
-                    _u.sent();
-                    ////////////////////////////////////////////////////////
-                    // 0:1   Format ID (0 = float32 values, 1 = int8 values)
-                    return [4 /*yield*/, File.writeInt(ctx.file, header.mode == 2 /* Float32 */ ? 0 : 1)];
+                    // 2:1   Format ID (0 = float32 values, 1 = int8 values)
+                    _x.sent();
+                    // 3:1   Block size
+                    return [4 /*yield*/, File.writeInt(ctx.file, ctx.blockSize)];
                 case 4:
-                    ////////////////////////////////////////////////////////
-                    // 0:1   Format ID (0 = float32 values, 1 = int8 values)
-                    _u.sent();
-                    _i = 0, _a = header.grid;
-                    _u.label = 5;
+                    // 3:1   Block size
+                    _x.sent();
+                    _i = 0, _a = header.axisOrder;
+                    _x.label = 5;
                 case 5:
                     if (!(_i < _a.length)) return [3 /*break*/, 8];
                     v = _a[_i];
                     return [4 /*yield*/, File.writeInt(ctx.file, v)];
                 case 6:
-                    _u.sent();
-                    _u.label = 7;
+                    _x.sent();
+                    _x.label = 7;
                 case 7:
                     _i++;
                     return [3 /*break*/, 5];
-                case 8: 
-                // 4:1   Block size
-                return [4 /*yield*/, File.writeInt(ctx.file, ctx.blockSize)];
+                case 8:
+                    _b = 0, _c = header.samples;
+                    _x.label = 9;
                 case 9:
-                    // 4:1   Block size
-                    _u.sent();
-                    _b = 0, _c = header.axisOrder;
-                    _u.label = 10;
-                case 10:
-                    if (!(_b < _c.length)) return [3 /*break*/, 13];
+                    if (!(_b < _c.length)) return [3 /*break*/, 12];
                     v = _c[_b];
                     return [4 /*yield*/, File.writeInt(ctx.file, v)];
+                case 10:
+                    _x.sent();
+                    _x.label = 11;
                 case 11:
-                    _u.sent();
-                    _u.label = 12;
-                case 12:
                     _b++;
-                    return [3 /*break*/, 10];
+                    return [3 /*break*/, 9];
+                case 12:
+                    _d = 0, _e = header.dimensions;
+                    _x.label = 13;
                 case 13:
-                    _d = 0, _e = header.extent;
-                    _u.label = 14;
-                case 14:
-                    if (!(_d < _e.length)) return [3 /*break*/, 17];
+                    if (!(_d < _e.length)) return [3 /*break*/, 16];
                     v = _e[_d];
-                    return [4 /*yield*/, File.writeInt(ctx.file, v)];
+                    return [4 /*yield*/, File.writeDouble(ctx.file, v)];
+                case 14:
+                    _x.sent();
+                    _x.label = 15;
                 case 15:
-                    _u.sent();
-                    _u.label = 16;
-                case 16:
                     _d++;
-                    return [3 /*break*/, 14];
+                    return [3 /*break*/, 13];
+                case 16:
+                    _f = 0, _g = header.origin;
+                    _x.label = 17;
                 case 17:
-                    _f = 0, _g = ctx.sampleCounts;
-                    _u.label = 18;
-                case 18:
-                    if (!(_f < _g.length)) return [3 /*break*/, 21];
+                    if (!(_f < _g.length)) return [3 /*break*/, 20];
                     v = _g[_f];
-                    return [4 /*yield*/, File.writeInt(ctx.file, v)];
+                    return [4 /*yield*/, File.writeDouble(ctx.file, v)];
+                case 18:
+                    _x.sent();
+                    _x.label = 19;
                 case 19:
-                    _u.sent();
-                    _u.label = 20;
-                case 20:
                     _f++;
-                    return [3 /*break*/, 18];
+                    return [3 /*break*/, 17];
+                case 20: 
+                // 22:1  Spacegroup number
+                return [4 /*yield*/, File.writeInt(ctx.file, header.spacegroupNumber)];
                 case 21:
-                    _h = 0, _j = header.origin;
-                    _u.label = 22;
+                    // 22:1  Spacegroup number
+                    _x.sent();
+                    _h = 0, _j = header.cellSize;
+                    _x.label = 22;
                 case 22:
                     if (!(_h < _j.length)) return [3 /*break*/, 25];
                     v = _j[_h];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v)];
                 case 23:
-                    _u.sent();
-                    _u.label = 24;
+                    _x.sent();
+                    _x.label = 24;
                 case 24:
                     _h++;
                     return [3 /*break*/, 22];
-                case 25: 
-                // 17:1   Spacegroup number
-                return [4 /*yield*/, File.writeInt(ctx.file, header.spacegroupNumber)];
+                case 25:
+                    _k = 0, _l = header.cellAngles;
+                    _x.label = 26;
                 case 26:
-                    // 17:1   Spacegroup number
-                    _u.sent();
-                    _k = 0, _l = header.cellSize;
-                    _u.label = 27;
-                case 27:
-                    if (!(_k < _l.length)) return [3 /*break*/, 30];
+                    if (!(_k < _l.length)) return [3 /*break*/, 29];
                     v = _l[_k];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v)];
+                case 27:
+                    _x.sent();
+                    _x.label = 28;
                 case 28:
-                    _u.sent();
-                    _u.label = 29;
-                case 29:
                     _k++;
-                    return [3 /*break*/, 27];
+                    return [3 /*break*/, 26];
+                case 29:
+                    _m = 0, _o = header.means;
+                    _x.label = 30;
                 case 30:
-                    _m = 0, _o = header.cellAngles;
-                    _u.label = 31;
-                case 31:
-                    if (!(_m < _o.length)) return [3 /*break*/, 34];
+                    if (!(_m < _o.length)) return [3 /*break*/, 33];
                     v = _o[_m];
                     return [4 /*yield*/, File.writeFloat(ctx.file, v)];
+                case 31:
+                    _x.sent();
+                    _x.label = 32;
                 case 32:
-                    _u.sent();
-                    _u.label = 33;
-                case 33:
                     _m++;
-                    return [3 /*break*/, 31];
-                case 34:
-                    _p = 0, headers_1 = headers;
-                    _u.label = 35;
-                case 35:
-                    if (!(_p < headers_1.length)) return [3 /*break*/, 38];
-                    h = headers_1[_p];
-                    return [4 /*yield*/, File.writeFloat(ctx.file, h.mean)];
-                case 36:
-                    _u.sent();
-                    _u.label = 37;
-                case 37:
-                    _p++;
-                    return [3 /*break*/, 35];
-                case 38:
+                    return [3 /*break*/, 30];
+                case 33:
                     ctx.sigmasOffset = ctx.file.position;
-                    _q = 0, headers_2 = headers;
-                    _u.label = 39;
+                    _p = 0, _q = header.means;
+                    _x.label = 34;
+                case 34:
+                    if (!(_p < _q.length)) return [3 /*break*/, 37];
+                    v = _q[_p];
+                    return [4 /*yield*/, File.writeFloat(ctx.file, v)];
+                case 35:
+                    _x.sent();
+                    _x.label = 36;
+                case 36:
+                    _p++;
+                    return [3 /*break*/, 34];
+                case 37:
+                    _r = 0, _s = header.minimums;
+                    _x.label = 38;
+                case 38:
+                    if (!(_r < _s.length)) return [3 /*break*/, 41];
+                    v = _s[_r];
+                    return [4 /*yield*/, File.writeFloat(ctx.file, v)];
                 case 39:
-                    if (!(_q < headers_2.length)) return [3 /*break*/, 42];
-                    h = headers_2[_q];
-                    return [4 /*yield*/, File.writeFloat(ctx.file, h.sigma)];
+                    _x.sent();
+                    _x.label = 40;
                 case 40:
-                    _u.sent();
-                    _u.label = 41;
-                case 41:
-                    _q++;
-                    return [3 /*break*/, 39];
-                case 42:
-                    _r = 0, headers_3 = headers;
-                    _u.label = 43;
-                case 43:
-                    if (!(_r < headers_3.length)) return [3 /*break*/, 46];
-                    h = headers_3[_r];
-                    return [4 /*yield*/, File.writeFloat(ctx.file, h.min)];
-                case 44:
-                    _u.sent();
-                    _u.label = 45;
-                case 45:
                     _r++;
-                    return [3 /*break*/, 43];
-                case 46:
-                    _s = 0, headers_4 = headers;
-                    _u.label = 47;
-                case 47:
-                    if (!(_s < headers_4.length)) return [3 /*break*/, 50];
-                    h = headers_4[_s];
-                    return [4 /*yield*/, File.writeFloat(ctx.file, h.max)];
-                case 48:
-                    _u.sent();
-                    _u.label = 49;
-                case 49:
-                    _s++;
-                    return [3 /*break*/, 47];
-                case 50:
-                    _t = 0, headers_5 = headers;
-                    _u.label = 51;
-                case 51:
-                    if (!(_t < headers_5.length)) return [3 /*break*/, 54];
-                    h = headers_5[_t];
-                    return [4 /*yield*/, File.writeString(ctx.file, h.name, 32)];
-                case 52:
-                    _u.sent();
-                    _u.label = 53;
-                case 53:
+                    return [3 /*break*/, 38];
+                case 41:
+                    _t = 0, _u = header.maximums;
+                    _x.label = 42;
+                case 42:
+                    if (!(_t < _u.length)) return [3 /*break*/, 45];
+                    v = _u[_t];
+                    return [4 /*yield*/, File.writeFloat(ctx.file, v)];
+                case 43:
+                    _x.sent();
+                    _x.label = 44;
+                case 44:
                     _t++;
-                    return [3 /*break*/, 51];
-                case 54: return [2 /*return*/];
+                    return [3 /*break*/, 42];
+                case 45:
+                    _v = 0, _w = header.names;
+                    _x.label = 46;
+                case 46:
+                    if (!(_v < _w.length)) return [3 /*break*/, 49];
+                    n = _w[_v];
+                    return [4 /*yield*/, File.writeString(ctx.file, n, 32)];
+                case 47:
+                    _x.sent();
+                    _x.label = 48;
+                case 48:
+                    _v++;
+                    return [3 /*break*/, 46];
+                case 49:
+                    // <BLOCK_00><BLOCK_01>...<BLOCK_0N>
+                    // <BLOCK_K0><BLOCK_K1>...<BLOCK_KN>   
+                    header.dataByteOffset = ctx.file.position;
+                    return [2 /*return*/, header];
             }
         });
     });
@@ -288,6 +297,7 @@ function writeInfo(ctx) {
             switch (_f.label) {
                 case 0:
                     o = 0;
+                    ctx.blockHeader.sigmas = ctx.sources.map(function (s) { return s.header.sigma; });
                     _i = 0, _a = ctx.sources;
                     _f.label = 1;
                 case 1:
@@ -302,6 +312,7 @@ function writeInfo(ctx) {
                     _i++;
                     return [3 /*break*/, 1];
                 case 4:
+                    ctx.blockHeader.minimums = ctx.sources.map(function (s) { return s.header.min; });
                     _b = 0, _c = ctx.sources;
                     _f.label = 5;
                 case 5:
@@ -316,6 +327,7 @@ function writeInfo(ctx) {
                     _b++;
                     return [3 /*break*/, 5];
                 case 8:
+                    ctx.blockHeader.maximums = ctx.sources.map(function (s) { return s.header.max; });
                     _d = 0, _e = ctx.sources;
                     _f.label = 9;
                 case 9:

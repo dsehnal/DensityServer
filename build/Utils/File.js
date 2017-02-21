@@ -65,7 +65,7 @@ function openRead(filename) {
     });
 }
 exports.openRead = openRead;
-function readBuffer(file, position, sizeOrBuffer, size) {
+function readBuffer(file, position, sizeOrBuffer, size, byteOffset) {
     return new Promise(function (res, rej) {
         if (typeof sizeOrBuffer === 'number') {
             var buff = new Buffer(new ArrayBuffer(sizeOrBuffer));
@@ -82,7 +82,7 @@ function readBuffer(file, position, sizeOrBuffer, size) {
                 rej('readBuffeR: Specify size.');
                 return;
             }
-            fs.read(file, sizeOrBuffer, 0, size, position, function (err, bytesRead, buffer) {
+            fs.read(file, sizeOrBuffer, byteOffset ? +byteOffset : 0, size, position, function (err, bytesRead, buffer) {
                 if (err) {
                     rej(err);
                     return;
@@ -175,6 +175,29 @@ function writeFloat(ctx, value, position) {
     });
 }
 exports.writeFloat = writeFloat;
+function writeDouble(ctx, value, position) {
+    return __awaiter(this, void 0, void 0, function () {
+        var written;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    ctx.smallBuffer.writeDoubleLE(value, 0);
+                    if (!(position === void 0)) return [3 /*break*/, 2];
+                    return [4 /*yield*/, writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 8)];
+                case 1:
+                    written = _a.sent();
+                    ctx.position += written;
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, writeBuffer(ctx.file, position, ctx.smallBuffer, 8)];
+                case 3:
+                    _a.sent();
+                    _a.label = 4;
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.writeDouble = writeDouble;
 function writeString(ctx, value, width) {
     return __awaiter(this, void 0, void 0, function () {
         var i, written;
@@ -238,26 +261,27 @@ function createTypedArrayBufferContext(size, type) {
     };
 }
 exports.createTypedArrayBufferContext = createTypedArrayBufferContext;
-function flipByteOrder(source, target, byteCount, elementByteSize) {
+function flipByteOrder(source, target, byteCount, elementByteSize, offset) {
     for (var i = 0, n = byteCount; i < n; i += elementByteSize) {
         for (var j = 0; j < elementByteSize; j++) {
-            target[i + elementByteSize - j - 1] = source[i + j];
+            target[offset + i + elementByteSize - j - 1] = source[offset + i + j];
         }
     }
 }
-function readTypedArray(ctx, file, position, count, littleEndian) {
+function readTypedArray(ctx, file, position, count, valueOffset, littleEndian) {
     return __awaiter(this, void 0, void 0, function () {
-        var byteCount;
+        var byteCount, byteOffset;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     byteCount = ctx.elementByteSize * count;
-                    return [4 /*yield*/, readBuffer(file, position, ctx.readBuffer, byteCount)];
+                    byteOffset = ctx.elementByteSize * valueOffset;
+                    return [4 /*yield*/, readBuffer(file, position, ctx.readBuffer, byteCount, byteOffset)];
                 case 1:
                     _a.sent();
                     if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== isNativeEndianLittle) || !isNativeEndianLittle)) {
                         // fix the endian 
-                        flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize);
+                        flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize, byteOffset);
                     }
                     return [2 /*return*/, ctx.values];
             }

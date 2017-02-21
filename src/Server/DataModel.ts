@@ -2,34 +2,7 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as File from '../Utils/File'
-
-export const enum FormatId { Float32 = 0, Int8 = 1 }
-
-export interface Header {
-    numDensities: number,
-    formatId: FormatId,
-    axisOrder: number[],
-    gridSize: number[],
-    blockSize: number,
-    extent: number[],
-    origin: number[],
-    spacegroupNumber: number,
-    cellSize: number[],
-    cellAngles: number[],
-    means: number[],
-    sigmas: number[],
-    minimums: number[],
-    maximums: number[],
-    names: string[],
-
-    dataByteOffset: number
-}
-
-export function getElementByteSize(header: Header) {
-    if (header.formatId === FormatId.Float32) return 4;
-    return 1;
-}
+import * as BlockFormat from '../Common/BlockFormat'
 
 export interface Box {
     a: number[],
@@ -37,16 +10,9 @@ export interface Box {
 }
 
 export interface Info {
-    blockCount: number[],
-    cellDimensions: number[],    
-    
+    blockCount: number[],        
     isAsymmetric: boolean,
-
-    /**
-     * Grid in axis order.
-     */
-    grid: number[],
-
+    voxelSize: number[],
     dataBox: Box,
 
     /**
@@ -59,7 +25,7 @@ export interface Info {
 
 export interface Context {
     file: number,
-    header: Header,
+    header: BlockFormat.Header,
     info: Info
 }
 
@@ -81,6 +47,7 @@ export interface QueryParams {
 
 export interface QueryData {
     box: Box,
+    samples: number[],
     values: Float32Array[]
 }
 

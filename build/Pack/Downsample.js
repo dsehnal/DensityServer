@@ -38,29 +38,32 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 var File = require("../Utils/File");
-function getSampleCounts(extent, sampleRate) {
-    return [Math.ceil(extent[0] / sampleRate), Math.ceil(extent[1] / sampleRate), Math.ceil(extent[2] / sampleRate)];
-}
 function createContext(filename, progress, sources, blockSize, sampleRate) {
     return __awaiter(this, void 0, void 0, function () {
-        var extent, sampleCounts, downsampleSliceSize, _a;
+        var extent, samples, downsampleSliceSize, downsampleSliceRate, downsampleBufferSize, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     extent = sources[0].header.extent;
-                    sampleCounts = [Math.ceil(extent[0] / sampleRate), Math.ceil(extent[1] / sampleRate), Math.ceil(extent[2] / sampleRate)];
-                    downsampleSliceSize = sampleCounts[0] * sampleCounts[1] * blockSize;
+                    samples = [Math.ceil(extent[0] / sampleRate), Math.ceil(extent[1] / sampleRate), Math.ceil(extent[2] / sampleRate)];
+                    downsampleSliceSize = samples[0] * samples[1] * blockSize;
+                    downsampleSliceRate = Math.ceil((samples[2] * sampleRate / extent[2]) * sampleRate);
+                    downsampleBufferSize = extent[0] * extent[1] * downsampleSliceRate;
                     _a = {};
                     return [4 /*yield*/, File.createFile(filename)];
                 case 1: 
                 // 2 * Math.ceil(sampleRate * sampleCounts[0] / extent[0])
                 return [2 /*return*/, (_a.file = _b.sent(),
-                        _a.sources = sources,
-                        _a.sampleCounts = sampleCounts,
-                        _a.blockSize = blockSize,
                         _a.sigmasOffset = 0,
-                        _a.progress = { current: 0, max: 0 },
-                        _a.downsampledSlices = sources.map(function (_) { return new Float32Array(downsampleSliceSize); }),
+                        _a.sources = sources,
+                        _a.blockHeader = void 0,
+                        _a.progress = progress,
+                        _a.blockSize = blockSize,
+                        _a.samples = samples,
+                        _a.blockCounts = [Math.ceil(samples[0] / blockSize) | 0, Math.ceil(samples[1] / blockSize) | 0, Math.ceil(samples[2] / blockSize) | 0],
+                        _a.cubeBuffer = new Buffer(new ArrayBuffer(sources[0].layer.buffer.elementByteSize * blockSize * blockSize * blockSize)),
+                        //downsampledBuffer: sources.map(_ => new Float32Array(downsampleBufferSize)),
+                        //downsampledSlices: sources.map(_ => new Float32Array(downsampleSliceSize)),
                         _a.sampleRate = sampleRate,
                         _a.currentSlice = 0,
                         _a.endSlice = 0,
@@ -70,20 +73,84 @@ function createContext(filename, progress, sources, blockSize, sampleRate) {
     });
 }
 exports.createContext = createContext;
-function downsampleSlice(ctx, index) {
-    //const { sliceHeight } = ctx.sources[index].slice;
-    var numSlices = ctx.currentSlice;
-    return numSlices;
+function lerp(ctx, index, u, v, w) {
+    var data = ctx.downsampleBuffer[index];
+    var extent = ctx.extent;
+    var u0 = Math.floor(u), u1 = Math.ceil(u), tU = u - u0;
+    var v0 = Math.floor(v), v1 = Math.ceil(v), tV = v - v0;
+    var w0 = Math.floor(w), w1 = Math.ceil(w), tW = w - w0;
+    // k * extent[0] * extent[1] + j * extent[0] + i;
+    var c00 = data[w0 * extent[0] * extent[1] + v0 * extent[0] + u0] * (1 - tU) + data[w0 * extent[0] * extent[1] + v0 * extent[0] + u1] * tU;
+    var c01 = data[w1 * extent[0] * extent[1] + v0 * extent[0] + u0] * (1 - tU) + data[w1 * extent[0] * extent[1] + v0 * extent[0] + u1] * tU;
+    var c10 = data[w0 * extent[0] * extent[1] + v1 * extent[0] + u0] * (1 - tU) + data[w0 * extent[0] * extent[1] + v1 * extent[0] + u1] * tU;
+    var c11 = data[w1 * extent[0] * extent[1] + v1 * extent[0] + u0] * (1 - tU) + data[w1 * extent[0] * extent[1] + v1 * extent[0] + u1] * tU;
+    var c0 = c00 * (1 - tV) + c10 * tV;
+    var c1 = c01 * (1 - tV) + c11 * tV;
+    return c0 * (1 - tW) + c1 * tW;
 }
-function nextSlice(ctx) {
-    ctx.endSlice += ctx.sources[0].slice.blockSize;
+function sumBlock(ctx, index, u, v) {
+    var sampleRate = ctx.sampleRate, sampleDelta = ctx.sampleDelta;
+    var startH = u * sampleRate, endH = startH + sampleRate;
+    var startK = v * sampleRate, endK = startK + sampleRate;
+    var dH = sampleDelta[0], dK = sampleDelta[1], dL = sampleDelta[2];
+    var sum = 0;
+    for (var l = 0; l < sampleRate; l++) {
+        var oL = l * dL;
+        for (var k = startK; k < endK; k++) {
+            var oK = k * dK;
+            for (var h = startH; h < endH; h++) {
+                var oH = h * dH;
+                sum += lerp(ctx, index, oH, oK, oL);
+            }
+        }
+    }
+    return sum / (sampleRate * sampleRate * sampleRate);
 }
-exports.nextSlice = nextSlice;
-function processSlice(ctx) {
+function downsampleSlice(ctx) {
+    var samples = ctx.samples, sampleRate = ctx.sampleRate, downsampleBuffer = ctx.downsampleBuffer, downsampledSlices = ctx.downsampledSlices;
+    var cU = samples[0];
+    var cV = samples[1];
+    var downsampleRow = ctx.currentDownsampledRow;
+    for (var index = 0; index < ctx.sources.length; index++) {
+        var downsampledSlice = downsampledSlices[index];
+        for (var v = 0; v < cV; v++) {
+            for (var u = 0; u < cU; u++) {
+                var sum = sumBlock(ctx, index, u, v);
+                downsampledSlice[ctx.currentDownsampledRow * samples[0] * samples[1] + v * samples[0] + u] = sum;
+            }
+        }
+    }
+    ctx.currentDownsampledRow++;
+}
+function prepareNextSlice(ctx) {
+    return false;
+}
+function canWriteBlocks(ctx) {
+    return false;
+}
+function writeBlocks(ctx) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             return [2 /*return*/];
         });
     });
 }
-exports.processSlice = processSlice;
+function processLayer(ctx) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!prepareNextSlice(ctx)) return [3 /*break*/, 3];
+                    downsampleSlice(ctx);
+                    if (!canWriteBlocks(ctx)) return [3 /*break*/, 2];
+                    return [4 /*yield*/, writeBlocks(ctx)];
+                case 1:
+                    _a.sent();
+                    _a.label = 2;
+                case 2: return [3 /*break*/, 0];
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.processLayer = processLayer;

@@ -2,8 +2,8 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 "use strict";
-var Data = require("./DataModel");
 var LA = require("../Utils/LinearAlgebra");
+var BlockFormat = require("../Common/BlockFormat");
 var Coords;
 (function (Coords) {
     function map(f, a) {
@@ -41,7 +41,9 @@ var Coords;
     }
     Coords.mapIndices = mapIndices;
     function makeSpacegroup(header) {
-        var cellAngles = header.cellAngles, cellSize = header.cellSize, gridSize = header.gridSize, axisOrder = header.axisOrder;
+        // TODO FIX
+        var cellAngles = header.cellAngles, cellSize = header.cellSize, /*gridSize,*/ axisOrder = header.axisOrder;
+        var gridSize = [2, 2, 2];
         var alpha = (Math.PI / 180.0) * cellAngles[0], beta = (Math.PI / 180.0) * cellAngles[1], gamma = (Math.PI / 180.0) * cellAngles[2];
         var xScale = cellSize[0] / gridSize[0], yScale = cellSize[1] / gridSize[1], zScale = cellSize[2] / gridSize[2];
         var z1 = Math.cos(beta), z2 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma), z3 = Math.sqrt(1.0 - z1 * z1 - z2 * z2);
@@ -90,7 +92,9 @@ var Box;
         if (info.blockCount.some(function (v, i) { return coord[i] >= v; })) {
             throw Error("Block coordinate exceeds block count.");
         }
-        var blockSize = header.blockSize, extent = header.extent;
+        // TODO FIX
+        var blockSize = header.blockSize /*, extent*/;
+        var extent = [10, 10, 10];
         var sizeH = extent[0];
         var sizeHK = extent[0] * extent[1];
         var dimensions = Coords.map(function (e, i) { return Math.min(blockSize, e - coord[i] * blockSize); }, extent);
@@ -100,7 +104,7 @@ var Box;
             N * blockSize * extent[0] * dimensions[2] * coord[1],
             N * blockSize * extent[0] * extent[1] * coord[2]
         ];
-        var dataOffset = header.dataByteOffset + Data.getElementByteSize(ctx.header) * (offsets[0] + offsets[1] + offsets[2]);
+        var dataOffset = header.dataByteOffset + BlockFormat.getElementByteSize(ctx.header) * (offsets[0] + offsets[1] + offsets[2]);
         var box = {
             a: Coords.map(function (c, i) { return ctx.info.dataBox.a[i] + blockSize * c; }, coord),
             b: Coords.map(function (c, i) { return ctx.info.dataBox.a[i] + blockSize * c + dimensions[i]; }, coord)
