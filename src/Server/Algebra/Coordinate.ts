@@ -2,7 +2,7 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as LA from '../../Utils/LinearAlgebra'
+import * as LA from '../Utils/LinearAlgebra'
 
 export interface SpacegroupInfo {
     number: number,
@@ -19,9 +19,7 @@ export interface GridInfo {
     /** Dimensions in fractional coords. */
     dimensions: number[],
     /** Number of samples along each direction (in axis order) */
-    samples: number[],
-    /** 0 = X, 1 = Y, 2 = Z */    
-    axisOrder: number[]
+    samples: number[]
 }
 
 /** 
@@ -35,8 +33,8 @@ export interface GridDomain<K> extends GridInfo { kind: K }
 export const enum Space { Cartesian, Fractional, Grid }
 export interface Coord<S extends Space> { kind: S, coord: number[] }
 export interface Cartesian extends Coord<Space.Cartesian> { }
-export interface Fractional extends Coord<Space.Fractional> { spacegroup: Spacegroup }
-export interface Grid<K> extends Coord<Space.Grid> { spacegroup: Spacegroup, domain: GridDomain<K> }
+export interface Fractional extends Coord<Space.Fractional> {  }
+export interface Grid<K> extends Coord<Space.Grid> { domain: GridDomain<K> }
 
 /** Constructs spacegroup skew matrix from supplied info */
 export function spacegroup(info: SpacegroupInfo): Spacegroup {
@@ -67,6 +65,10 @@ export function spacegroup(info: SpacegroupInfo): Spacegroup {
     return { ...info, toFrac, fromFrac };
 }
 
+///////////////////////////////////////////
+// CONSTRUCTORS
+///////////////////////////////////////////
+
 export function domain<K>(kind: K, info: GridInfo): GridDomain<K> {
     return { kind, ...info };
 }
@@ -75,17 +77,25 @@ export function cartesian(coord: number[]): Cartesian {
     return { kind: Space.Cartesian, coord };
 }
 
-export function fractional(coord: number[], spacegroup: Spacegroup): Fractional {
-    return { kind: Space.Fractional, spacegroup, coord };
+export function fractional(coord: number[]): Fractional {
+    return { kind: Space.Fractional, coord };
 }
 
-
-export function grid<K>(coord: number[], spacegroup: Spacegroup, domain: GridDomain<K>): Grid<K> {
-    return { kind: Space.Grid, spacegroup, domain, coord };
+export function grid<K>(coord: number[], domain: GridDomain<K>): Grid<K> {
+    return { kind: Space.Grid, domain, coord };
 }
 
-export function cartesianToFractional(a: Cartesian, spacegroup: Spacegroup): Fractional {
-    return fractional(Helpers.transform(a.coord, spacegroup.toFrac), spacegroup);
+export function withCoord<C extends Coord<Space>>(a: C, coord: number[]): C {
+    return { ...a as any, coord };
+}
+
+///////////////////////////////////////////
+// CONVERSIONS
+///////////////////////////////////////////
+
+export function cartesianToFractional(a: Cartesian, spacegroup: Spacegroup, axisOrder: number[]): Fractional {
+    const coord = Helpers.transform(a.coord, spacegroup.toFrac);
+    return fractional([coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]]);
 }
 
 export function fractionalToGrid<K>(a: Fractional, domain: GridDomain<K>, snap: 'floor' | 'ceil'): Grid<K> {
@@ -95,8 +105,9 @@ export function fractionalToGrid<K>(a: Fractional, domain: GridDomain<K>, snap: 
     for (let i = 0; i < 3; i++) {
         coord[i] = Helpers.snap((a.coord[i] - origin[i]) / dimensions[i] * samples[i], snap);
     }
-    return grid(coord, a.spacegroup, domain);
+    return grid(coord, domain);
 }
+
 
 export function gridToFractional<K>(a: Grid<K>): Fractional {
     const { origin, dimensions, samples } = a.domain;
@@ -105,25 +116,31 @@ export function gridToFractional<K>(a: Grid<K>): Fractional {
     for (let i = 0; i < 3; i++) {
         coord[i] = a.coord[i] * dimensions[i] / samples[i] + origin[i];
     }
-    return fractional(coord, a.spacegroup);
+    return fractional(coord);
 }
+
+///////////////////////////////////////////
+// MISC
+///////////////////////////////////////////
 
 export function clampGridToSamples<K>(a: Grid<K>): Grid<K> {
     const { samples } = a.domain;
     const coord = [0, 0, 0];
 
     for (let i = 0; i < 3; i++) {
-        coord[i] = Math.min(a.coord[i], samples[i]);
+        coord[i] = Math.max(Math.min(a.coord[i], samples[i]), 0);
     }
     return { ...a, coord };
 }
 
 export function add<S extends Space>(a: Coord<S>, b: Coord<S>): Coord<S> {
-    return { ...a, coord: Helpers.add(a.coord, b.coord) };
+    const x = a.coord, y = b.coord;
+    return { ...a, coord: [x[0] + y[0], x[1] + y[1], x[2] + y[2]] };
 }
 
 export function sub<S extends Space>(a: Coord<S>, b: Coord<S>): Coord<S> {
-    return { ...a, coord: Helpers.sub(a.coord, b.coord) };
+    const x = a.coord, y = b.coord;
+    return { ...a, coord: [x[0] - y[0], x[1] - y[1], x[2] - y[2]] };
 }
 
 export function isInDomain<K>(a: Fractional, domain: GridDomain<K>) {
@@ -134,6 +151,13 @@ export function isInDomain<K>(a: Fractional, domain: GridDomain<K>) {
         if (c < 0 || c > dimensions[i]) return false;
     }
     return true;
+}
+
+/** Maps each grid point to a unique integer */
+export function perfectGridHash<K>(a: Grid<K>) {
+    const coord = a.coord;
+    const samples = a.domain.samples;
+    return coord[0] + samples[0] * (coord[1] + coord[2] * samples[1]);
 }
 
 module Helpers {
@@ -149,22 +173,6 @@ module Helpers {
 
     export function transform(x: number[], matrix: number[]) {
         return transformInPlace([x[0], x[1], x[2]], matrix);
-    }
-
-    export function map(f: (x: number, i: number) => number, a: number[]) {
-        return [f(a[0], 0), f(a[1], 1), f(a[2], 2)];
-    }
-
-    export function add(a: number[], b: number[]) {
-        return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
-    }
-
-    export function sub(a: number[], b: number[]) {
-        return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-    }
-
-    export function mapIndices(map: number[], coord: number[]) {
-        return [coord[map[0]], coord[map[1]], coord[map[2]]];
     }
 
     export function snap(v: number, to: 'floor' | 'ceil') {

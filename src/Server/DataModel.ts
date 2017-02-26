@@ -3,56 +3,70 @@
  */
 
 import * as BlockFormat from '../Common/BlockFormat'
+import * as Coords from './CoordinateAlgebra'
+import * as Box from './BoxAlgebra'
+import * as File from '../Utils/File'
 
-export interface Box {
-    a: number[],
-    b: number[]
+//////////////////////////////////////
+// DATA
+//////////////////////////////////////
+
+export interface Sampling {
+    index: number,
+    rate: number,
+    byteOffset: number,
+    dataDomain: Coords.GridDomain<'Data'>,
+    blockDomain: Coords.GridDomain<'Block'>
 }
 
-export interface Info {
-    blockCount: number[],        
-    isAsymmetric: boolean,
-    voxelSize: number[],
-    dataBox: Box,
-
-    /**
-     * Transform from orthogonal to the scaled fraction coordinates
-     */
-    toFrac: number[],
-
-    fromFrac: number[]
+export interface Coordinates {
+    spacegroup: Coords.Spacegroup,
+    /** X = 0, Z = 2, fastest to slowest moving, same as in CCP4 format */
+    axisOrder: number[],        
+    dataBox: Box.Fractional,
+    sampling: Sampling[]
 }
 
-export interface Context {
+export interface DataContext {
     file: number,
     header: BlockFormat.Header,
-    info: Info
+    coordinates: Coordinates
 }
 
-export interface MultiBlock {
-    coord: number[],
-    blockCount: number[],
-    dimensions: number[],
-    box: Box,
-    values: Float32Array
-}
+//////////////////////////////////////
+// QUERY
+//////////////////////////////////////
 
 export interface QueryParams {
     asBinary: boolean,
     source: string,
     id: string,
-    box: Box,
+    box: Box.Cartesian,
     guid: string
 }
 
-export interface QueryData {
-    box: Box,
-    samples: number[],
-    values: Float32Array[]
+export interface QueryContext {
+    data: DataContext,
+    params: QueryParams,
+    samplingIndex: number,
+    box: Box.Fractional,
+    domain: Coords.GridDomain<'Query'>
 }
 
 export interface QueryResult {
-    params: QueryParams,
+    context: QueryContext,
+    isEmpty: boolean,
     error?: string,
-    data?: { ctx: Context, result?: QueryData }
+    values?: File.ValueArray[]
+}
+
+//////////////////////////////////////
+// MISC
+//////////////////////////////////////
+
+export interface MultiBlock {
+    coord: number[],
+    dimensions: number[],
+    box: Box.Fractional,
+    values: Float32Array
 }

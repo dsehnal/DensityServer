@@ -12,24 +12,29 @@ export const enum FormatId {
     // ...
 }
 
+export interface Sampling {
+    /** How many values along each exis are coolapsed into 1? */
+    rate: number,
+
+    /** Number of samples along each axis, in axisOrder  */
+    samples: number[]
+}
+
 export interface Header {
     /** Format version number  */
     version: number,
 
-    /** Number of density data/channels present in the file */
-    numDensities: number,
-
     /** Determines the data type of the values */
     formatId: FormatId,
+
+    /** Number of density data/channels present in the file */
+    numDensities: number,
 
     /** The value are stored in blockSize^3 cubes */
     blockSize: number,
 
     /** Axis order from the slowest to fastest moving, same as in CCP4 */
     axisOrder: number[],
-
-    /** Number of samples along each axis, in axisOrder  */
-    samples: number[],
 
     /** Dimensions in fractional coordinates, in axisOrder */
     dimensions: number[],
@@ -49,6 +54,9 @@ export interface Header {
     maximums: number[],
     names: string[],
 
+    /** Data sampling info */
+    sampling: Sampling[],
+
     /** Block data start at this offset */
     dataByteOffset: number
 }
@@ -67,7 +75,6 @@ function getArray<T>(r: (offset: number) => T, offset: number, count: number, st
 }
 
 export async function readHeader(file: number) {
-
     const maxDensityCount = 4; 
     const headerBaseSize = 29 * 4;
     const readSize = headerBaseSize + 4 * 4 * maxDensityCount + 32 * maxDensityCount;
@@ -84,8 +91,10 @@ export async function readHeader(file: number) {
     }
     
     const numDensities = readInt(1);
+    const numSamplings = readInt(2);
+
     if (numDensities > maxDensityCount) {
-        throw Error('At most 4 density fields are supported per single file.');
+        throw Error('At most 4 density channels are supported per single file.');
     }
 
     const header: Header = {
@@ -96,7 +105,6 @@ export async function readHeader(file: number) {
         blockSize: readInt(3),
         axisOrder: getArray(readInt, 4, 3),
         
-        samples: getArray(readInt, 7, 3),
         dimensions: getArray(readDouble, 10, 3, 2),
         origin: getArray(readDouble, 16, 3, 2),
 
@@ -110,6 +118,8 @@ export async function readHeader(file: number) {
         maximums: getArray(readFloat, 29 + 3 * numDensities, numDensities),
         
         names: getArray(readString, 29 + 4 * numDensities, numDensities, 8),
+
+        sampling: 0 as any,
 
         dataByteOffset: headerBaseSize + 4 * 4 * numDensities + 32 * numDensities
     };
