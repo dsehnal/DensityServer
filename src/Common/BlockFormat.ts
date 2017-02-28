@@ -3,8 +3,9 @@
  */
 
 import * as File from '../Utils/File'
+import * as Schema from '../Utils/BinarySchema'
 
-export const enum FormatId { 
+export const enum ValueType { 
     Float32 = 0, 
     // Float64 = 1
     Int8 = 2,
@@ -12,10 +13,23 @@ export const enum FormatId {
     // ...
 }
 
-export interface Sampling {
-    /** How many values along each exis are coolapsed into 1? */
-    rate: number,
+export interface Spacegroup {
+    number: number,
+    size: number[],
+    angles: number[],    
+    /** Determine if the data should be treated as periodic or not. (e.g. X-ray = periodic, EM = not periodic) */
+    isPeriodic: boolean,
+}
 
+export interface Channel {
+    name: string,
+    mean: number,
+    sigma: number,
+    min: number,
+    max: number
+}
+
+export interface Sampling {
     /** Number of samples along each axis, in axisOrder  */
     samples: number[]
 }
@@ -25,10 +39,7 @@ export interface Header {
     version: number,
 
     /** Determines the data type of the values */
-    formatId: FormatId,
-
-    /** Number of density data/channels present in the file */
-    numDensities: number,
+    valueType: ValueType,
 
     /** The value are stored in blockSize^3 cubes */
     blockSize: number,
@@ -42,27 +53,44 @@ export interface Header {
     /** Origin in fractional coordinates, in axisOrder */
     origin: number[],
 
-    /** Spacegroup information */
-    spacegroupNumber: number,
-    cellSize: number[],
-    cellAngles: number[],
-    
-    /** Metadata */
-    means: number[],
-    sigmas: number[],
-    minimums: number[],
-    maximums: number[],
-    names: string[],
-
-    /** Data sampling info */
-    sampling: Sampling[],
-
-    /** Block data start at this offset */
-    dataByteOffset: number
+    spacegroup: Spacegroup,
+    channels: Channel[],    
+    sampling: Sampling[]
 }
 
-export function getElementByteSize(header: Header) {
-    if (header.formatId === FormatId.Float32) return 4;
+module _schema {
+    const { array, obj, int, bool, float, str } = Schema
+
+    export const schema = obj<Header>([
+        ['version', int],
+        ['valueType', int],
+        ['blockSize', int],
+        ['axisOrder', array(int)],
+        ['dimensions', array(float)],
+        ['origin', array(float)],
+        ['spacegroup', obj<Spacegroup>([
+            ['number', int],
+            ['size', float],
+            ['angles', float],
+            ['isPeriodic', bool],
+        ])],
+        ['channels', array(obj<Channel>([
+            ['name', str],
+            ['mean', float],
+            ['sigma', float],
+            ['min', float],
+            ['max', float],
+        ]))],
+        ['sampling', array(obj<Sampling>([
+            ['samples', array(int)]
+        ]))]
+    ]);
+}
+
+const headerSchema = _schema.schema;
+
+export function getValueByteSize(header: Header) {
+    if (header.valueType === ValueType.Float32) return 4;
     return 1;
 }
 

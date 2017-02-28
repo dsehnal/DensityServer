@@ -17,6 +17,7 @@ export interface Context {
     
     blockSize: number, 
 
+    isPeriodic: boolean,
     samples: number[], 
 
     /** Math.ceil(sampleCounts / blockSize) */
@@ -92,19 +93,18 @@ function makeHeader(ctx: Context): BlockFormat.Header {
         formatId: header.mode == CCP4.Mode.Float32 ? BlockFormat.FormatId.Float32 : BlockFormat.FormatId.Int8,
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,
-        samples: ctx.samples,
         dimensions: normalize(header.extent),
         origin: normalize(header.origin),
         spacegroupNumber: header.spacegroupNumber,
         cellSize: header.cellSize,
         cellAngles: header.cellAngles,
+        isPeriodic: ctx.isPeriodic,
         means: headers.map(h => h.mean),
         sigmas: headers.map(h => h.sigma),
         minimums: headers.map(h => h.min),
         maximums: headers.map(h => h.max),
         names: headers.map(h => h.name),
-
-        dataByteOffset: 0
+        sampling: []
     }
 }
 
@@ -161,7 +161,7 @@ export async function writeHeader(ctx: Context) {
     // <BLOCK_00><BLOCK_01>...<BLOCK_0N>
     // <BLOCK_K0><BLOCK_K1>...<BLOCK_KN>   
 
-    header.dataByteOffset = ctx.file.position;
+    // header.dataByteOffset = ctx.file.position;
     return header;
 }
 
