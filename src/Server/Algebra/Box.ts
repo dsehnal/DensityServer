@@ -2,7 +2,7 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as Coords from './CoordinateAlgebra'
+import * as Coords from './Coordinate'
 
 export interface Box<C extends Coords.Coord<Coords.Space>> { a: C, b: C }
 

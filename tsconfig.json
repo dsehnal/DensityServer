@@ -9,6 +9,7 @@
     "strictNullChecks": true,
     "noImplicitThis": true,
     "noImplicitReturns": true,
+    "noUnusedLocals": true,
     "alwaysStrict": true,
     "allowJs": true,
     "lib": [ "es5", "es2015.collection", "es2015.promise" ],

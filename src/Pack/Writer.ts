@@ -110,7 +110,8 @@ function makeHeader(ctx: Context): BlockFormat.Header {
 
 export async function writeHeader(ctx: Context) {    
     const header = makeHeader(ctx);
-    
+
+
     // 0:1   Format Version
     await File.writeInt(ctx.file, FORMAT_VERSION);
 

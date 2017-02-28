@@ -2,7 +2,6 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as fs from 'fs'
 import * as File from '../Utils/File'
 
 export const enum Mode { Int8 = 0, Float32 = 2 }
@@ -101,7 +100,7 @@ function getArray(r: (offset: number) => number, offset: number, count: number) 
 
 async function readHeader(name: string, file: number) {
     const headerSize = 1024;
-    const { bytesRead, buffer: data } = await File.readBuffer(file, 0, headerSize);        
+    const { buffer: data } = await File.readBuffer(file, 0, headerSize);        
 
     let littleEndian = true;
 

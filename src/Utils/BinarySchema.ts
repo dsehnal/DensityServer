@@ -5,8 +5,6 @@
 import * as CIF from '../lib/CIFTools'
 import MsgPack = CIF.Binary.MessagePack
 
-export interface EntryBase { name: string }
-
 export type Bool = { kind: 'bool' }
 export type Int = { kind: 'int' }
 export type Float = { kind: 'float' }
@@ -143,8 +141,8 @@ function decodeElement(e: Element, buffer: Buffer, offset: number, target: { val
     return offset;
 }
 
-export function decode<T>(element: Element, buffer: Buffer) {
+export function decode<T>(element: Element, buffer: Buffer, offset?: number) {
     const target = { value: void 0 as any };
-    decodeElement(element, buffer, 0, target);
+    decodeElement(element, buffer, offset! | 0, target);
     return target.value as T;
 }

@@ -2,7 +2,7 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as LA from '../Utils/LinearAlgebra'
+import * as LA from './Linear'
 
 export interface SpacegroupInfo {
     number: number,
@@ -38,7 +38,7 @@ export interface Grid<K> extends Coord<Space.Grid> { domain: GridDomain<K> }
 
 /** Constructs spacegroup skew matrix from supplied info */
 export function spacegroup(info: SpacegroupInfo): Spacegroup {
-    const { number, angles: cellAngles, size: cellSize } = info;
+    const { angles: cellAngles, size: cellSize } = info;
 
     const alpha = (Math.PI / 180.0) * cellAngles[0];
     const beta = (Math.PI / 180.0) * cellAngles[1];
