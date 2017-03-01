@@ -10,8 +10,8 @@ export type Int = { kind: 'int' }
 export type Float = { kind: 'float' }
 export type String = { kind: 'string' }
 export type Array = { kind: 'array', element: Element }
-export type Prop<E extends Element> = { element: E, getter: (o: any) => any, setter: (o: any, v: any) => void }
-export type Obj = { kind: 'object', props: Prop<Element>[] }
+export type Prop = { element: Element, prop: string }
+export type Obj = { kind: 'object', props: Prop[] }
 export type Element = Bool | Int | Float | String | Array | Obj
 
 export const bool: Bool = { kind: 'bool' };
@@ -24,8 +24,7 @@ export function obj<T>(schema: ((keyof T) | Element)[][]): Obj {
         kind: 'object', 
         props: schema.map(s => ({
             element: s[1] as Element,
-            getter: (o: any) => o[s[0]],
-            setter: (o: any, v: any) => o[s[0]] = v
+            prop: s[0] as string
         }))
     }; 
 }
@@ -46,7 +45,7 @@ function byteCount(e: Element, src: any) {
         }
         case 'object': {
             for (const p of e.props) {
-                size += byteCount(p.element, p.getter(src)); 
+                size += byteCount(p.element, src[p.prop]); 
             }
             break;
         }
@@ -81,7 +80,7 @@ function writeElement(e: Element, buffer: Buffer, src: any, offset: number) {
             break;
         }
         case 'object': {
-            for (const p of e.props) offset = writeElement(p.element, buffer, p.getter(src), offset);
+            for (const p of e.props) offset = writeElement(p.element, buffer, src[p.prop], offset);
             break;
         }
     }
@@ -101,7 +100,7 @@ export function encode(element: Element, src: any): Buffer {
 
 function decodeElement(e: Element, buffer: Buffer, offset: number, target: { value: any }) {
     switch (e.kind) {
-        case 'bool': target.value = buffer.readInt8(offset); offset += 1; break;
+        case 'bool': target.value = !!buffer.readInt8(offset); offset += 1; break;
         case 'int': target.value = buffer.readInt32LE(offset); offset += 4; break;
         case 'float': target.value = buffer.readDoubleLE(offset);  offset += 8; break;
         case 'string': {
@@ -132,7 +131,7 @@ function decodeElement(e: Element, buffer: Buffer, offset: number, target: { val
             const element = { value: void 0 };
             for (const p of e.props) {
                 offset = decodeElement(p.element, buffer, offset, element);
-                p.setter(t, element.value);
+                t[p.prop] = element.value;
             }
             target.value = t;      
             break;

@@ -3,13 +3,14 @@
  */
 
 import * as File from '../Utils/File'
+import * as BlockFormat from '../Common/BlockFormat'
 
 export const enum Mode { Int8 = 0, Float32 = 2 }
 
 export interface Header {
     name: string,
     mode: Mode,
-    grid: number[],
+    grid: number[], // grid is converted to the axis order!!
     axisOrder: number[],
     extent: number[],
     origin: number[],
@@ -25,7 +26,7 @@ export interface Header {
 }
 
 /** Represents a circular buffer for 2 * blockSize layers */
-export interface LayerContext {   
+export interface DataLayer {   
     buffer: File.TypedArrayBufferContext,
 
     blockSize: number,
@@ -46,8 +47,19 @@ export interface LayerContext {
     isFinished: boolean
 }
 
+export interface Data {
+    header: Header,
+    file: number,
+    layer: DataLayer,
+    numLayers: number
+}
 
-function createLayerContext(header: Header, blockSize: number): LayerContext {
+export function getValueType(header: Header) {
+    if (header.mode === Mode.Float32) return BlockFormat.ValueType.Float32;
+    return BlockFormat.ValueType.Int8;
+}
+
+function createDataLayer(header: Header, blockSize: number): DataLayer {
     const { extent } = header;
     const size = 2 * blockSize * extent[0] * extent[1];
     const buffer = File.createTypedArrayBufferContext(size, header.mode === Mode.Float32 ? File.ValueType.Float32 : File.ValueType.Int8);
@@ -63,13 +75,6 @@ function createLayerContext(header: Header, blockSize: number): LayerContext {
         readHeight: 0,
         isFinished: false
     };
-}
-
-export interface Data {
-    header: Header,
-    file: number,
-    layer: LayerContext,
-    numSlices: number
 }
 
 function compareProp(a: any, b: any) {
@@ -116,58 +121,6 @@ async function readHeader(name: string, file: number) {
     const readInt = littleEndian ? (o: number) => data.readInt32LE(o * 4) : (o: number) => data.readInt32BE(o * 4); 
     const readFloat = littleEndian ? (o: number) => data.readFloatLE(o * 4) : (o: number) => data.readFloatBE(o * 4);
 
-    // const header: Header = {
-    //     name,
-    //     mode,
-    //     grid: getArray(readInt, 7, 3),
-    //     axisOrder: getArray(readInt, 16, 3).map(i => i - 1),
-    //     extent: getArray(readInt, 0, 3),
-    //     origin: [0, 0, 0],
-    //     spacegroupNumber: readInt(22),
-    //     cellSize: getArray(readFloat, 10, 3),
-    //     cellAngles: getArray(readFloat, 13, 3),
-    //     mean: readFloat(21),
-    //     sigma: 0.0,
-    //     min: Number.POSITIVE_INFINITY,
-    //     max: Number.NEGATIVE_INFINITY,
-    //     littleEndian,
-    //     dataOffset: headerSize + readInt(23) /* symBytes */
-    // };
-
-    // let alpha = (Math.PI / 180.0) * header.cellAngles[0],
-    //     beta = (Math.PI / 180.0) * header.cellAngles[1],
-    //     gamma = (Math.PI / 180.0) * header.cellAngles[2];
-
-    // let xScale = header.cellSize[0] / header.grid[0],
-    //     yScale = header.cellSize[1] / header.grid[1],
-    //     zScale = header.cellSize[2] / header.grid[2];
-
-    // let z1 = Math.cos(beta),
-    //     z2 = (Math.cos(alpha) - Math.cos(beta) * Math.cos(gamma)) / Math.sin(gamma),
-    //     z3 = Math.sqrt(1.0 - z1 * z1 - z2 * z2);
-
-    // let xAxis = [xScale, 0.0, 0.0],
-    //     yAxis = [Math.cos(gamma) * yScale, Math.sin(gamma) * yScale, 0.0],
-    //     zAxis = [z1 * zScale, z2 * zScale, z3 * zScale];
-    
-    // let indices = [0, 0, 0];
-    // indices[header.axisOrder[0]] = 0;
-    // indices[header.axisOrder[1]] = 1;
-    // indices[header.axisOrder[2]] = 2;
-                
-    // let origin2k = getArray(readFloat, 49, 3);
-    // let origin: number[];
-    // let nxyzStart = getArray(readInt, 4, 3);
-    // if (origin2k[0] === 0.0 && origin2k[1] === 0.0 && origin2k[2] === 0.0) {
-    //     origin = [
-    //         xAxis[0] * nxyzStart[indices[0]] + yAxis[0] * nxyzStart[indices[1]] + zAxis[0] * nxyzStart[indices[2]],
-    //                                            yAxis[1] * nxyzStart[indices[1]] + zAxis[1] * nxyzStart[indices[2]],
-    //                                                                               zAxis[2] * nxyzStart[indices[2]]
-    //     ];
-    // } else {
-    //     origin = [origin2k[indices[0]], origin2k[indices[1]], origin2k[indices[2]]];
-    // }
-
     const origin2k = getArray(readFloat, 49, 3);
     const nxyzStart = getArray(readInt, 4, 3);
     const header: Header = {
@@ -188,11 +141,13 @@ async function readHeader(name: string, file: number) {
         dataOffset: headerSize + readInt(23) /* symBytes */
     };
 
+    header.grid = [header.grid[header.axisOrder[0]], header.grid[header.axisOrder[1]], header.grid[header.axisOrder[2]]];
+
     return header;
 }
 
 export async function readLayer(data: Data, sliceIndex: number) {
-    if (sliceIndex >= data.numSlices) {
+    if (sliceIndex >= data.numLayers) {
         data.layer.isFinished = true;
         return 0;
     }
@@ -235,7 +190,7 @@ export async function readLayer(data: Data, sliceIndex: number) {
     layer.readHeight = sliceHeight;
     layer.valuesOffset = valuesOffset;
 
-    if (sliceIndex >= data.numSlices - 1) {
+    if (sliceIndex >= data.numLayers - 1) {
         header.sigma = Math.sqrt(header.sigma / (extent[0] * extent[1] * extent[2]));
         layer.isFinished = true;
     }
@@ -249,8 +204,8 @@ export async function open(name: string, filename: string, blockSize: number): P
     return <Data>{ 
         header, 
         file, 
-        layer: createLayerContext(header, blockSize),
-        numSlices: Math.ceil(header.extent[2] / blockSize) | 0
+        layer: createDataLayer(header, blockSize),
+        numLayers: Math.ceil(header.extent[2] / blockSize) | 0
     };
 }
 

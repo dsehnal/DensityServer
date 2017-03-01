@@ -32,8 +32,11 @@ export interface Channel {
 export interface Sampling {
     byteOffset: number,
 
+    /** How many values along each axis were collapsed into 1 */
+    rate: number,
+
     /** Number of samples along each axis, in axisOrder  */
-    samples: number[]
+    sampleCount: number[]
 }
 
 export interface Header {
@@ -85,26 +88,21 @@ module _schema {
         ]))],
         ['sampling', array(obj<Sampling>([
             ['byteOffset', float],
-            ['samples', array(int)]
+            ['rate', int],
+            ['sampleCount', array(int)]
         ]))]
     ]);
 }
 
 const headerSchema = _schema.schema;
 
-export function getValueByteSize(header: Header) {
-    if (header.valueType === ValueType.Float32) return 4;
+export function getValueByteSize(type: ValueType) {
+    if (type === ValueType.Float32) return 4;
     return 1;
 }
 
-export async function headerByteSize(header: Header) {
-    return 4 + Schema.encode(headerSchema, header).byteLength;
-}
-
-export async function writeHeader(file: File.WriteContext, header: Header) {
-    const encoded = Schema.encode(headerSchema, header);
-    await File.writeInt(file, encoded.byteLength);
-    await File.writeBuffer(file.file, 4, encoded);
+export function encodeHeader(header: Header) {
+    return Schema.encode(headerSchema, header);
 }
 
 export async function readHeader(file: number): Promise<{ header: Header, dataOffset: number }> {
@@ -117,66 +115,4 @@ export async function readHeader(file: number): Promise<{ header: Header, dataOf
 
     const header = Schema.decode<Header>(headerSchema, buffer, 4);
     return { header, dataOffset: headerSize + 4 };
-
-    //Schema.decode<Header>(..)
-
-    // const maxDensityCount = 4; 
-    // const headerBaseSize = 29 * 4;
-    // const readSize = headerBaseSize + 4 * 4 * maxDensityCount + 32 * maxDensityCount;
-
-    // const { buffer: data } = await File.readBuffer(file, 0, readSize);
-    
-    // const readInt = (o: number) => data.readInt32LE(o * 4); 
-    // const readFloat = (o: number) => data.readFloatLE(o * 4);
-    // const readDouble = (o: number) => data.readDoubleLE(o * 4);
-    // const readString = (o: number) => {
-    //     const bytes: number[] = [];
-    //     for (let i = 0; i < 32; i++) bytes.push(data.readUInt8(4 * o + i));
-    //     return String.fromCharCode.apply(null, bytes).trim();
-    // }
-    
-    // const numDensities = readInt(1);
-    // const numSamplings = readInt(2);
-
-    // if (numDensities > maxDensityCount) {
-    //     throw Error('At most 4 density channels are supported per single file.');
-    // }
-
-    // const header: Header = {
-    //     version: readInt(0),
-    //     numDensities,
-    //     formatId: readInt(2),
-        
-    //     blockSize: readInt(3),
-    //     axisOrder: getArray(readInt, 4, 3),
-        
-    //     dimensions: getArray(readDouble, 10, 3, 2),
-    //     origin: getArray(readDouble, 16, 3, 2),
-
-    //     spacegroupNumber: readInt(22),
-    //     cellSize: getArray(readFloat, 23, 3),
-    //     cellAngles: getArray(readFloat, 26, 3),
-
-    //     means: getArray(readFloat, 29, numDensities),
-    //     sigmas: getArray(readFloat, 29 + numDensities, numDensities),
-    //     minimums: getArray(readFloat, 29 + 2 * numDensities, numDensities),
-    //     maximums: getArray(readFloat, 29 + 3 * numDensities, numDensities),
-        
-    //     names: getArray(readString, 29 + 4 * numDensities, numDensities, 8),
-
-    //     sampling: 0 as any,
-
-    //     dataByteOffset: headerBaseSize + 4 * 4 * numDensities + 32 * numDensities
-    // };
-
-    // return header;
 }
-
-
-// function getArray<T>(r: (offset: number) => T, offset: number, count: number, step = 1): T[] {
-//     const ret:T[] = [];
-//     for (let i = 0; i < count; i++) {
-//         ret[i] = r(offset + i * step);
-//     }
-//     return ret;
-// }
