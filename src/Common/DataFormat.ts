@@ -2,8 +2,8 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as File from '../Utils/File'
-import * as Schema from '../Utils/BinarySchema'
+import * as File from './File'
+import * as Schema from './BinarySchema'
 
 export const enum ValueType { 
     Float32 = 0, 
@@ -12,6 +12,8 @@ export const enum ValueType {
     // Uint8 = 3
     // ...
 }
+
+export type ValueArray = Float32Array | Int8Array
 
 export interface Spacegroup {
     number: number,
@@ -75,8 +77,8 @@ module _schema {
         ['origin', array(float)],
         ['spacegroup', obj<Spacegroup>([
             ['number', int],
-            ['size', float],
-            ['angles', float],
+            ['size', array(float)],
+            ['angles', array(float)],
             ['isPeriodic', bool],
         ])],
         ['channels', array(obj<Channel>([

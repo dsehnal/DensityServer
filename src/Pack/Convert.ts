@@ -3,14 +3,41 @@
  */
 
 import * as CCP4 from './CCP4'
-import * as File from '../Utils/File'
-import * as Writer from './Writer'
+import * as File from '../Common/File'
 import * as Data from './DataModel'
 import * as Sampling from './Sampling'
+import * as DataFormat from '../Common/DataFormat'
+import * as fs from 'fs'
 
 function getTime() {
     let t = process.hrtime();
     return t[0] * 1000 + t[1] / 1000000;
+}
+
+function updateAllocationProgress(progress: Data.Progress, progressDone: number) {
+    let old = (100 * progress.current / progress.max).toFixed(0);
+    progress.current += progressDone;
+    let $new = (100 * progress.current / progress.max).toFixed(0);
+    if (old !== $new) {
+        process.stdout.write(`\rAllocating...      ${$new}%`);
+    }
+}
+
+async function allocateFile(ctx: Data.Context) {
+    const { totalByteSize, file } = ctx;
+    const buffer = new Buffer(Math.min(totalByteSize, 8 * 1024 * 1024));
+    const progress: Data.Progress = { current: 0, max: Math.ceil(totalByteSize / buffer.byteLength) };
+    let written = 0;
+    while (written < totalByteSize) {
+        written += fs.writeSync(file, buffer, 0, Math.min(totalByteSize - written, buffer.byteLength));
+        updateAllocationProgress(progress, 1);
+    }
+}
+
+async function writeHeader(ctx: Data.Context) {
+    const header = DataFormat.encodeHeader(Data.createHeader(ctx));
+    await File.writeInt(ctx.file, header.byteLength, 0);
+    await File.writeBuffer(ctx.file, 4, header);
 }
 
 async function processLayers(ctx: Data.Context) {
@@ -20,7 +47,7 @@ async function processLayers(ctx: Data.Context) {
         for (const src of ctx.channels) {
             await CCP4.readLayer(src, i);
         }
-        await Sampling.processLayer(ctx, i === (numLayers - 1));
+        await Sampling.processLayer(ctx);
     }
 }
  
@@ -51,11 +78,13 @@ async function create(filename: string, sourceDensities: { name: string, filenam
         // Step 1c: Create data context.
         const context = await Sampling.createContext(filename, channels, blockSize, isPeriodic);
         for (const s of channels) files.push(s.file);
-        files.push(context.file.file);
+        files.push(context.file);
         process.stdout.write('   done.\n');
 
-        // Step 2: Allocate disk space.
-        await Writer.allocateFile(context);
+        // Step 2: Allocate disk space.        
+        process.stdout.write('Allocating...      0%');
+        await allocateFile(context);
+        process.stdout.write('\rAllocating...      done.\n');
 
         // Step 3: Process and write the data 
         process.stdout.write('Writing data...    0%');
@@ -65,8 +94,8 @@ async function create(filename: string, sourceDensities: { name: string, filenam
         // Step 4: Write the header at the start of the file.
         // The header is written last because the sigma/min/max values are computed 
         // during step 3.
-        process.stdout.write('Writing header... ');
-        await Writer.writeHeader(context);
+        process.stdout.write('Writing header...  ');
+        await writeHeader(context);
         process.stdout.write('done.\n');
 
         // Step 5: Report the time, d'ph.
@@ -75,14 +104,14 @@ async function create(filename: string, sourceDensities: { name: string, filenam
     } finally {
         for (let f of files) File.close(f);
 
-        // const ff = await File.openRead(path.join(folder, '1.mdb'));
+        // const ff = await File.openRead(filename);
         // const hh = await BlockFormat.readHeader(ff);
         // File.close(ff);
-        // console.log(hh);
+        // console.log(hh.header.sampling[1]);
     }
 } 
 
-export default async function pack(input: { name: string, filename: string}[], blockSize: number, isPeriodic: boolean, outputFilename: string) {
+export default async function pack(input: { name: string, filename: string }[], blockSize: number, isPeriodic: boolean, outputFilename: string) {
     try {
         await create(outputFilename, input, blockSize, isPeriodic);
     } catch (e) {

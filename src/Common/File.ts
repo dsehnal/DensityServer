@@ -4,8 +4,9 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
+import * as DataFormat from './DataFormat'
 
-const isNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
+export const IsNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
 
 export async function openRead(filename: string) {
     return new Promise<number>((res, rej) => {
@@ -61,14 +62,6 @@ export function writeBuffer(file: number, position: number, buffer: Buffer, size
     })
 }
 
-const smallBufferSize = 128
-
-export interface WriteContext {
-    file: number,
-    position: number,
-    smallBuffer: Buffer
-}
-
 function makeDir(path: string, root?: string): boolean {
     let dirs = path.split(/\/|\\/g),
         dir = dirs.shift();
@@ -84,66 +77,28 @@ function makeDir(path: string, root?: string): boolean {
 }
 
 export function createFile(filename: string) {
-    return new Promise<WriteContext>((res, rej) => {
+    return new Promise<number>((res, rej) => {
         if (fs.existsSync(filename)) fs.unlinkSync(filename);
         makeDir(path.dirname(filename));
         fs.open(filename, 'w', (err, file) => {
             if (err) rej(err);
-            else res({ file, position: 0, smallBuffer: new Buffer(new ArrayBuffer(smallBufferSize)) });
+            else res(file);
         }) 
     });
 }
 
 export function close(file: number) {
-    fs.close(file);
+    fs.closeSync(file);
 }
 
-export async function writeInt(ctx: WriteContext, value: number) {
-    ctx.smallBuffer.writeInt32LE(value, 0);
-    let written = await writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 4);
-    ctx.position += written;
+const smallBuffer = new Buffer(8);
+export async function writeInt(file: number, value: number, position: number) {    
+    smallBuffer.writeInt32LE(value, 0);
+    await writeBuffer(file, position, smallBuffer, 4);
 }
 
-export async function writeFloat(ctx: WriteContext, value: number, position?:number) {
-    ctx.smallBuffer.writeFloatLE(value, 0);
-    if (position === void 0) {
-        let written = await writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 4);
-        ctx.position += written;
-    } else {
-        await writeBuffer(ctx.file, position, ctx.smallBuffer, 4);
-    }
-}
-
-export async function writeDouble(ctx: WriteContext, value: number, position?:number) {
-    ctx.smallBuffer.writeDoubleLE(value, 0);
-    if (position === void 0) {
-        let written = await writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 8);
-        ctx.position += written;
-    } else {
-        await writeBuffer(ctx.file, position, ctx.smallBuffer, 8);
-    }
-}
-
-export async function writeString(ctx: WriteContext, value: string, width: number) {
-    if (value.length > width || width > smallBufferSize) throw Error('The string exceeds the maximum length.');
-    for (let i = 0; i < value.length; i++) {
-        if (value.charCodeAt(i) >= 0x7f) throw Error('Only one byte UTF8 strings can be written.');
-    }
-    value += new Array(width - value.length + 1).join(' ');
-    ctx.smallBuffer.write(value);
-    let written = await writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, width);
-    ctx.position += written;
-}
-
-
-export async function write(ctx: WriteContext, value: Buffer, size: number) {
-    let written = await writeBuffer(ctx.file, ctx.position, value, size);
-    ctx.position += written;
-}
-
-
-export const enum ValueType { Float32 = 0, Int8 = 1 }
-export type ValueArray = Float32Array | Int8Array
+import ValueType = DataFormat.ValueType
+import ValueArray = DataFormat.ValueArray
 
 export interface TypedArrayBufferContext {
     type: ValueType,
@@ -160,14 +115,15 @@ function getElementByteSize(type: ValueType) {
 
 function makeTypedArray(type: ValueType, buffer: ArrayBuffer): ValueArray {
     if (type === ValueType.Float32) return new Float32Array(buffer);
-    return new Int8Array(buffer);
+    let ret = new Int8Array(buffer);
+    return ret;
 }
 
 export function createTypedArrayBufferContext(size: number, type: ValueType): TypedArrayBufferContext {
     let elementByteSize = getElementByteSize(type);
-    let arrayBuffer = new ArrayBuffer(elementByteSize * size);
+    let arrayBuffer = new ArrayBuffer(elementByteSize * size);    
     let readBuffer = new Buffer(arrayBuffer); 
-    let valuesBuffer = isNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
+    let valuesBuffer = IsNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
     return {
         type,
         elementByteSize,
@@ -190,9 +146,15 @@ export async function readTypedArray(ctx: TypedArrayBufferContext, file: number,
     let byteOffset = ctx.elementByteSize * valueOffset;
     
     await readBuffer(file, position, ctx.readBuffer, byteCount, byteOffset);    
-    if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== isNativeEndianLittle) || !isNativeEndianLittle)) {
+    if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== IsNativeEndianLittle) || !IsNativeEndianLittle)) {
         // fix the endian 
         flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize, byteOffset);
     }
     return ctx.values;
+}
+
+export function ensureLittleEndian(source: Buffer, target: Buffer, byteCount: number, elementByteSize: number, offset: number) {
+    if (IsNativeEndianLittle) return;
+    if (!byteCount || elementByteSize <= 1) return;
+    flipByteOrder(source, target, byteCount, elementByteSize, offset);
 }

@@ -37,9 +37,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var path = require("path");
-var isNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
+exports.isNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
 function openRead(filename) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
@@ -104,7 +105,6 @@ function writeBuffer(file, position, buffer, size) {
     });
 }
 exports.writeBuffer = writeBuffer;
-var smallBufferSize = 128;
 function makeDir(path, root) {
     var dirs = path.split(/\/|\\/g), dir = dirs.shift();
     root = (root || '') + dir + '/';
@@ -126,117 +126,31 @@ function createFile(filename) {
             if (err)
                 rej(err);
             else
-                res({ file: file, position: 0, smallBuffer: new Buffer(new ArrayBuffer(smallBufferSize)) });
+                res(file);
         });
     });
 }
 exports.createFile = createFile;
 function close(file) {
-    fs.close(file);
+    fs.closeSync(file);
 }
 exports.close = close;
-function writeInt(ctx, value) {
+var smallBuffer = new Buffer(8);
+function writeInt(file, value, position) {
     return __awaiter(this, void 0, void 0, function () {
-        var written;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    ctx.smallBuffer.writeInt32LE(value, 0);
-                    return [4 /*yield*/, writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 4)];
+                    smallBuffer.writeInt32LE(value, 0);
+                    return [4 /*yield*/, writeBuffer(file, position, smallBuffer, 4)];
                 case 1:
-                    written = _a.sent();
-                    ctx.position += written;
+                    _a.sent();
                     return [2 /*return*/];
             }
         });
     });
 }
 exports.writeInt = writeInt;
-function writeFloat(ctx, value, position) {
-    return __awaiter(this, void 0, void 0, function () {
-        var written;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    ctx.smallBuffer.writeFloatLE(value, 0);
-                    if (!(position === void 0)) return [3 /*break*/, 2];
-                    return [4 /*yield*/, writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 4)];
-                case 1:
-                    written = _a.sent();
-                    ctx.position += written;
-                    return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, writeBuffer(ctx.file, position, ctx.smallBuffer, 4)];
-                case 3:
-                    _a.sent();
-                    _a.label = 4;
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.writeFloat = writeFloat;
-function writeDouble(ctx, value, position) {
-    return __awaiter(this, void 0, void 0, function () {
-        var written;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    ctx.smallBuffer.writeDoubleLE(value, 0);
-                    if (!(position === void 0)) return [3 /*break*/, 2];
-                    return [4 /*yield*/, writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, 8)];
-                case 1:
-                    written = _a.sent();
-                    ctx.position += written;
-                    return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, writeBuffer(ctx.file, position, ctx.smallBuffer, 8)];
-                case 3:
-                    _a.sent();
-                    _a.label = 4;
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.writeDouble = writeDouble;
-function writeString(ctx, value, width) {
-    return __awaiter(this, void 0, void 0, function () {
-        var i, written;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (value.length > width || width > smallBufferSize)
-                        throw Error('The string exceeds the maximum length.');
-                    for (i = 0; i < value.length; i++) {
-                        if (value.charCodeAt(i) >= 0x7f)
-                            throw Error('Only one byte UTF8 strings can be written.');
-                    }
-                    value += new Array(width - value.length + 1).join(' ');
-                    ctx.smallBuffer.write(value);
-                    return [4 /*yield*/, writeBuffer(ctx.file, ctx.position, ctx.smallBuffer, width)];
-                case 1:
-                    written = _a.sent();
-                    ctx.position += written;
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.writeString = writeString;
-function write(ctx, value, size) {
-    return __awaiter(this, void 0, void 0, function () {
-        var written;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, writeBuffer(ctx.file, ctx.position, value, size)];
-                case 1:
-                    written = _a.sent();
-                    ctx.position += written;
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.write = write;
 function getElementByteSize(type) {
     if (type === 0 /* Float32 */)
         return 4;
@@ -245,13 +159,14 @@ function getElementByteSize(type) {
 function makeTypedArray(type, buffer) {
     if (type === 0 /* Float32 */)
         return new Float32Array(buffer);
-    return new Int8Array(buffer);
+    var ret = new Int8Array(buffer);
+    return ret;
 }
 function createTypedArrayBufferContext(size, type) {
     var elementByteSize = getElementByteSize(type);
     var arrayBuffer = new ArrayBuffer(elementByteSize * size);
     var readBuffer = new Buffer(arrayBuffer);
-    var valuesBuffer = isNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
+    var valuesBuffer = exports.isNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
     return {
         type: type,
         elementByteSize: elementByteSize,
@@ -279,7 +194,7 @@ function readTypedArray(ctx, file, position, count, valueOffset, littleEndian) {
                     return [4 /*yield*/, readBuffer(file, position, ctx.readBuffer, byteCount, byteOffset)];
                 case 1:
                     _a.sent();
-                    if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== isNativeEndianLittle) || !isNativeEndianLittle)) {
+                    if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== exports.isNativeEndianLittle) || !exports.isNativeEndianLittle)) {
                         // fix the endian 
                         flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize, byteOffset);
                     }
@@ -289,3 +204,11 @@ function readTypedArray(ctx, file, position, count, valueOffset, littleEndian) {
     });
 }
 exports.readTypedArray = readTypedArray;
+function ensureLittleEndian(source, target, byteCount, elementByteSize, offset) {
+    if (exports.isNativeEndianLittle)
+        return;
+    if (!byteCount || elementByteSize <= 1)
+        return;
+    flipByteOrder(source, target, byteCount, elementByteSize, offset);
+}
+exports.ensureLittleEndian = ensureLittleEndian;

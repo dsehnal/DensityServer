@@ -2,11 +2,12 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import pack from './Pack/DensityBlock'
+import pack from './Pack/Convert'
 import VERSION from './Pack/Version'
 
 let config = {
     input: <{ name: string, filename: string }[]>[],
+    isPeriodic: false,
     outputFilename: '',
     blockSize: 96 
 };
@@ -53,6 +54,7 @@ function parseInput() {
                     { name: '2Fo-Fc', filename: process.argv[++i] },
                     { name: 'Fo-Fc', filename: process.argv[++i] }
                 ];
+                config.isPeriodic = true;
                 config.outputFilename = process.argv[++i];
                 break;
             case '-em':
@@ -76,5 +78,5 @@ function parseInput() {
 }
 
 if (parseInput()) {
-    pack(config.input, config.blockSize, config.outputFilename);
+    pack(config.input, config.blockSize, config.isPeriodic, config.outputFilename);
 }

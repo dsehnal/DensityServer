@@ -35,7 +35,7 @@ function byteCount(e: Element, src: any) {
         case 'bool': size += 1; break;
         case 'int': size += 4; break;
         case 'float': size += 8; break;
-        case 'string': size += 4; size += MsgPack.utf8ByteCount(src); break;
+        case 'string': size += 4 + MsgPack.utf8ByteCount(src); break;
         case 'array': {
             size += 4; // array length
             for (const x of src) {
@@ -55,7 +55,7 @@ function byteCount(e: Element, src: any) {
 
 function writeElement(e: Element, buffer: Buffer, src: any, offset: number) {
     switch (e.kind) {
-        case 'int': buffer.writeInt8(src ? 1 : 0, offset); offset += 1; break;
+        case 'bool': buffer.writeInt8(src ? 1 : 0, offset); offset += 1; break;
         case 'int': buffer.writeInt32LE(src | 0, offset); offset += 4; break;
         case 'float': buffer.writeDoubleLE(+src, offset); offset += 8; break;
         case 'string': {
@@ -80,7 +80,9 @@ function writeElement(e: Element, buffer: Buffer, src: any, offset: number) {
             break;
         }
         case 'object': {
-            for (const p of e.props) offset = writeElement(p.element, buffer, src[p.prop], offset);
+            for (const p of e.props) {
+                offset = writeElement(p.element, buffer, src[p.prop], offset);
+            }
             break;
         }
     }
@@ -102,7 +104,7 @@ function decodeElement(e: Element, buffer: Buffer, offset: number, target: { val
     switch (e.kind) {
         case 'bool': target.value = !!buffer.readInt8(offset); offset += 1; break;
         case 'int': target.value = buffer.readInt32LE(offset); offset += 4; break;
-        case 'float': target.value = buffer.readDoubleLE(offset);  offset += 8; break;
+        case 'float': target.value = buffer.readDoubleLE(offset); offset += 8; break;
         case 'string': {
             const size = buffer.readInt32LE(offset);
             offset += 4; // str len

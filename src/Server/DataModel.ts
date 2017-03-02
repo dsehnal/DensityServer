@@ -2,10 +2,9 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as BlockFormat from '../Common/BlockFormat'
-import * as Coords from './CoordinateAlgebra'
-import * as Box from './BoxAlgebra'
-import * as File from '../Utils/File'
+import * as DataFormat from '../Common/DataFormat'
+import * as Coords from './Algebra/Coordinate'
+import * as Box from './Algebra/Box'
 
 //////////////////////////////////////
 // DATA
@@ -29,7 +28,7 @@ export interface Coordinates {
 
 export interface DataContext {
     file: number,
-    header: BlockFormat.Header,
+    header: DataFormat.Header,
     coordinates: Coordinates
 }
 
@@ -57,7 +56,7 @@ export interface QueryResult {
     context: QueryContext,
     isEmpty: boolean,
     error?: string,
-    values?: File.ValueArray[]
+    values?: DataFormat.ValueArray[]
 }
 
 //////////////////////////////////////

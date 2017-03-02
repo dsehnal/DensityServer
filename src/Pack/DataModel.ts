@@ -3,8 +3,7 @@
  */
 
 import * as CCP4 from './CCP4'
-import * as File from '../Utils/File'
-import * as BlockFormat from '../Common/BlockFormat'
+import * as DataFormat from '../Common/DataFormat'
 
 const FORMAT_VERSION = '1.0.0';
 
@@ -13,12 +12,16 @@ export interface Progress {
     max: number
 }
 
-export interface BlockLayer {
+export interface BlocksLayer {
     /** numU * numV * blockSize  */
-    dimenions: number[],
-    buffer: File.ValueArray,
-    currentSlice: number,
-    isFull: boolean
+    dimensions: number[],
+    values: DataFormat.ValueArray[],
+    buffers: Buffer[],
+    /** number of slices that are currently written to the buffer */
+    slicesWritten: number,
+
+    lastProcessedSlice: number,
+    isFull: boolean,
 }
 
 export interface Sampling {
@@ -26,9 +29,10 @@ export interface Sampling {
     rate: number,
 
     sampleCount: number[],
+    delta: number[],    
 
     /** One per channel, same indexing */
-    blockLayers: BlockLayer[],
+    blocksLayer: BlocksLayer,
 
     /** How far along the current sampling is in the buffer */
     dataSliceIndex: number,
@@ -36,21 +40,25 @@ export interface Sampling {
     /** Info about location in the output file, 0 offset is where the header ends */
     byteOffset: number,
     byteSize: number,
-    /** where to write the next block */
-    writeByteOffset: number
+    /** where to write the next block relative to the byteoffset */
+    writeByteOffset: number,
 }
 
 export interface Context {
-    file: File.WriteContext, 
+    file: number, 
 
     /** Periodic are x-ray density files that cover the entire grid */
     isPeriodic: boolean,
     
     channels: CCP4.Data[],    
+    valueType: DataFormat.ValueType,
     blockSize: number,
-    cubeBuffer: Buffer,
+    /** Able to store channels.length * blockSize^3 values. */
+    cubeBuffer: Buffer, 
+    litteEndianCubeBuffer: Buffer,   
 
     sampling: Sampling[],
+    lerpCube: LerpCube,
 
     /** 
      * Reordering of sampling where each subarray has rates that are a non-trivial multiple of index 
@@ -71,7 +79,15 @@ export interface Context {
     progress: Progress
 }
 
-export function createHeader(ctx: Context): BlockFormat.Header {
+export interface LerpCube {
+    cube: number[],
+    z0Offset: number,
+    z1Offset: number,
+    sizeI: number,
+    sizeIJ: number
+}
+
+export function createHeader(ctx: Context): DataFormat.Header {
     const header = ctx.channels[0].header;
     /** map the grid to the axis order */
     const grid = [header.grid[header.axisOrder[0]], header.grid[header.axisOrder[1]], header.grid[header.axisOrder[2]]];
@@ -82,7 +98,7 @@ export function createHeader(ctx: Context): BlockFormat.Header {
 
     return {
         version: FORMAT_VERSION,
-        valueType: header.mode === CCP4.Mode.Float32 ? BlockFormat.ValueType.Float32 : BlockFormat.ValueType.Int8,
+        valueType: header.mode === CCP4.Mode.Float32 ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8,
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,
         dimensions: normalize(header.extent),

@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var Config = {
     /**
      * Maximum number of cells along a single axis.
@@ -47,5 +48,4 @@ var Config = {
         }
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Config;

@@ -2,10 +2,12 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 "use strict";
-var DensityBlock_1 = require("./Pack/DensityBlock");
+Object.defineProperty(exports, "__esModule", { value: true });
+var Convert_1 = require("./Pack/Convert");
 var Version_1 = require("./Pack/Version");
 var config = {
     input: [],
+    isPeriodic: false,
     outputFilename: '',
     blockSize: 96
 };
@@ -48,6 +50,7 @@ function parseInput() {
                     { name: '2Fo-Fc', filename: process.argv[++i] },
                     { name: 'Fo-Fc', filename: process.argv[++i] }
                 ];
+                config.isPeriodic = true;
                 config.outputFilename = process.argv[++i];
                 break;
             case '-em':
@@ -70,5 +73,5 @@ function parseInput() {
     return input;
 }
 if (parseInput()) {
-    DensityBlock_1.default(config.input, config.blockSize, config.outputFilename);
+    Convert_1.default(config.input, config.blockSize, config.isPeriodic, config.outputFilename);
 }

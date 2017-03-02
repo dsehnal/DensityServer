@@ -2,8 +2,8 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as File from '../Utils/File'
-import * as BlockFormat from '../Common/BlockFormat'
+import * as File from '../Common/File'
+import * as DataFormat from '../Common/DataFormat'
 
 export const enum Mode { Int8 = 0, Float32 = 2 }
 
@@ -29,15 +29,15 @@ export interface Header {
 export interface DataLayer {   
     buffer: File.TypedArrayBufferContext,
 
-    blockSize: number,
+    readSize: number,
 
-    /** Index of the first slice that is available */
+    /** Index of the slice that is at the valuesOffset */
     startSlice: number,
 
     /** Number of slices available in the buffer */
     endSlice: number,
 
-    values: File.ValueArray,
+    values: DataFormat.ValueArray,
     valuesOffset: number,
 
     readCount: number,
@@ -55,18 +55,17 @@ export interface Data {
 }
 
 export function getValueType(header: Header) {
-    if (header.mode === Mode.Float32) return BlockFormat.ValueType.Float32;
-    return BlockFormat.ValueType.Int8;
+    if (header.mode === Mode.Float32) return DataFormat.ValueType.Float32;
+    return DataFormat.ValueType.Int8;
 }
 
 function createDataLayer(header: Header, blockSize: number): DataLayer {
     const { extent } = header;
-    const size = 2 * blockSize * extent[0] * extent[1];
-    const buffer = File.createTypedArrayBufferContext(size, header.mode === Mode.Float32 ? File.ValueType.Float32 : File.ValueType.Int8);
-
+    const size = blockSize * extent[0] * extent[1];
+    const buffer = File.createTypedArrayBufferContext(size, header.mode === Mode.Float32 ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8);
     return {
         buffer,
-        blockSize,
+        readSize: (blockSize / 2) | 0,
         startSlice: 0,
         endSlice: 0,
         values: buffer.values,
@@ -156,14 +155,14 @@ export async function readLayer(data: Data, sliceIndex: number) {
     const header = data.header;
     const { extent, mean } = header;
     const sliceSize = extent[0] * extent[1];    
-    const sliceOffsetIndex = sliceIndex * layer.blockSize;
+    const sliceOffsetIndex = sliceIndex * layer.readSize;
     const sliceByteOffset = layer.buffer.elementByteSize * sliceSize * sliceOffsetIndex;
-    const sliceHeight = Math.min(layer.blockSize, extent[2] - sliceOffsetIndex);
+    const sliceHeight = Math.min(layer.readSize, extent[2] - sliceOffsetIndex);
     const sliceCount = sliceHeight * sliceSize;
 
     // are we in the top or bottom layer?
-    const valuesOffset = (layer.readCount % 2) * layer.blockSize * sliceSize;
-    let values: File.ValueArray;
+    const valuesOffset = (layer.readCount % 2) * layer.readSize * sliceSize;
+    let values: DataFormat.ValueArray;
     
     function updateSigma() {
         let sigma = header.sigma;
@@ -185,7 +184,7 @@ export async function readLayer(data: Data, sliceIndex: number) {
     updateSigma();
 
     layer.readCount++;
-    if (layer.readCount > 2) layer.startSlice += layer.blockSize;
+    if (layer.readCount > 2) layer.startSlice += layer.readSize;
     layer.endSlice += sliceHeight;
     layer.readHeight = sliceHeight;
     layer.valuesOffset = valuesOffset;
@@ -205,7 +204,7 @@ export async function open(name: string, filename: string, blockSize: number): P
         header, 
         file, 
         layer: createDataLayer(header, blockSize),
-        numLayers: Math.ceil(header.extent[2] / blockSize) | 0
+        numLayers: Math.ceil(2 * header.extent[2] / blockSize) | 0
     };
 }
 

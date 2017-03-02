@@ -37,73 +37,193 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var File = require("../Utils/File");
-var Writer = require("./Writer");
-function processLayer(ctx) {
+Object.defineProperty(exports, "__esModule", { value: true });
+var CCP4 = require("./CCP4");
+var File = require("../Common/File");
+var Data = require("./DataModel");
+var Sampling = require("./Sampling");
+var DataFormat = require("../Common/DataFormat");
+var fs = require("fs");
+function getTime() {
+    var t = process.hrtime();
+    return t[0] * 1000 + t[1] / 1000000;
+}
+function updateAllocationProgress(progress, progressDone) {
+    var old = (100 * progress.current / progress.max).toFixed(0);
+    progress.current += progressDone;
+    var $new = (100 * progress.current / progress.max).toFixed(0);
+    if (old !== $new) {
+        process.stdout.write("\rAllocating...      " + $new + "%");
+    }
+}
+function allocateFile(ctx) {
     return __awaiter(this, void 0, void 0, function () {
-        var extent, _a, readHeight, valuesOffset, v, u, _i, _b, src, numBytes;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var totalByteSize, file, buffer, progress, written;
+        return __generator(this, function (_a) {
+            totalByteSize = ctx.totalByteSize, file = ctx.file;
+            buffer = new Buffer(Math.min(totalByteSize, 8 * 1024 * 1024));
+            progress = { current: 0, max: Math.ceil(totalByteSize / buffer.byteLength) };
+            written = 0;
+            while (written < totalByteSize) {
+                written += fs.writeSync(file, buffer, 0, Math.min(totalByteSize - written, buffer.byteLength));
+                updateAllocationProgress(progress, 1);
+            }
+            return [2 /*return*/];
+        });
+    });
+}
+function writeHeader(ctx) {
+    return __awaiter(this, void 0, void 0, function () {
+        var header;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
-                    extent = ctx.sources[0].header.extent;
-                    _a = ctx.sources[0].layer, readHeight = _a.readHeight, valuesOffset = _a.valuesOffset;
-                    v = 0;
-                    _c.label = 1;
+                    header = DataFormat.encodeHeader(Data.createHeader(ctx));
+                    return [4 /*yield*/, File.writeInt(ctx.file, header.byteLength, 0)];
                 case 1:
-                    if (!(v < ctx.blockCounts[0])) return [3 /*break*/, 8];
-                    u = 0;
-                    _c.label = 2;
+                    _a.sent();
+                    return [4 /*yield*/, File.writeBuffer(ctx.file, 4, header)];
                 case 2:
-                    if (!(u < ctx.blockCounts[1])) return [3 /*break*/, 7];
-                    _i = 0, _b = ctx.sources;
-                    _c.label = 3;
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function processLayers(ctx) {
+    return __awaiter(this, void 0, void 0, function () {
+        var numLayers, i, _i, _a, src;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    numLayers = ctx.channels[0].numLayers;
+                    i = 0;
+                    _b.label = 1;
+                case 1:
+                    if (!(i < numLayers)) return [3 /*break*/, 8];
+                    _i = 0, _a = ctx.channels;
+                    _b.label = 2;
+                case 2:
+                    if (!(_i < _a.length)) return [3 /*break*/, 5];
+                    src = _a[_i];
+                    return [4 /*yield*/, CCP4.readLayer(src, i)];
                 case 3:
-                    if (!(_i < _b.length)) return [3 /*break*/, 6];
-                    src = _b[_i];
-                    numBytes = Writer.fillCube(ctx, src.layer.buffer.values, valuesOffset, u, v, readHeight);
-                    return [4 /*yield*/, File.write(ctx.file, ctx.cubeBuffer, numBytes)];
+                    _b.sent();
+                    _b.label = 4;
                 case 4:
-                    _c.sent();
-                    Writer.updateProgress(ctx.progress, 1);
-                    _c.label = 5;
-                case 5:
                     _i++;
-                    return [3 /*break*/, 3];
-                case 6:
-                    u++;
                     return [3 /*break*/, 2];
+                case 5: return [4 /*yield*/, Sampling.processLayer(ctx)];
+                case 6:
+                    _b.sent();
+                    _b.label = 7;
                 case 7:
-                    v++;
+                    i++;
                     return [3 /*break*/, 1];
                 case 8: return [2 /*return*/];
             }
         });
     });
 }
-exports.processLayer = processLayer;
-function createContext(filename, progress, sources, blockSize) {
+function create(filename, sourceDensities, blockSize, isPeriodic) {
     return __awaiter(this, void 0, void 0, function () {
-        var samples, blockCounts, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var startedTime, files, channels_1, _i, sourceDensities_1, s, _a, _b, _c, isOk, context, _d, channels_2, s, time, _e, files_1, f;
+        return __generator(this, function (_f) {
+            switch (_f.label) {
                 case 0:
-                    samples = sources[0].header.extent;
-                    blockCounts = [Math.ceil(samples[0] / blockSize) | 0, Math.ceil(samples[1] / blockSize) | 0, Math.ceil(samples[2] / blockSize) | 0];
-                    progress.max += blockCounts[0] * blockCounts[1] * blockCounts[2] * sources.length;
-                    _a = {};
-                    return [4 /*yield*/, File.createFile(filename)];
-                case 1: return [2 /*return*/, (_a.file = _b.sent(),
-                        _a.sigmasOffset = 0,
-                        _a.sources = sources,
-                        _a.blockHeader = void 0,
-                        _a.progress = progress,
-                        _a.blockSize = blockSize,
-                        _a.samples = samples,
-                        _a.blockCounts = [Math.ceil(samples[0] / blockSize) | 0, Math.ceil(samples[1] / blockSize) | 0, Math.ceil(samples[2] / blockSize) | 0],
-                        _a.cubeBuffer = new Buffer(new ArrayBuffer(sources[0].layer.buffer.elementByteSize * blockSize * blockSize * blockSize)),
-                        _a)];
+                    startedTime = getTime();
+                    if (blockSize % 2 !== 0 || blockSize < 8) {
+                        throw Error('Block size must be an even number greater than 8.');
+                    }
+                    if (!sourceDensities.length) {
+                        throw Error('Specify at least one source density.');
+                    }
+                    console.log("Block Size: " + blockSize + ".");
+                    process.stdout.write('Initializing... ');
+                    files = [];
+                    _f.label = 1;
+                case 1:
+                    _f.trys.push([1, , 10, 11]);
+                    channels_1 = [];
+                    _i = 0, sourceDensities_1 = sourceDensities;
+                    _f.label = 2;
+                case 2:
+                    if (!(_i < sourceDensities_1.length)) return [3 /*break*/, 5];
+                    s = sourceDensities_1[_i];
+                    _b = (_a = channels_1).push;
+                    return [4 /*yield*/, CCP4.open(s.name, s.filename, blockSize)];
+                case 3:
+                    _b.apply(_a, [_f.sent()]);
+                    _f.label = 4;
+                case 4:
+                    _i++;
+                    return [3 /*break*/, 2];
+                case 5:
+                    isOk = channels_1.reduce(function (ok, s) { return ok && CCP4.compareHeaders(channels_1[0].header, s.header); }, true);
+                    if (!isOk) {
+                        throw new Error('Input file headers are not compatible (different grid, etc.).');
+                    }
+                    return [4 /*yield*/, Sampling.createContext(filename, channels_1, blockSize, isPeriodic)];
+                case 6:
+                    context = _f.sent();
+                    for (_d = 0, channels_2 = channels_1; _d < channels_2.length; _d++) {
+                        s = channels_2[_d];
+                        files.push(s.file);
+                    }
+                    files.push(context.file);
+                    process.stdout.write('   done.\n');
+                    // Step 2: Allocate disk space.        
+                    process.stdout.write('Allocating...      0%');
+                    return [4 /*yield*/, allocateFile(context)];
+                case 7:
+                    _f.sent();
+                    process.stdout.write('\rAllocating...      done.\n');
+                    // Step 3: Process and write the data 
+                    process.stdout.write('Writing data...    0%');
+                    return [4 /*yield*/, processLayers(context)];
+                case 8:
+                    _f.sent();
+                    process.stdout.write('\rWriting data...    done.\n');
+                    // Step 4: Write the header at the start of the file.
+                    // The header is written last because the sigma/min/max values are computed 
+                    // during step 3.
+                    process.stdout.write('Writing header...  ');
+                    return [4 /*yield*/, writeHeader(context)];
+                case 9:
+                    _f.sent();
+                    process.stdout.write('done.\n');
+                    time = getTime() - startedTime;
+                    console.log("[Done] " + time.toFixed(0) + "ms.");
+                    return [3 /*break*/, 11];
+                case 10:
+                    for (_e = 0, files_1 = files; _e < files_1.length; _e++) {
+                        f = files_1[_e];
+                        File.close(f);
+                    }
+                    return [7 /*endfinally*/];
+                case 11: return [2 /*return*/];
             }
         });
     });
 }
-exports.createContext = createContext;
+function pack(input, blockSize, isPeriodic, outputFilename) {
+    return __awaiter(this, void 0, void 0, function () {
+        var e_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, create(outputFilename, input, blockSize, isPeriodic)];
+                case 1:
+                    _a.sent();
+                    return [3 /*break*/, 3];
+                case 2:
+                    e_1 = _a.sent();
+                    console.error('[Error] ' + e_1);
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.default = pack;
