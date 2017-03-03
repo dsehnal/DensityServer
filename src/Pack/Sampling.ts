@@ -11,7 +11,7 @@ import * as DataFormat from '../Common/DataFormat'
 
 function getSamplingRates(baseSampleCount: number[], blockSize: number) {
     const ret = [];
-    for (let i = 1; i <= 16; i++) ret.push(i);
+    for (let i = 1; i <= 1; i++) ret.push(i);
     return ret;
     //return [1, 2, 3, 4, 5, 6, 7, 8];
 }

@@ -38,7 +38,7 @@ export function readBuffer(file: number, position: number, sizeOrBuffer: Buffer 
             });
         } else {
             if (size === void 0) {
-                rej('readBuffeR: Specify size.');
+                rej('readBuffer: Specify size.');
                 return;
             }
 

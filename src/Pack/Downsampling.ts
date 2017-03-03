@@ -76,10 +76,11 @@ function advanceSamplingKbase(sampling: Data.Sampling, ctx: Data.Context) {
 }
 
 /** Advances sampling rate K */
-export function advanceSamplingK(K: number, sampling: Data.Sampling[], ctx: Data.Context) {
+export async function advanceSamplingK(K: number, sampling: Data.Sampling[], ctx: Data.Context) {
 
     // TODO: compute how many times we have advanced.
     // TODO: add the base to the multipliers
+    // TODO: write when full.
 
     const mult = 3 * sampling.length;
     for (let m = 0; m < mult; m++) {

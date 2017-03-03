@@ -40,7 +40,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var path = require("path");
-exports.isNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
+exports.IsNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
 function openRead(filename) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
@@ -80,7 +80,7 @@ function readBuffer(file, position, sizeOrBuffer, size, byteOffset) {
         }
         else {
             if (size === void 0) {
-                rej('readBuffeR: Specify size.');
+                rej('readBuffer: Specify size.');
                 return;
             }
             fs.read(file, sizeOrBuffer, byteOffset ? +byteOffset : 0, size, position, function (err, bytesRead, buffer) {
@@ -166,7 +166,7 @@ function createTypedArrayBufferContext(size, type) {
     var elementByteSize = getElementByteSize(type);
     var arrayBuffer = new ArrayBuffer(elementByteSize * size);
     var readBuffer = new Buffer(arrayBuffer);
-    var valuesBuffer = exports.isNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
+    var valuesBuffer = exports.IsNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
     return {
         type: type,
         elementByteSize: elementByteSize,
@@ -194,7 +194,7 @@ function readTypedArray(ctx, file, position, count, valueOffset, littleEndian) {
                     return [4 /*yield*/, readBuffer(file, position, ctx.readBuffer, byteCount, byteOffset)];
                 case 1:
                     _a.sent();
-                    if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== exports.isNativeEndianLittle) || !exports.isNativeEndianLittle)) {
+                    if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== exports.IsNativeEndianLittle) || !exports.IsNativeEndianLittle)) {
                         // fix the endian 
                         flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize, byteOffset);
                     }
@@ -205,7 +205,7 @@ function readTypedArray(ctx, file, position, count, valueOffset, littleEndian) {
 }
 exports.readTypedArray = readTypedArray;
 function ensureLittleEndian(source, target, byteCount, elementByteSize, offset) {
-    if (exports.isNativeEndianLittle)
+    if (exports.IsNativeEndianLittle)
         return;
     if (!byteCount || elementByteSize <= 1)
         return;
