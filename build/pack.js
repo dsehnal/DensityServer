@@ -3,7 +3,7 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var Convert_1 = require("./Pack/Convert");
+var Main_1 = require("./Pack/Main");
 var Version_1 = require("./Pack/Version");
 var config = {
     input: [],
@@ -73,5 +73,5 @@ function parseInput() {
     return input;
 }
 if (parseInput()) {
-    Convert_1.default(config.input, config.blockSize, config.isPeriodic, config.outputFilename);
+    Main_1.default(config.input, config.blockSize, config.isPeriodic, config.outputFilename);
 }

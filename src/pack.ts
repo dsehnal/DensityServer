@@ -2,7 +2,7 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import pack from './Pack/Convert'
+import pack from './Pack/Main'
 import VERSION from './Pack/Version'
 
 let config = {
