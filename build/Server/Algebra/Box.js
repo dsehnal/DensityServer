@@ -23,6 +23,10 @@ function clampGridToSamples(box) {
     return { a: Coords.clampGridToSamples(box.a), b: Coords.clampGridToSamples(box.b) };
 }
 exports.clampGridToSamples = clampGridToSamples;
+function fractionalFromBlock(block) {
+    throw '';
+}
+exports.fractionalFromBlock = fractionalFromBlock;
 function bounding(xs) {
     var a = xs[0].coord.slice();
     var b = xs[1].coord.slice();

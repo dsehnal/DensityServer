@@ -29,14 +29,24 @@ export function clampGridToSamples<C extends Coords.Grid<K>, K>(box: Box<C>): Bo
     return { a: Coords.clampGridToSamples(box.a), b: Coords.clampGridToSamples(box.b) } as Box<C>;
 }
 
+export function fractionalFromBlock(block: Coords.Grid<'Block'>): Fractional {
+    const { domain } = block;
+    const a = Coords.gridToFractional(block);
+    const b = Coords.add(a, domain.delta);
+    for (let i = 0; i < 3; i++) {
+        b[i] = Math.min(b[i], domain.origin[i] + domain.dimensions[i]);
+    }
+    return { a, b }
+}
+
 export function bounding<C extends Coords.Coord<Coords.Space>>(xs: C[]): Box<C> {
-    let a = [...xs[0].coord];
-    let b = [...xs[1].coord];
+    let a = [xs[0][0], xs[0][1], xs[0][2]];
+    let b = [xs[0][0], xs[0][1], xs[0][2]];
 
     for (const x of xs) {
         for (let i = 0; i < 3; i++) {
-            a[i] = Math.min(a[i], x.coord[i]);
-            b[i] = Math.max(b[i], x.coord[i]);
+            a[i] = Math.min(a[i], x[i]);
+            b[i] = Math.max(b[i], x[i]);
         }
     }
 
@@ -45,8 +55,8 @@ export function bounding<C extends Coords.Coord<Coords.Space>>(xs: C[]): Box<C> 
 
 export function areIntersecting<C extends Coords.Coord<S>, S extends Coords.Space>(box1: Box<C>, box2: Box<C>) {
     for (let i = 0; i < 3; i++) {
-        let x = box1.a.coord[i], y = box1.b.coord[i];
-        let u = box2.a.coord[i], v = box2.b.coord[i];
+        let x = box1.a[i], y = box1.b[i];
+        let u = box2.a[i], v = box2.b[i];
         if (x > v || y < u) return false;
     }
     return true;
@@ -57,8 +67,8 @@ export function intersect<C extends Coords.Coord<S>, S extends Coords.Space>(box
     let b = [0.1, 0.1, 0.1];
     
     for (let i = 0; i < 3; i++) {
-        let x = box1.a.coord[i], y = box1.b.coord[i];
-        let u = box2.a.coord[i], v = box2.b.coord[i];
+        let x = box1.a[i], y = box1.b[i];
+        let u = box2.a[i], v = box2.b[i];
         if (x > v || y < u) return void 0;
         a[i] = Math.max(x, u);
         b[i] = Math.min(y, v);
@@ -66,8 +76,12 @@ export function intersect<C extends Coords.Coord<S>, S extends Coords.Space>(box
     return { a: Coords.withCoord(box1.a, a), b: Coords.withCoord(box1.a, b) };
 }
 
+export interface XX extends Array<number> { [i: number]: number, length: number };
+export let xx: XX = 0 as any;
+
+
 export function dimensions<C extends Coords.Coord<S>, S extends Coords.Space>(box: Box<C>): number[] {
-    return Coords.sub(box.b, box.a).coord;
+    return [box.b[0] - box.a[0], box.b[1] - box.a[1], box.b[2] - box.a[2]];
 }
 
 export function volume<C extends Coords.Coord<S>, S extends Coords.Space>(box: Box<C>): number {

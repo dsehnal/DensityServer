@@ -2,8 +2,14 @@
 //  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
 //  */
 
+import * as Data from '../Query/DataModel'
+import * as Coords from '../Algebra/Coordinate'
+
+export default async function readBlock(ctx: Data.DataContext, coord: Coords.Grid<'Block'>): Promise<Data.BlockData> {
+    throw '';
+}
+
 // import * as File from '../Utils/File'
-// import * as Data from './DataModel'
 // import { Coords, Box } from './Transforms'
 // import * as LA from '../Utils/LinearAlgebra'
 // import * as BlockFormat from '../Common/BlockFormat'

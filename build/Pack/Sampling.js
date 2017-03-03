@@ -57,9 +57,7 @@ function getSamplingRates(baseSampleCount, blockSize) {
     for (var i = 2; i <= maxDiv; i++) {
         _loop_1(i);
     }
-    console.log('sampling', ret);
     return ret;
-    //return [1, 2, 3, 4, 5, 6, 7, 8];
 }
 function createBuffer(type, size) {
     if (type === 0 /* Float32 */) {

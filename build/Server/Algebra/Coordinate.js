@@ -67,19 +67,19 @@ function cartesianToFractional(a, spacegroup, axisOrder) {
 }
 exports.cartesianToFractional = cartesianToFractional;
 function fractionalToGrid(a, domain, snap) {
-    var origin = domain.origin, dimensions = domain.dimensions, samples = domain.samples;
+    var origin = domain.origin, delta = domain.delta;
     var coord = [0, 0, 0];
     for (var i = 0; i < 3; i++) {
-        coord[i] = Helpers.snap((a.coord[i] - origin[i]) / dimensions[i] * samples[i], snap);
+        coord[i] = Helpers.snap((a.coord[i] - origin[i]) / delta[i], snap);
     }
     return grid(coord, domain);
 }
 exports.fractionalToGrid = fractionalToGrid;
 function gridToFractional(a) {
-    var _a = a.domain, origin = _a.origin, dimensions = _a.dimensions, samples = _a.samples;
+    var _a = a.domain, origin = _a.origin, delta = _a.delta;
     var coord = [0.1, 0.1, 0.1];
     for (var i = 0; i < 3; i++) {
-        coord[i] = a.coord[i] * dimensions[i] / samples[i] + origin[i];
+        coord[i] = a.coord[i] * delta[i] + origin[i];
     }
     return fractional(coord);
 }
@@ -88,10 +88,10 @@ exports.gridToFractional = gridToFractional;
 // MISC
 ///////////////////////////////////////////
 function clampGridToSamples(a) {
-    var samples = a.domain.samples;
+    var boxSampleCount = a.domain.boxSampleCount;
     var coord = [0, 0, 0];
     for (var i = 0; i < 3; i++) {
-        coord[i] = Math.max(Math.min(a.coord[i], samples[i]), 0);
+        coord[i] = Math.max(Math.min(a.coord[i], boxSampleCount[i]), 0);
     }
     return __assign({}, a, { coord: coord });
 }
@@ -106,21 +106,10 @@ function sub(a, b) {
     return __assign({}, a, { coord: [x[0] - y[0], x[1] - y[1], x[2] - y[2]] });
 }
 exports.sub = sub;
-function isInDomain(a, domain) {
-    var coord = a.coord;
-    var dimensions = domain.dimensions, origin = domain.origin;
-    for (var i = 0; i < 3; i++) {
-        var c = coord[i] - origin[i];
-        if (c < 0 || c > dimensions[i])
-            return false;
-    }
-    return true;
-}
-exports.isInDomain = isInDomain;
 /** Maps each grid point to a unique integer */
 function perfectGridHash(a) {
     var coord = a.coord;
-    var samples = a.domain.samples;
+    var samples = a.domain.boxSampleCount;
     return coord[0] + samples[0] * (coord[1] + coord[2] * samples[1]);
 }
 exports.perfectGridHash = perfectGridHash;
