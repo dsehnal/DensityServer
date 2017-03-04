@@ -11,10 +11,18 @@ export interface Fractional extends Box<Coords.Fractional> { }
 export interface Grid<K> extends Box<Coords.Grid<K>> { }
 
 export function cartesianToFractional(box: Cartesian, spacegroup: Coords.Spacegroup, axisOrder: number[]): Fractional {
-    return { 
-        a: Coords.cartesianToFractional(box.a, spacegroup, axisOrder), 
-        b: Coords.cartesianToFractional(box.b, spacegroup, axisOrder)
-    }
+    const { a: l, b: r } = box;
+    const corners = [
+        [l[0], l[1], l[2]],
+        [r[0], l[1], l[2]],
+        [l[0], r[1], l[2]],
+        [l[0], l[1], r[2]],
+        [r[0], r[1], l[2]],
+        [r[0], l[1], r[2]],
+        [l[0], r[1], r[2]],
+        [r[0], r[1], r[2]],
+    ].map(c => Coords.cartesianToFractional(Coords.cartesian(c), spacegroup, axisOrder));
+    return bounding(corners);
 }
 
 export function fractionalToGrid<K>(box: Fractional, domain: Coords.GridDomain<K>): Grid<K> {

@@ -66,7 +66,7 @@ function addUniqueBlock(blocks: UniqueBlocks, coord: Coords.Grid<'Block'>, offse
 }
 
 function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractional, blocks: UniqueBlocks) {
-    const shifted = Box.shift(query.box, offset);
+    const shifted = Box.shift(query.fractionalBox, offset);
     const intersection = Box.intersect(shifted, query.data.coordinates.dataBox);
 
     // Intersection can be empty in the case of "aperiodic spacegroups"
@@ -94,10 +94,10 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
 export function findUniqueBlocks(query: Data.QueryContext) {
     const translations = query.data.header.spacegroup.isPeriodic
         // find all query box translations that overlap with the unit cell.
-        ? findDataOverlapTranslationList(query.box, query.sampling.dataDomain) 
+        ? findDataOverlapTranslationList(query.fractionalBox, query.sampling.dataDomain) 
         // no translations
         : [Coords.fractional([0, 0, 0])];
-        
+
     const blocks: UniqueBlocks = FastMap.create<number, UniqueBlock>();
 
     for (const t of translations) {

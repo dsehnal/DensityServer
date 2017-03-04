@@ -6,15 +6,43 @@ import * as Data from './DataModel'
 import * as Identify from './Identify'
 import * as Box from '../Algebra/Box'
 import * as Coords from '../Algebra/Coordinate'
-import readBlock from '../IO/BlockReader'
+import * as File from '../../Common/File'
 
-function fillChannel(query: Data.QueryContext, channelIndex: number, blockData: Data.BlockData, blockGridBox: Box.Grid<'BlockGrid'>, queryGridBox: Box.Grid<'Query'>) {
-
+export default async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Block'>, blockBox: Box.Fractional): Promise<Data.BlockData> {
+    const sampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.sampling.dataDomain));
+    const size = query.data.header.channels.length * sampleCount[0] * sampleCount[1] * sampleCount[2];
+    const buffer = File.createTypedArrayBufferContext(size, query.data.header.valueType);
+    const values = await File.readTypedArray(buffer, query.data.file, 0, size, 0);
+    return {
+        sampleCount,
+        values
+    };
 }
 
-function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGridBox: Box.Grid<'BlockGrid'>, queryGridBox: Box.Grid<'Query'>) {
-    for (let i = 0, _ii = query.data.header.channels.length; i < _ii; i++) {
-        fillChannel(query, i, blockData, blockGridBox, queryGridBox);
+function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGridBox: Box.Grid<'BlockGrid'>) {
+    const { values: source, sampleCount: blockSampleCount } = blockData;
+
+    const tSizeH = query.gridBox.a.domain.sampleCount[0], 
+          tSizeHK = query.gridBox.a.domain.sampleCount[0] * query.gridBox.a.domain.sampleCount[1];
+    const sSizeH = blockSampleCount[0],
+          sSizeHK = blockSampleCount[0] * blockSampleCount[1];
+
+    const offsetTarget = query.gridBox.a[0] + query.gridBox.a[1] * tSizeH + query.gridBox.a[2] * tSizeHK;
+
+    const [maxH, maxK, maxL] = Box.dimensions(blockGridBox);
+
+    for (let channelIndex = 0, _ii = query.data.header.channels.length; channelIndex < _ii; channelIndex++) {
+        const target = query.result.values![channelIndex];
+        const offsetSource = channelIndex * blockGridBox.a.domain.sampleVolume 
+            + blockGridBox.a[0] + blockGridBox.a[1] * sSizeH + blockGridBox.a[2] * sSizeHK;
+
+        for (let l = 0; l < maxL; l++) {
+            for (let k = 0; k < maxK; k++) {
+                for (let h = 0; h < maxH; h++) {
+                    target[offsetTarget + h + k * tSizeH + l * tSizeHK] = source[offsetSource + h + k * sSizeH + l * sSizeHK]
+                }
+            }
+        }
     }
 }
 
@@ -22,7 +50,7 @@ function createBlockGridDomain(block: Coords.Grid<'Block'>, grid: Coords.GridDom
     const blockBox = Box.fractionalFromBlock(block);
     const origin = blockBox.a;
     const dimensions = Coords.sub(blockBox.b, blockBox.a);
-    const sampleCount = Coords.sampleCounts(dimensions, grid.delta, 'round');
+    const sampleCount = Coords.sampleCounts(dimensions, grid.delta, 'ceil');
     return Coords.domain<'BlockGrid'>('BlockGrid', { origin, dimensions, delta: grid.delta, sampleCount });
 }
 
@@ -35,11 +63,10 @@ async function fillBlock(query: Data.QueryContext, block: Identify.UniqueBlock) 
 
     for (const offset of block.offsets) {
         const offsetBlockBox = Box.shift(baseBox, offset);
-        const dataBox = Box.intersect(offsetBlockBox, query.box);
+        const dataBox = Box.intersect(offsetBlockBox, query.fractionalBox);
         if (!dataBox) continue;
         const blockGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, blockGridDomain));
-        const queryGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, query.domain));
-        fillData(query, blockData, blockGridBox, queryGridBox);
+        fillData(query, blockData, blockGridBox);
     }
 }
 

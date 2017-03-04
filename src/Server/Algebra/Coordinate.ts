@@ -30,7 +30,7 @@ export interface GridInfo {
  * can distinguish between different types of grids, 
  * e.g. GridDomain<'Data'>, GridDomain<'Query'>, GridDomain<'Block'>, etc.
  */
-export interface GridDomain<K> extends GridInfo { kind: K }
+export interface GridDomain<K> extends GridInfo { kind: K, sampleVolume: number }
 
 export const enum Space { Cartesian, Fractional, Grid }
 export interface Coord<S extends Space> { kind: S, '0': number, '1': number, '2': number, [index: number]: number }
@@ -72,7 +72,8 @@ export function spacegroup(info: SpacegroupInfo): Spacegroup {
 ///////////////////////////////////////////
 
 export function domain<K>(kind: K, info: GridInfo): GridDomain<K> {
-    return { kind, ...info };
+    const sc = info.sampleCount;
+    return { kind, ...info, sampleVolume: sc[0] * sc[1] * sc[2] };
 }
 
 export function cartesian(coord: number[]): Cartesian {

@@ -34,7 +34,6 @@ export interface DataContext {
 }
 
 export interface BlockData {
-    coord: Coords.Grid<'Block'>,
     sampleCount: number[],
     values: DataFormat.ValueArray
 }
@@ -55,8 +54,9 @@ export interface QueryContext {
     data: DataContext,
     params: QueryParams,
     sampling: Sampling,
-    box: Box.Fractional,
-    domain: Coords.GridDomain<'Query'>,
+    fractionalBox: Box.Fractional,
+    gridBox: Box.Grid<'Query'>,
+    //domain: Coords.GridDomain<'Query'>,
     result: QueryResult
 }
 
