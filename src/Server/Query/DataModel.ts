@@ -18,19 +18,12 @@ export interface Sampling {
     blockDomain: Coords.GridDomain<'Block'>
 }
 
-export interface Coordinates {
-    spacegroup: Coords.Spacegroup,
-    /** X = 0, Z = 2, fastest to slowest moving, same as in CCP4 format */
-    axisOrder: number[],        
-    dataBox: Box.Fractional,
-    sampling: Sampling[]
-}
-
 export interface DataContext {
     file: number,
     header: DataFormat.Header,
-    dataByteOffset: number,
-    coordinates: Coordinates
+    spacegroup: Coords.Spacegroup,
+    dataBox: Box.Fractional,
+    sampling: Sampling[]
 }
 
 export interface BlockData {
@@ -56,7 +49,6 @@ export interface QueryContext {
     sampling: Sampling,
     fractionalBox: Box.Fractional,
     gridBox: Box.Grid<'Query'>,
-    //domain: Coords.GridDomain<'Query'>,
     result: QueryResult
 }
 

@@ -91,7 +91,7 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
 }
 
 /** Find a list of unique blocks+offsets that overlap with the query region. */
-export function findUniqueBlocks(query: Data.QueryContext) {
+export default function findUniqueBlocks(query: Data.QueryContext) {
     const translations = query.data.header.spacegroup.isPeriodic
         // find all query box translations that overlap with the unit cell.
         ? findDataOverlapTranslationList(query.fractionalBox, query.sampling.dataDomain) 

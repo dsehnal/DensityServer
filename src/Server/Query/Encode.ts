@@ -170,7 +170,7 @@ function write(writer: Writer, query: Data.QueryContext) {
     }
 }
 
-export function encode(output: CIF.OutputStream, query: Data.QueryContext) {
+export default function encode(query: Data.QueryContext, output: CIF.OutputStream) {
     let w = query.params.asBinary 
         ? new CIF.Binary.Writer<ResultContext>(`DensityServer ${VERSION}`) 
         : new CIF.Text.Writer<ResultContext>();

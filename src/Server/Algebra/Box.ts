@@ -29,6 +29,10 @@ export function fractionalToGrid<K>(box: Fractional, domain: Coords.GridDomain<K
     return { a: Coords.fractionalToGrid(box.a, domain, 'floor'), b: Coords.fractionalToGrid(box.b, domain, 'ceil') }
 }
 
+export function gridToFractional<K>(box: Grid<K>): Fractional {
+    return { a: Coords.gridToFractional(box.a), b: Coords.gridToFractional(box.b) }
+}
+
 export function fractionalRoundToGrid<K>(box: Fractional, domain: Coords.GridDomain<K>): Grid<K> {
     return { a: Coords.fractionalToGrid(box.a, domain, 'round'), b: Coords.fractionalToGrid(box.b, domain, 'round') }
 }
@@ -39,6 +43,10 @@ export function shift<C extends Coords.Coord<S>, S extends Coords.Space>(box: Bo
 
 export function clampGridToSamples<C extends Coords.Grid<K>, K>(box: Box<C>): Box<C> {
     return { a: Coords.clampGridToSamples(box.a), b: Coords.clampGridToSamples(box.b) } as Box<C>;
+}
+
+export function fractionalToDomain<K>(box: Fractional, domain: K, delta: Coords.Fractional): Coords.GridDomain<K> {
+
 }
 
 export function fractionalFromBlock(block: Coords.Grid<'Block'>): Fractional {
@@ -87,10 +95,6 @@ export function intersect<C extends Coords.Coord<S>, S extends Coords.Space>(box
     }
     return { a: Coords.withCoord(box1.a, a), b: Coords.withCoord(box1.a, b) };
 }
-
-export interface XX extends Array<number> { [i: number]: number, length: number };
-export let xx: XX = 0 as any;
-
 
 export function dimensions<C extends Coords.Coord<S>, S extends Coords.Space>(box: Box<C>): number[] {
     return [box.b[0] - box.a[0], box.b[1] - box.a[1], box.b[2] - box.a[2]];

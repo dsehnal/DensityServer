@@ -2,17 +2,21 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
+import * as DataFormat from '../../Common/DataFormat'
 import * as Data from './DataModel'
 import * as Identify from './Identify'
 import * as Box from '../Algebra/Box'
 import * as Coords from '../Algebra/Coordinate'
 import * as File from '../../Common/File'
 
-export default async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Block'>, blockBox: Box.Fractional): Promise<Data.BlockData> {
+export async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Block'>, blockBox: Box.Fractional): Promise<Data.BlockData> {
     const sampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.sampling.dataDomain));
     const size = query.data.header.channels.length * sampleCount[0] * sampleCount[1] * sampleCount[2];
-    const buffer = File.createTypedArrayBufferContext(size, query.data.header.valueType);
-    const values = await File.readTypedArray(buffer, query.data.file, 0, size, 0);
+    const { valueType, blockSize } = query.data.header;
+    const buffer = File.createTypedArrayBufferContext(size, valueType);
+    const byteOffset = query.sampling.byteOffset 
+        + DataFormat.getValueByteSize(valueType) * (coord[0] + coord[1] * blockSize + coord[2] * blockSize * blockSize);
+    const values = await File.readTypedArray(buffer, query.data.file, byteOffset, size, 0);
     return {
         sampleCount,
         values
@@ -36,9 +40,9 @@ function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGrid
         const offsetSource = channelIndex * blockGridBox.a.domain.sampleVolume 
             + blockGridBox.a[0] + blockGridBox.a[1] * sSizeH + blockGridBox.a[2] * sSizeHK;
 
-        for (let l = 0; l < maxL; l++) {
-            for (let k = 0; k < maxK; k++) {
-                for (let h = 0; h < maxH; h++) {
+        for (let l = 0; l <= maxL; l++) {
+            for (let k = 0; k <= maxK; k++) {
+                for (let h = 0; h <= maxH; h++) {
                     target[offsetTarget + h + k * tSizeH + l * tSizeHK] = source[offsetSource + h + k * sSizeH + l * sSizeHK]
                 }
             }
@@ -70,7 +74,7 @@ async function fillBlock(query: Data.QueryContext, block: Identify.UniqueBlock) 
     }
 }
 
-export async function compose(query: Data.QueryContext, blocks: Identify.UniqueBlock[]) {
+export default async function compose(query: Data.QueryContext, blocks: Identify.UniqueBlock[]) {
     for (const block of blocks) {
         await fillBlock(query, block);
     }
