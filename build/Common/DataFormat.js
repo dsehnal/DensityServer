@@ -44,7 +44,7 @@ var _schema;
 (function (_schema) {
     var array = Schema.array, obj = Schema.obj, int = Schema.int, bool = Schema.bool, float = Schema.float, str = Schema.str;
     _schema.schema = obj([
-        ['version', str],
+        ['formatVersion', str],
         ['valueType', int],
         ['blockSize', int],
         ['axisOrder', array(int)],

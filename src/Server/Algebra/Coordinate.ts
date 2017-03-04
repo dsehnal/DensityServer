@@ -130,9 +130,11 @@ export function clampGridToSamples<K>(a: Grid<K>): Grid<K> {
     const coord = [0, 0, 0];
 
     for (let i = 0; i < 3; i++) {
-        coord[i] = Math.max(Math.min(a[i], sampleCount[i]), 0);
+        if (a[i] < 0) coord[i] = 0;
+        else if (a[i] > sampleCount[i]) coord[i] = sampleCount[i];
+        else coord[i] = a[i];
     }
-    return { ...a, coord };
+    return { ...a, 0: coord[0], 1: coord[1], 2: coord[2] };
 }
 
 export function add<S extends Space>(a: Coord<S>, b: Coord<S>): Coord<S> {
@@ -144,37 +146,36 @@ export function sub<S extends Space>(a: Coord<S>, b: Coord<S>): Coord<S> {
 }
 
 /** Maps each grid point to a unique integer */
-export function perfectGridHash<K>(a: Grid<K>) {
+export function linearGridIndex<K>(a: Grid<K>) {
     const samples = a.domain.sampleCount;
     return a[0] + samples[0] * (a[1] + a[2] * samples[1]);
 }
 
+export function gridMetrics(dimensions: { [i: number]: number }) {
+    return {
+        sizeX: dimensions[0],
+        sizeXY: dimensions[0] * dimensions[1],
+        sizeXYZ: dimensions[0] * dimensions[1] * dimensions[2]
+    };
+}
+
 export function sampleCounts(dimensions: Fractional, delta: Fractional, snap: 'floor' | 'ceil' | 'round') {
     return [
-        Helpers.snap(dimensions[0] / delta[0], snap), 
-        Helpers.snap(dimensions[1] / delta[1], snap), 
-        Helpers.snap(dimensions[2] / delta[2], snap)
+        Helpers.snap(dimensions[0] / delta[0], snap) + 1, 
+        Helpers.snap(dimensions[1] / delta[1], snap) + 1, 
+        Helpers.snap(dimensions[2] / delta[2], snap) + 1
     ];
 }
 
+// to prevent floating point rounding errors
+export function round(v: number) {
+    return Math.round(10000000 * v) / 10000000;
+}
+
 module Helpers {
-    const u = { x: 0.1, y: 0.1, z: 0.1 };
-    const v = { x: 0.1, y: 0.1, z: 0.1 };
     import applyTransform = LA.Matrix4.transformVector3;
-    export function transformInPlace(x: number[], matrix: number[]) {
-        u.x = x[0]; u.y = x[1]; u.z = x[2];
-        applyTransform(v, u, matrix);
-        x[0] = v.x; x[1] = v.y; x[2] = v.z;
-        return x;
-    }
-
     export function transform(x: { [index: number]: number }, matrix: number[]) {
-        return transformInPlace([x[0], x[1], x[2]], matrix);
-    }
-
-    // to prevent floating point rounding errors
-    function round(v: number) {
-        return Math.round(10000000 * v) / 10000000;
+        return applyTransform([0.1, 0.1, 0.1], x, matrix);
     }
 
     export function snap(v: number, to: 'floor' | 'ceil' | 'round') {

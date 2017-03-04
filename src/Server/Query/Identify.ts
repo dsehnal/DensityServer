@@ -11,12 +11,13 @@ type Translations = Coords.Fractional[]
 
 /**
  * Find the integer interval [x, y] so that for all k \in [x, y]
- * k * [a, b] intersects with [u, v]
+ * [a + k, b + k] intersects with (u, v)
  */
 function overlapMultiplierRange(a: number, b: number, u: number, v: number): number[] | undefined {
     let x = Math.ceil(u - b) | 0, y =  Math.floor(v - a) | 0;
-    if (b + x < u) x++;
-    if (a + y > v) y--;
+    console.log(x, y, { a, b, u, v });
+    if (Coords.round(b + x) <= Coords.round(u)) x++;
+    if (Coords.round(a + y) >= Coords.round(v)) y--;
     if (x > y) return void 0;
     return [x, y];
 }
@@ -56,7 +57,7 @@ export type UniqueBlock = { coord: Coords.Grid<'Block'>, offsets: Coords.Fractio
 type UniqueBlocks = FastMap<number, UniqueBlock>
 
 function addUniqueBlock(blocks: UniqueBlocks, coord: Coords.Grid<'Block'>, offset: Coords.Fractional) {
-    const hash = Coords.perfectGridHash(coord);
+    const hash = Coords.linearGridIndex(coord);
     if (blocks.has(hash)) {
         const entry = blocks.get(hash)!;
         entry.offsets.push(offset);
@@ -80,6 +81,10 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
     // Clamping the data makes sure we avoid silly rounding errors (hopefully :))
     const { a: min, b: max } 
         = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain));
+
+
+    console.log({ frac: blockDomain })
+    console.log({ min, max });
 
     for (let i = min[0]; i < max[0]; i++) {
         for (let j = min[1]; j < max[1]; j++) {
@@ -105,6 +110,9 @@ export default function findUniqueBlocks(query: Data.QueryContext) {
     }
     
     const blockList = blocks.forEach((b, _, ctx) => { ctx!.push(b) }, [] as UniqueBlock[]);
+
+    console.log(blockList);
+
     // sort the data so that the first coodinate changes the fastest 
     // this is because that's how the data is laid out in the underlaying 
     // data format and reading the data 'in order' makes it faster.

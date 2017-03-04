@@ -4,6 +4,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var Coords = require("./Coordinate");
+///////////////////////////////////////////
+// CONVERSIONS
+///////////////////////////////////////////
 function cartesianToFractional(box, spacegroup, axisOrder) {
     var l = box.a, r = box.b;
     var corners = [
@@ -31,6 +34,9 @@ function fractionalRoundToGrid(box, domain) {
     return { a: Coords.fractionalToGrid(box.a, domain, 'round'), b: Coords.fractionalToGrid(box.b, domain, 'round') };
 }
 exports.fractionalRoundToGrid = fractionalRoundToGrid;
+///////////////////////////////////////////
+// MISC
+///////////////////////////////////////////
 function shift(box, offset) {
     return { a: Coords.add(box.a, offset), b: Coords.add(box.b, offset) };
 }
@@ -100,7 +106,3 @@ function dimensions(box) {
     return [box.b[0] - box.a[0], box.b[1] - box.a[1], box.b[2] - box.a[2]];
 }
 exports.dimensions = dimensions;
-function volume(box) {
-    return dimensions(box).reduce(function (a, v) { return a * v; }, 1);
-}
-exports.volume = volume;

@@ -50,7 +50,7 @@ var FastMap;
             this.size = 0;
         },
         forEach: function (f, ctx) {
-            forEach(this.data, f, ctx !== void 0 ? ctx : void 0);
+            return forEach(this.data, f, ctx !== void 0 ? ctx : void 0);
         }
     };
     /**
@@ -130,7 +130,7 @@ var FastSet;
             this.size = 0;
         },
         forEach: function (f, ctx) {
-            forEach(this.data, f, ctx !== void 0 ? ctx : void 0);
+            return forEach(this.data, f, ctx !== void 0 ? ctx : void 0);
         }
     };
     /**

@@ -4,51 +4,27 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /*
-    * This code has been modified from https://github.com/toji/gl-matrix/,
-    * copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
-    *
-    * Permission is hereby granted, free of charge, to any person obtaining a copy
-    * of this software and associated documentation files (the "Software"), to deal
-    * in the Software without restriction, including without limitation the rights
-    * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    * copies of the Software, and to permit persons to whom the Software is
-    * furnished to do so, subject to the following conditions:
-    */
-var makeArray = (typeof Float64Array !== 'undefined')
-    ? function (size) { return (new Float64Array(size)); }
-    : function (size) { return []; };
+ * This code has been modified from https://github.com/toji/gl-matrix/,
+ * copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ */
 /**
  * Stores a 4x4 matrix in a column major (j * 4 + i indexing) format.
  */
 var Matrix4;
 (function (Matrix4) {
     function empty() {
-        return makeArray(16);
+        return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
     }
     Matrix4.empty = empty;
-    function identity() {
-        var out = makeArray(16);
-        out[0] = 1;
-        out[1] = 0;
-        out[2] = 0;
-        out[3] = 0;
-        out[4] = 0;
-        out[5] = 1;
-        out[6] = 0;
-        out[7] = 0;
-        out[8] = 0;
-        out[9] = 0;
-        out[10] = 1;
-        out[11] = 0;
-        out[12] = 0;
-        out[13] = 0;
-        out[14] = 0;
-        out[15] = 1;
-        return out;
-    }
-    Matrix4.identity = identity;
     function ofRows(rows) {
-        var out = makeArray(16), i, j, r;
+        var out = empty(), i, j, r;
         for (i = 0; i < 4; i++) {
             r = rows[i];
             for (j = 0; j < 4; j++) {
@@ -58,43 +34,6 @@ var Matrix4;
         return out;
     }
     Matrix4.ofRows = ofRows;
-    function areEqual(a, b, eps) {
-        for (var i = 0; i < 16; i++) {
-            if (Math.abs(a[i] - b[i]) > eps) {
-                return false;
-            }
-        }
-        return true;
-    }
-    Matrix4.areEqual = areEqual;
-    function setValue(a, i, j, value) {
-        a[4 * j + i] = value;
-    }
-    Matrix4.setValue = setValue;
-    function copy(out, a) {
-        out[0] = a[0];
-        out[1] = a[1];
-        out[2] = a[2];
-        out[3] = a[3];
-        out[4] = a[4];
-        out[5] = a[5];
-        out[6] = a[6];
-        out[7] = a[7];
-        out[8] = a[8];
-        out[9] = a[9];
-        out[10] = a[10];
-        out[11] = a[11];
-        out[12] = a[12];
-        out[13] = a[13];
-        out[14] = a[14];
-        out[15] = a[15];
-        return out;
-    }
-    Matrix4.copy = copy;
-    function clone(a) {
-        return Matrix4.copy(Matrix4.empty(), a);
-    }
-    Matrix4.clone = clone;
     function invert(out, a) {
         var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3], a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7], a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11], a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15], b00 = a00 * a11 - a01 * a10, b01 = a00 * a12 - a02 * a10, b02 = a00 * a13 - a03 * a10, b03 = a01 * a12 - a02 * a11, b04 = a01 * a13 - a03 * a11, b05 = a02 * a13 - a03 * a12, b06 = a20 * a31 - a21 * a30, b07 = a20 * a32 - a22 * a30, b08 = a20 * a33 - a23 * a30, b09 = a21 * a32 - a22 * a31, b10 = a21 * a33 - a23 * a31, b11 = a22 * a33 - a23 * a32, 
         // Calculate the determinant
@@ -157,161 +96,12 @@ var Matrix4;
         return out;
     }
     Matrix4.mul = mul;
-    function translate(out, a, v) {
-        var x = v[0], y = v[1], z = v[2], a00, a01, a02, a03, a10, a11, a12, a13, a20, a21, a22, a23;
-        if (a === out) {
-            out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
-            out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
-            out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
-            out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
-        }
-        else {
-            a00 = a[0];
-            a01 = a[1];
-            a02 = a[2];
-            a03 = a[3];
-            a10 = a[4];
-            a11 = a[5];
-            a12 = a[6];
-            a13 = a[7];
-            a20 = a[8];
-            a21 = a[9];
-            a22 = a[10];
-            a23 = a[11];
-            out[0] = a00;
-            out[1] = a01;
-            out[2] = a02;
-            out[3] = a03;
-            out[4] = a10;
-            out[5] = a11;
-            out[6] = a12;
-            out[7] = a13;
-            out[8] = a20;
-            out[9] = a21;
-            out[10] = a22;
-            out[11] = a23;
-            out[12] = a00 * x + a10 * y + a20 * z + a[12];
-            out[13] = a01 * x + a11 * y + a21 * z + a[13];
-            out[14] = a02 * x + a12 * y + a22 * z + a[14];
-            out[15] = a03 * x + a13 * y + a23 * z + a[15];
-        }
-        return out;
-    }
-    Matrix4.translate = translate;
-    function fromTranslation(out, v) {
-        out[0] = 1;
-        out[1] = 0;
-        out[2] = 0;
-        out[3] = 0;
-        out[4] = 0;
-        out[5] = 1;
-        out[6] = 0;
-        out[7] = 0;
-        out[8] = 0;
-        out[9] = 0;
-        out[10] = 1;
-        out[11] = 0;
-        out[12] = v[0];
-        out[13] = v[1];
-        out[14] = v[2];
-        out[15] = 1;
-        return out;
-    }
-    Matrix4.fromTranslation = fromTranslation;
     function transformVector3(out, a, m) {
-        var x = a.x, y = a.y, z = a.z;
-        out.x = m[0] * x + m[4] * y + m[8] * z + m[12];
-        out.y = m[1] * x + m[5] * y + m[9] * z + m[13];
-        out.z = m[2] * x + m[6] * y + m[10] * z + m[14];
-        //out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
+        var x = a[0], y = a[1], z = a[2];
+        out[0] = m[0] * x + m[4] * y + m[8] * z + m[12];
+        out[1] = m[1] * x + m[5] * y + m[9] * z + m[13];
+        out[2] = m[2] * x + m[6] * y + m[10] * z + m[14];
         return out;
     }
     Matrix4.transformVector3 = transformVector3;
-    function makeTable(m) {
-        var ret = '';
-        for (var i = 0; i < 4; i++) {
-            for (var j = 0; j < 4; j++) {
-                ret += m[4 * j + i].toString();
-                if (j < 3)
-                    ret += ' ';
-            }
-            if (i < 3)
-                ret += '\n';
-        }
-        return ret;
-    }
-    Matrix4.makeTable = makeTable;
-    function determinant(a) {
-        var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3], a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7], a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11], a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15], b00 = a00 * a11 - a01 * a10, b01 = a00 * a12 - a02 * a10, b02 = a00 * a13 - a03 * a10, b03 = a01 * a12 - a02 * a11, b04 = a01 * a13 - a03 * a11, b05 = a02 * a13 - a03 * a12, b06 = a20 * a31 - a21 * a30, b07 = a20 * a32 - a22 * a30, b08 = a20 * a33 - a23 * a30, b09 = a21 * a32 - a22 * a31, b10 = a21 * a33 - a23 * a31, b11 = a22 * a33 - a23 * a32;
-        // Calculate the determinant
-        return b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
-    }
-    Matrix4.determinant = determinant;
 })(Matrix4 = exports.Matrix4 || (exports.Matrix4 = {}));
-var Vector4;
-(function (Vector4) {
-    function create() {
-        var out = makeArray(4);
-        out[0] = 0;
-        out[1] = 0;
-        out[2] = 0;
-        out[3] = 0;
-        return out;
-    }
-    Vector4.create = create;
-    function clone(a) {
-        var out = makeArray(4);
-        out[0] = a[0];
-        out[1] = a[1];
-        out[2] = a[2];
-        out[3] = a[3];
-        return out;
-    }
-    Vector4.clone = clone;
-    function fromValues(x, y, z, w) {
-        var out = makeArray(4);
-        out[0] = x;
-        out[1] = y;
-        out[2] = z;
-        out[3] = w;
-        return out;
-    }
-    Vector4.fromValues = fromValues;
-    function set(out, x, y, z, w) {
-        out[0] = x;
-        out[1] = y;
-        out[2] = z;
-        out[3] = w;
-        return out;
-    }
-    Vector4.set = set;
-    function distance(a, b) {
-        var x = b[0] - a[0], y = b[1] - a[1], z = b[2] - a[2], w = b[3] - a[3];
-        return Math.sqrt(x * x + y * y + z * z + w * w);
-    }
-    Vector4.distance = distance;
-    function squaredDistance(a, b) {
-        var x = b[0] - a[0], y = b[1] - a[1], z = b[2] - a[2], w = b[3] - a[3];
-        return x * x + y * y + z * z + w * w;
-    }
-    Vector4.squaredDistance = squaredDistance;
-    function norm(a) {
-        var x = a[0], y = a[1], z = a[2], w = a[3];
-        return Math.sqrt(x * x + y * y + z * z + w * w);
-    }
-    Vector4.norm = norm;
-    function squaredNorm(a) {
-        var x = a[0], y = a[1], z = a[2], w = a[3];
-        return x * x + y * y + z * z + w * w;
-    }
-    Vector4.squaredNorm = squaredNorm;
-    function transform(out, a, m) {
-        var x = a[0], y = a[1], z = a[2], w = a[3];
-        out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
-        out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
-        out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
-        out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
-        return out;
-    }
-    Vector4.transform = transform;
-})(Vector4 = exports.Vector4 || (exports.Vector4 = {}));

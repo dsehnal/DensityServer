@@ -105,9 +105,9 @@ async function create(filename: string, sourceDensities: { name: string, filenam
         for (let f of files) File.close(f);
 
         // const ff = await File.openRead(filename);
-        // const hh = await BlockFormat.readHeader(ff);
+        // const hh = await DataFormat.readHeader(ff);
         // File.close(ff);
-        // console.log(hh.header.sampling[1]);
+        // console.log(hh.header);
     }
 } 
 

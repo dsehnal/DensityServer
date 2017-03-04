@@ -91,6 +91,13 @@ export function close(file: number) {
     fs.closeSync(file);
 }
 
+export function tryClose(file: number | undefined) {
+    try {
+        if (file !== void 0) fs.closeSync(file);
+    } catch (e) {
+    }
+}
+
 const smallBuffer = new Buffer(8);
 export async function writeInt(file: number, value: number, position: number) {    
     smallBuffer.writeInt32LE(value, 0);

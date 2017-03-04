@@ -135,6 +135,15 @@ function close(file) {
     fs.closeSync(file);
 }
 exports.close = close;
+function tryClose(file) {
+    try {
+        if (file !== void 0)
+            fs.closeSync(file);
+    }
+    catch (e) {
+    }
+}
+exports.tryClose = tryClose;
 var smallBuffer = new Buffer(8);
 function writeInt(file, value, position) {
     return __awaiter(this, void 0, void 0, function () {

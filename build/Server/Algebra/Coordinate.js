@@ -92,9 +92,14 @@ function clampGridToSamples(a) {
     var sampleCount = a.domain.sampleCount;
     var coord = [0, 0, 0];
     for (var i = 0; i < 3; i++) {
-        coord[i] = Math.max(Math.min(a[i], sampleCount[i]), 0);
+        if (a[i] < 0)
+            coord[i] = 0;
+        else if (a[i] > sampleCount[i])
+            coord[i] = sampleCount[i];
+        else
+            coord[i] = a[i];
     }
-    return __assign({}, a, { coord: coord });
+    return __assign({}, a, { 0: coord[0], 1: coord[1], 2: coord[2] });
 }
 exports.clampGridToSamples = clampGridToSamples;
 function add(a, b) {
@@ -106,43 +111,39 @@ function sub(a, b) {
 }
 exports.sub = sub;
 /** Maps each grid point to a unique integer */
-function perfectGridHash(a) {
+function linearGridIndex(a) {
     var samples = a.domain.sampleCount;
     return a[0] + samples[0] * (a[1] + a[2] * samples[1]);
 }
-exports.perfectGridHash = perfectGridHash;
+exports.linearGridIndex = linearGridIndex;
+function gridMetrics(dimensions) {
+    return {
+        sizeX: dimensions[0],
+        sizeXY: dimensions[0] * dimensions[1],
+        sizeXYZ: dimensions[0] * dimensions[1] * dimensions[2]
+    };
+}
+exports.gridMetrics = gridMetrics;
 function sampleCounts(dimensions, delta, snap) {
     return [
-        Helpers.snap(dimensions[0] / delta[0], snap),
-        Helpers.snap(dimensions[1] / delta[1], snap),
-        Helpers.snap(dimensions[2] / delta[2], snap)
+        Helpers.snap(dimensions[0] / delta[0], snap) + 1,
+        Helpers.snap(dimensions[1] / delta[1], snap) + 1,
+        Helpers.snap(dimensions[2] / delta[2], snap) + 1
     ];
 }
 exports.sampleCounts = sampleCounts;
+// to prevent floating point rounding errors
+function round(v) {
+    return Math.round(10000000 * v) / 10000000;
+}
+exports.round = round;
 var Helpers;
 (function (Helpers) {
-    var u = { x: 0.1, y: 0.1, z: 0.1 };
-    var v = { x: 0.1, y: 0.1, z: 0.1 };
     var applyTransform = LA.Matrix4.transformVector3;
-    function transformInPlace(x, matrix) {
-        u.x = x[0];
-        u.y = x[1];
-        u.z = x[2];
-        applyTransform(v, u, matrix);
-        x[0] = v.x;
-        x[1] = v.y;
-        x[2] = v.z;
-        return x;
-    }
-    Helpers.transformInPlace = transformInPlace;
     function transform(x, matrix) {
-        return transformInPlace([x[0], x[1], x[2]], matrix);
+        return applyTransform([0.1, 0.1, 0.1], x, matrix);
     }
     Helpers.transform = transform;
-    // to prevent floating point rounding errors
-    function round(v) {
-        return Math.round(10000000 * v) / 10000000;
-    }
     function snap(v, to) {
         switch (to) {
             case 'floor': return Math.floor(round(v)) | 0;

@@ -8,13 +8,12 @@ var DataFormat = require("../Common/DataFormat");
 var FORMAT_VERSION = '1.0.0';
 function createHeader(ctx) {
     var header = ctx.channels[0].header;
-    /** map the grid to the axis order */
-    var grid = [header.grid[header.axisOrder[0]], header.grid[header.axisOrder[1]], header.grid[header.axisOrder[2]]];
+    var grid = header.grid;
     function normalize(data) {
         return [data[0] / grid[0], data[1] / grid[1], data[2] / grid[2]];
     }
     return {
-        version: FORMAT_VERSION,
+        formatVersion: FORMAT_VERSION,
         valueType: header.mode === 2 /* Float32 */ ? 0 /* Float32 */ : 2 /* Int8 */,
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,

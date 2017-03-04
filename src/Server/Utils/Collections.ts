@@ -91,7 +91,7 @@ export namespace FastMap {
             this.size = 0;
         },
         forEach(this: MapData, f: (k: string | number, v: number, ctx?: any) => void, ctx?: any) {
-            forEach(this.data, f, ctx !== void 0 ? ctx : void 0);
+            return forEach(this.data, f, ctx !== void 0 ? ctx : void 0);
         }
     };
 
@@ -166,7 +166,7 @@ export namespace FastSet {
             this.size = 0;
         },
         forEach(this: MapData, f: (k: string | number, ctx: any) => void, ctx?: any) {
-            forEach(this.data, f, ctx !== void 0 ? ctx : void 0);
+            return forEach(this.data, f, ctx !== void 0 ? ctx : void 0);
         }
     };
 

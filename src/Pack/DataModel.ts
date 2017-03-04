@@ -89,15 +89,14 @@ export interface LerpCube {
 
 export function createHeader(ctx: Context): DataFormat.Header {
     const header = ctx.channels[0].header;
-    /** map the grid to the axis order */
-    const grid = [header.grid[header.axisOrder[0]], header.grid[header.axisOrder[1]], header.grid[header.axisOrder[2]]];
+    const grid = header.grid;
 
     function normalize(data: number[]) {
         return [data[0] / grid[0], data[1] / grid[1], data[2] / grid[2]];
     } 
 
     return {
-        version: FORMAT_VERSION,
+        formatVersion: FORMAT_VERSION,
         valueType: header.mode === CCP4.Mode.Float32 ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8,
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,

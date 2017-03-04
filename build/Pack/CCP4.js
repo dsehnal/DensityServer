@@ -130,6 +130,7 @@ function readHeader(name, file) {
                         littleEndian: littleEndian,
                         dataOffset: headerSize + readInt(23) /* symBytes */
                     };
+                    // "normalize" the grid axis order
                     header.grid = [header.grid[header.axisOrder[0]], header.grid[header.axisOrder[1]], header.grid[header.axisOrder[2]]];
                     return [2 /*return*/, header];
             }

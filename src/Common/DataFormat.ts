@@ -43,7 +43,7 @@ export interface Sampling {
 
 export interface Header {
     /** Format version number  */
-    version: string,
+    formatVersion: string,
 
     /** Determines the data type of the values */
     valueType: ValueType,
@@ -69,7 +69,7 @@ module _schema {
     const { array, obj, int, bool, float, str } = Schema
 
     export const schema = obj<Header>([
-        ['version', str],
+        ['formatVersion', str],
         ['valueType', int],
         ['blockSize', int],
         ['axisOrder', array(int)],

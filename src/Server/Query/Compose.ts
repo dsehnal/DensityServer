@@ -24,12 +24,10 @@ export async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Bl
 }
 
 function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGridBox: Box.Grid<'BlockGrid'>, queryGridBox: Box.Grid<'Query'>) {
-    const { values: source, sampleCount: blockSampleCount } = blockData;
+    const source = blockData.values;
 
-    const tSizeH = query.gridDomain.sampleCount[0], 
-          tSizeHK = query.gridDomain.sampleCount[0] * query.gridDomain.sampleCount[1];
-    const sSizeH = blockSampleCount[0],
-          sSizeHK = blockSampleCount[0] * blockSampleCount[1];
+    const { sizeX: tSizeH, sizeXY: tSizeHK } = Coords.gridMetrics(query.gridDomain.sampleCount);
+    const { sizeX: sSizeH, sizeXY: sSizeHK } = Coords.gridMetrics(blockData.sampleCount);
 
     const offsetTarget = queryGridBox.a[0] + queryGridBox.a[1] * tSizeH + queryGridBox.a[2] * tSizeHK;
 
@@ -40,10 +38,11 @@ function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGrid
         const offsetSource = channelIndex * blockGridBox.a.domain.sampleVolume 
             + blockGridBox.a[0] + blockGridBox.a[1] * sSizeH + blockGridBox.a[2] * sSizeHK;
 
-        for (let l = 0; l <= maxL; l++) {
-            for (let k = 0; k <= maxK; k++) {
-                for (let h = 0; h <= maxH; h++) {
-                    target[offsetTarget + h + k * tSizeH + l * tSizeHK] = source[offsetSource + h + k * sSizeH + l * sSizeHK]
+        for (let l = 0; l < maxL; l++) {
+            for (let k = 0; k < maxK; k++) {
+                for (let h = 0; h < maxH; h++) {
+                    target[offsetTarget + h + k * tSizeH + l * tSizeHK] 
+                        = source[offsetSource + h + k * sSizeH + l * sSizeHK];
                 }
             }
         }
@@ -69,8 +68,8 @@ async function fillBlock(query: Data.QueryContext, block: Identify.UniqueBlock) 
         const offsetBlockBox = Box.shift(baseBox, offset);
         const dataBox = Box.intersect(offsetBlockBox, query.fractionalBox);
         if (!dataBox) continue;
-        const blockGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, blockGridDomain));
-        const queryGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, query.gridDomain));
+        const blockGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, blockGridDomain));
+        const queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.gridDomain));
         fillData(query, blockData, blockGridBox, queryGridBox);
     }
 }

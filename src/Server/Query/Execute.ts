@@ -3,6 +3,7 @@
  */
 
 import * as DataFormat from '../../Common/DataFormat'
+import * as File from '../../Common/File'
 import * as Data from './DataModel'
 import * as Coords from '../Algebra/Coordinate'
 import * as Box from '../Algebra/Box'
@@ -35,7 +36,7 @@ export function blockDomain(domain: Coords.GridDomain<'Data'>, blockSize: number
         origin: domain.origin,
         dimensions: domain.dimensions,
         delta,
-        sampleCount: Coords.sampleCounts(domain.origin, delta, 'ceil')
+        sampleCount: Coords.sampleCounts(domain.dimensions, delta, 'ceil')
     });
 }
 
@@ -84,6 +85,8 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
     const sampling = pickSampling(data, queryBox);
     // snap the query box to the sampling grid:
     const fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+
+    console.log({ gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta) });
 
     return {
         guid,
@@ -134,22 +137,28 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, se
             allocateResult(query);
 
             // Step 3b: Compose the result data
-            compose(query, blocks);
+            await compose(query, blocks);
         }
 
         // Step 4: Encode the result
-        output = outputProvider()
+        output = outputProvider();
         encode(query, output);
     } catch (e) {
         query.result.error = `${e}`;
         query.result.isEmpty = true;
         query.result.values = void 0;
+        try {
+            if (!output) output = outputProvider();
+            encode(query, output);
+        } catch (e) {
+            throw e;
+        }
     } finally {
         if (output) output.end();
     }
 }
 
-export async function execute(file: number, params: Data.QueryParams, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
+export async function execute(params: Data.QueryParams, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
     const start = getTime();
     State.pendingQueries++;
 
@@ -158,17 +167,20 @@ export async function execute(file: number, params: Data.QueryParams, outputProv
 
     const { a, b } = params.box;
     Logger.log(`[GUID] ${guid}`, serialNumber);
-    Logger.log(`[Id] ${params.source}/${params.id}`, serialNumber);
+    Logger.log(`[Id] ${params.sourceId}`, serialNumber);
     Logger.log(`[Box] ${a.kind === Coords.Space.Cartesian ? 'cart' : 'frac'} [${a[0]},${a[1]},${a[2]}] [${b[0]},${b[1]},${b[2]}]`, serialNumber);
     Logger.log(`[Encoding] ${params.asBinary ? 'bcif' : 'cif'}`, serialNumber);
 
+    let sourceFile: number | undefined = void 0;
     try {
-        await _execute(file, params, guid, serialNumber, outputProvider);
+        sourceFile = await File.openRead(params.sourceFilename);
+        await _execute(sourceFile, params, guid, serialNumber, outputProvider);
         Logger.log(`[OK]`, serialNumber); 
         return true;
     } catch (e) {
         Logger.log(`[Error] ${e}`, serialNumber); 
     } finally {
+        File.tryClose(sourceFile);
         State.pendingQueries--;
         const time = getTime() - start;
         Logger.log(`[Time] ${Math.round(time)}ms`, serialNumber);

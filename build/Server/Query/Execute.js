@@ -39,6 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var DataFormat = require("../../Common/DataFormat");
+var File = require("../../Common/File");
 var Coords = require("../Algebra/Coordinate");
 var Box = require("../Algebra/Box");
 var Logger = require("../Utils/Logger");
@@ -65,7 +66,7 @@ function blockDomain(domain, blockSize) {
         origin: domain.origin,
         dimensions: domain.dimensions,
         delta: delta,
-        sampleCount: Coords.sampleCounts(domain.origin, delta, 'ceil')
+        sampleCount: Coords.sampleCounts(domain.dimensions, delta, 'ceil')
     });
 }
 exports.blockDomain = blockDomain;
@@ -118,6 +119,7 @@ function createQueryContext(data, params, guid, serialNumber) {
     var sampling = pickSampling(data, queryBox);
     // snap the query box to the sampling grid:
     var fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+    console.log({ gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta) });
     return {
         guid: guid,
         serialNumber: serialNumber,
@@ -142,7 +144,7 @@ function allocateResult(query) {
 }
 function _execute(file, params, guid, serialNumber, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
-        var data, query, output, blocks;
+        var data, query, output, blocks, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, createDataContext(file)];
@@ -150,41 +152,56 @@ function _execute(file, params, guid, serialNumber, outputProvider) {
                     data = _a.sent();
                     query = createQueryContext(data, params, guid, serialNumber);
                     output = void 0;
+                    _a.label = 2;
+                case 2:
+                    _a.trys.push([2, 6, 7, 8]);
+                    // Step 2a: Validate query context
+                    validateQueryContext(query);
+                    blocks = Identify_1.default(query);
+                    if (!(blocks.length === 0)) return [3 /*break*/, 3];
+                    query.result.isEmpty = true;
+                    return [3 /*break*/, 5];
+                case 3:
+                    query.result.isEmpty = false;
+                    // Step 3a: Allocate space for result data
+                    allocateResult(query);
+                    // Step 3b: Compose the result data
+                    return [4 /*yield*/, Compose_1.default(query, blocks)];
+                case 4:
+                    // Step 3b: Compose the result data
+                    _a.sent();
+                    _a.label = 5;
+                case 5:
+                    // Step 4: Encode the result
+                    output = outputProvider();
+                    Encode_1.default(query, output);
+                    return [3 /*break*/, 8];
+                case 6:
+                    e_1 = _a.sent();
+                    query.result.error = "" + e_1;
+                    query.result.isEmpty = true;
+                    query.result.values = void 0;
                     try {
-                        // Step 2a: Validate query context
-                        validateQueryContext(query);
-                        blocks = Identify_1.default(query);
-                        if (blocks.length === 0) {
-                            query.result.isEmpty = true;
-                        }
-                        else {
-                            query.result.isEmpty = false;
-                            // Step 3a: Allocate space for result data
-                            allocateResult(query);
-                            // Step 3b: Compose the result data
-                            Compose_1.default(query, blocks);
-                        }
-                        // Step 4: Encode the result
-                        output = outputProvider();
+                        if (!output)
+                            output = outputProvider();
                         Encode_1.default(query, output);
                     }
                     catch (e) {
-                        query.result.error = "" + e;
-                        query.result.isEmpty = true;
-                        query.result.values = void 0;
+                        throw e;
                     }
-                    finally {
-                        if (output)
-                            output.end();
-                    }
-                    return [2 /*return*/];
+                    return [3 /*break*/, 8];
+                case 7:
+                    if (output)
+                        output.end();
+                    return [7 /*endfinally*/];
+                case 8: return [2 /*return*/];
             }
         });
     });
 }
-function execute(file, params, outputProvider) {
+function execute(params, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
-        var start, guid, serialNumber, _a, a, b, e_1, time;
+        var start, guid, serialNumber, _a, a, b, sourceFile, e_2, time;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -194,27 +211,32 @@ function execute(file, params, outputProvider) {
                     serialNumber = State_1.State.querySerial++;
                     _a = params.box, a = _a.a, b = _a.b;
                     Logger.log("[GUID] " + guid, serialNumber);
-                    Logger.log("[Id] " + params.source + "/" + params.id, serialNumber);
+                    Logger.log("[Id] " + params.sourceId, serialNumber);
                     Logger.log("[Box] " + (a.kind === 0 /* Cartesian */ ? 'cart' : 'frac') + " [" + a[0] + "," + a[1] + "," + a[2] + "] [" + b[0] + "," + b[1] + "," + b[2] + "]", serialNumber);
                     Logger.log("[Encoding] " + (params.asBinary ? 'bcif' : 'cif'), serialNumber);
+                    sourceFile = void 0;
                     _b.label = 1;
                 case 1:
-                    _b.trys.push([1, 3, 4, 5]);
-                    return [4 /*yield*/, _execute(file, params, guid, serialNumber, outputProvider)];
+                    _b.trys.push([1, 4, 5, 6]);
+                    return [4 /*yield*/, File.openRead(params.sourceFilename)];
                 case 2:
+                    sourceFile = _b.sent();
+                    return [4 /*yield*/, _execute(sourceFile, params, guid, serialNumber, outputProvider)];
+                case 3:
                     _b.sent();
                     Logger.log("[OK]", serialNumber);
                     return [2 /*return*/, true];
-                case 3:
-                    e_1 = _b.sent();
-                    Logger.log("[Error] " + e_1, serialNumber);
-                    return [3 /*break*/, 5];
                 case 4:
+                    e_2 = _b.sent();
+                    Logger.log("[Error] " + e_2, serialNumber);
+                    return [3 /*break*/, 6];
+                case 5:
+                    File.tryClose(sourceFile);
                     State_1.State.pendingQueries--;
                     time = getTime() - start;
                     Logger.log("[Time] " + Math.round(time) + "ms", serialNumber);
                     return [2 /*return*/, false];
-                case 5: return [2 /*return*/];
+                case 6: return [2 /*return*/];
             }
         });
     });

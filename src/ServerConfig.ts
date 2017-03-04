@@ -45,8 +45,9 @@ const Config = {
     mapFile(source: string, id: string) {
         switch (source.toLowerCase()) {
             //case 'emd': return `e:/test/density_server/mdb/emd/${id.toLowerCase()}.mdb`;
-            case 'emd': return `g:/test/mdb/emd-${id.toLowerCase()}/1.mdb`;
-            case 'x-ray': return `e:/test/density_server/mdb/x-ray/${id.toLowerCase()}.mdb`;
+            case 'emd': return `g:/test/mdb/emd-${id.toLowerCase()}.mdb`;
+            //case 'x-ray': return `e:/test/density_server/mdb/x-ray/${id.toLowerCase()}.mdb`;
+            case 'x-ray': return `g:/test/mdb/xray-${id.toLowerCase()}.mdb`;
             default: return void 0;
         }
     }

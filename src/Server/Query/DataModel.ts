@@ -36,9 +36,9 @@ export interface BlockData {
 //////////////////////////////////////
 
 export interface QueryParams {
+    sourceFilename: string,
+    sourceId: string,
     asBinary: boolean,
-    source: string,
-    id: string,
     box: Box.Cartesian | Box.Fractional,
 }
 

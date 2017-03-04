@@ -107,26 +107,32 @@ function queryDone() {
 }
 function readHeader(src, id) {
     return __awaiter(this, void 0, void 0, function () {
-        var filename, file, header, e_1;
+        var file, filename, header, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 3, , 4]);
+                    file = void 0;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 4, 5, 6]);
                     filename = mapFile(src, id);
                     if (!filename)
                         return [2 /*return*/, void 0];
                     return [4 /*yield*/, File.openRead(filename)];
-                case 1:
+                case 2:
                     file = _a.sent();
                     return [4 /*yield*/, DataFormat.readHeader(file)];
-                case 2:
-                    header = _a.sent();
-                    return [2 /*return*/, header];
                 case 3:
+                    header = _a.sent();
+                    return [2 /*return*/, header.header];
+                case 4:
                     e_1 = _a.sent();
                     Logger.log("[Info] [Error] " + src + "/" + id + ": " + e_1);
                     return [2 /*return*/, void 0];
-                case 4: return [2 /*return*/];
+                case 5:
+                    File.tryClose(file);
+                    return [7 /*endfinally*/];
+                case 6: return [2 /*return*/];
             }
         });
     });
@@ -135,42 +141,51 @@ function init(app) {
     var _this = this;
     // Header
     app.get(makePath(':source/:id/?$'), function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-        var headerWritten, header, json;
+        var headerWritten, header, json, e_2;
         return __generator(this, function (_a) {
-            Logger.log("[Info] " + req.params.source + "/" + req.params.id);
-            headerWritten = false;
-            try {
-                header = readHeader(req.params.source, req.params.id);
-                if (header) {
-                    json = JSON.stringify(header, null, 2);
-                    res.writeHead(200, {
-                        'Content-Type': 'application/json; charset=utf-8',
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Headers': 'X-Requested-With'
-                    });
-                    headerWritten = true;
-                    res.write(json);
-                }
-                else {
-                    res.writeHead(404);
-                    headerWritten = true;
-                }
+            switch (_a.label) {
+                case 0:
+                    Logger.log("[Info] " + req.params.source + "/" + req.params.id);
+                    headerWritten = false;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, 4, 5]);
+                    return [4 /*yield*/, readHeader(req.params.source, req.params.id)];
+                case 2:
+                    header = _a.sent();
+                    if (header) {
+                        json = JSON.stringify(header, null, 2);
+                        res.writeHead(200, {
+                            'Content-Type': 'application/json; charset=utf-8',
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Headers': 'X-Requested-With'
+                        });
+                        headerWritten = true;
+                        res.write(json);
+                    }
+                    else {
+                        res.writeHead(404);
+                        headerWritten = true;
+                    }
+                    return [3 /*break*/, 5];
+                case 3:
+                    e_2 = _a.sent();
+                    Logger.log("[Info] [Error] " + req.params.source + "/" + req.params.id + ": " + e_2);
+                    if (!headerWritten) {
+                        res.writeHead(404);
+                    }
+                    return [3 /*break*/, 5];
+                case 4:
+                    res.end();
+                    return [7 /*endfinally*/];
+                case 5: return [2 /*return*/];
             }
-            catch (e) {
-                Logger.log("[Info] [Error] " + req.params.source + "/" + req.params.id + ": " + e);
-                if (!headerWritten) {
-                    res.writeHead(404);
-                }
-            }
-            finally {
-                res.end();
-            }
-            return [2 /*return*/];
         });
     }); });
-    // Box
+    // Box /:src/:id/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
+    // Optional param
     app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-        var a, b, isCartesian, box, asBinary, outputFilename, response, file, params, filename, ok, e_2;
+        var a, b, isCartesian, box, asBinary, outputFilename, response, sourceFilename, params, ok, e_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -183,48 +198,38 @@ function init(app) {
                     asBinary = req.query.text !== '1';
                     outputFilename = getOutputFilename(req.params.source, req.params.id, asBinary, box);
                     response = wrapResponse(outputFilename, res);
-                    file = void 0;
                     _a.label = 1;
                 case 1:
-                    _a.trys.push([1, 4, 5, 6]);
-                    params = {
-                        asBinary: asBinary,
-                        box: box,
-                        id: req.params.id,
-                        source: req.params.source
-                    };
-                    filename = mapFile(req.params.source, req.params.id);
-                    if (!filename) {
+                    _a.trys.push([1, 3, 4, 5]);
+                    sourceFilename = mapFile(req.params.source, req.params.id);
+                    if (!sourceFilename) {
                         response.do404();
                         return [2 /*return*/];
                     }
-                    return [4 /*yield*/, File.openRead(filename)];
+                    params = {
+                        sourceFilename: sourceFilename,
+                        sourceId: req.params.source + "/" + req.params.id,
+                        asBinary: asBinary,
+                        box: box,
+                    };
+                    return [4 /*yield*/, Query.execute(params, function () { return response; })];
                 case 2:
-                    file = _a.sent();
-                    return [4 /*yield*/, Query.execute(file, params, function () { return response; })];
-                case 3:
                     ok = _a.sent();
                     if (!ok) {
                         response.do404();
                         return [2 /*return*/];
                     }
-                    return [3 /*break*/, 6];
-                case 4:
-                    e_2 = _a.sent();
-                    Logger.log("[Error] " + e_2);
+                    return [3 /*break*/, 5];
+                case 3:
+                    e_3 = _a.sent();
+                    Logger.log("[Error] " + e_3);
                     response.do404();
-                    return [3 /*break*/, 6];
-                case 5:
-                    if (file !== void 0) {
-                        try {
-                            File.close(file);
-                        }
-                        catch (e) { }
-                    }
+                    return [3 /*break*/, 5];
+                case 4:
                     response.end();
                     queryDone();
                     return [7 /*endfinally*/];
-                case 6: return [2 /*return*/];
+                case 5: return [2 /*return*/];
             }
         });
     }); });

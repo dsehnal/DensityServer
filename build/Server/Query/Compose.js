@@ -67,19 +67,20 @@ function readBlock(query, coord, blockBox) {
 }
 exports.readBlock = readBlock;
 function fillData(query, blockData, blockGridBox, queryGridBox) {
-    var source = blockData.values, blockSampleCount = blockData.sampleCount;
-    var tSizeH = query.gridDomain.sampleCount[0], tSizeHK = query.gridDomain.sampleCount[0] * query.gridDomain.sampleCount[1];
-    var sSizeH = blockSampleCount[0], sSizeHK = blockSampleCount[0] * blockSampleCount[1];
+    var source = blockData.values;
+    var _a = Coords.gridMetrics(query.gridDomain.sampleCount), tSizeH = _a.sizeX, tSizeHK = _a.sizeXY;
+    var _b = Coords.gridMetrics(blockData.sampleCount), sSizeH = _b.sizeX, sSizeHK = _b.sizeXY;
     var offsetTarget = queryGridBox.a[0] + queryGridBox.a[1] * tSizeH + queryGridBox.a[2] * tSizeHK;
-    var _a = Box.dimensions(blockGridBox), maxH = _a[0], maxK = _a[1], maxL = _a[2];
+    var _c = Box.dimensions(blockGridBox), maxH = _c[0], maxK = _c[1], maxL = _c[2];
     for (var channelIndex = 0, _ii = query.data.header.channels.length; channelIndex < _ii; channelIndex++) {
         var target = query.result.values[channelIndex];
         var offsetSource = channelIndex * blockGridBox.a.domain.sampleVolume
             + blockGridBox.a[0] + blockGridBox.a[1] * sSizeH + blockGridBox.a[2] * sSizeHK;
-        for (var l = 0; l <= maxL; l++) {
-            for (var k = 0; k <= maxK; k++) {
-                for (var h = 0; h <= maxH; h++) {
-                    target[offsetTarget + h + k * tSizeH + l * tSizeHK] = source[offsetSource + h + k * sSizeH + l * sSizeHK];
+        for (var l = 0; l < maxL; l++) {
+            for (var k = 0; k < maxK; k++) {
+                for (var h = 0; h < maxH; h++) {
+                    target[offsetTarget + h + k * tSizeH + l * tSizeHK]
+                        = source[offsetSource + h + k * sSizeH + l * sSizeHK];
                 }
             }
         }
@@ -110,8 +111,8 @@ function fillBlock(query, block) {
                         dataBox = Box.intersect(offsetBlockBox, query.fractionalBox);
                         if (!dataBox)
                             continue;
-                        blockGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, blockGridDomain));
-                        queryGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, query.gridDomain));
+                        blockGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, blockGridDomain));
+                        queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.gridDomain));
                         fillData(query, blockData, blockGridBox, queryGridBox);
                     }
                     return [2 /*return*/];

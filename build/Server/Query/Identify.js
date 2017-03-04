@@ -8,13 +8,14 @@ var Box = require("../Algebra/Box");
 var Collections_1 = require("../Utils/Collections");
 /**
  * Find the integer interval [x, y] so that for all k \in [x, y]
- * k * [a, b] intersects with [u, v]
+ * [a + k, b + k] intersects with (u, v)
  */
 function overlapMultiplierRange(a, b, u, v) {
     var x = Math.ceil(u - b) | 0, y = Math.floor(v - a) | 0;
-    if (b + x < u)
+    console.log(x, y, { a: a, b: b, u: u, v: v });
+    if (Coords.round(b + x) <= Coords.round(u))
         x++;
-    if (a + y > v)
+    if (Coords.round(a + y) >= Coords.round(v))
         y--;
     if (x > y)
         return void 0;
@@ -46,7 +47,7 @@ function findDataOverlapTranslationList(box, domain) {
     return translations;
 }
 function addUniqueBlock(blocks, coord, offset) {
-    var hash = Coords.perfectGridHash(coord);
+    var hash = Coords.linearGridIndex(coord);
     if (blocks.has(hash)) {
         var entry = blocks.get(hash);
         entry.offsets.push(offset);
@@ -67,6 +68,8 @@ function findUniqueBlocksOffset(query, offset, blocks) {
     //
     // Clamping the data makes sure we avoid silly rounding errors (hopefully :))
     var _a = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain)), min = _a.a, max = _a.b;
+    console.log({ frac: blockDomain });
+    console.log({ min: min, max: max });
     for (var i = min[0]; i < max[0]; i++) {
         for (var j = min[1]; j < max[1]; j++) {
             for (var k = min[2]; k < max[2]; k++) {
@@ -86,6 +89,7 @@ function findUniqueBlocks(query) {
         findUniqueBlocksOffset(query, t, blocks);
     }
     var blockList = blocks.forEach(function (b, _, ctx) { ctx.push(b); }, []);
+    console.log(blockList);
     // sort the data so that the first coodinate changes the fastest 
     // this is because that's how the data is laid out in the underlaying 
     // data format and reading the data 'in order' makes it faster.
