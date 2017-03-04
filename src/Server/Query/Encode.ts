@@ -35,7 +35,7 @@ function _density_info(result: ResultContext) {
     const ctx = {
         header: result.query.data.header,
         channelIndex: result.channelIndex,
-        grid: result.query.gridBox
+        grid: result.query.gridDomain
     }
     let fields: FieldDesc<typeof ctx>[] = [
         string(ctx, 'name', ctx => ctx.header.channels[ctx.channelIndex].name),
@@ -44,17 +44,17 @@ function _density_info(result: ResultContext) {
         int32(ctx, 'axis_order[1]', ctx => ctx.header.axisOrder[1]),
         int32(ctx, 'axis_order[2]', ctx => ctx.header.axisOrder[2]),
 
-        int32(ctx, 'origin[0]', ctx => ctx.grid.a.domain.origin[0]),
-        int32(ctx, 'origin[1]', ctx => ctx.grid.a.domain.origin[1]),
-        int32(ctx, 'origin[2]', ctx => ctx.grid.a.domain.origin[2]),
+        int32(ctx, 'origin[0]', ctx => ctx.grid.origin[0]),
+        int32(ctx, 'origin[1]', ctx => ctx.grid.origin[1]),
+        int32(ctx, 'origin[2]', ctx => ctx.grid.origin[2]),
 
-        int32(ctx, 'dimensions[0]', ctx => ctx.grid.a.domain.dimensions[0]),
-        int32(ctx, 'dimensions[1]', ctx => ctx.grid.a.domain.dimensions[1]),
-        int32(ctx, 'dimensions[2]', ctx => ctx.grid.a.domain.dimensions[2]),
+        int32(ctx, 'dimensions[0]', ctx => ctx.grid.dimensions[0]),
+        int32(ctx, 'dimensions[1]', ctx => ctx.grid.dimensions[1]),
+        int32(ctx, 'dimensions[2]', ctx => ctx.grid.dimensions[2]),
 
-        int32(ctx, 'sample_count[0]', ctx => ctx.grid.a.domain.sampleCount[0]),
-        int32(ctx, 'sample_count[1]', ctx => ctx.grid.a.domain.sampleCount[1]),
-        int32(ctx, 'sample_count[2]', ctx => ctx.grid.a.domain.sampleCount[2]),
+        int32(ctx, 'sample_count[0]', ctx => ctx.grid.sampleCount[0]),
+        int32(ctx, 'sample_count[1]', ctx => ctx.grid.sampleCount[1]),
+        int32(ctx, 'sample_count[2]', ctx => ctx.grid.sampleCount[2]),
 
         int32(ctx, 'spacegroup_number', ctx => ctx.header.spacegroup.number),
 
@@ -128,7 +128,7 @@ function _density_server_result(ctx: Data.QueryContext) {
     let fields: FieldDesc<Data.QueryContext>[] = [
         string(ctx, 'server_version', ctx => VERSION),        
         string(ctx, 'datetime', ctx => new Date().toLocaleString('en-US')),
-        string(ctx, 'guid', ctx => ctx.params.guid),
+        string(ctx, 'guid', ctx => ctx.guid),
         string(ctx, 'is_empty', ctx => ctx.result.isEmpty ? 'yes' : 'no'),
         string(ctx, 'has_error', ctx => ctx.result.error ? 'yes' : 'no'),
         string(ctx, 'error', ctx => ctx.result.error!),

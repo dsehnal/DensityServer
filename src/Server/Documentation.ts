@@ -71,11 +71,11 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
 </div>
 
 <div class="cs-docs-query-wrap">
-  <h2>Query Data <span>/&lt;source&gt;/&lt;id&gt;/&lt;a,b,c&gt;/&lt;u,v,w&gt;[?text=1]</span><br> 
-  <small>Returns density data for a given entry. For X-ray data, returns 2Fo-Fc and Fo-Fc densities in a single response.</small></h2>
+  <h2>Query Data <span>/&lt;source&gt;/&lt;id&gt;/box/&lt;a,b,c&gt;/&lt;u,v,w&gt;[?text=1][&space=cartesian]</span><br> 
+  <small>Returns density data inside the specified box for the given entry. For X-ray data, returns 2Fo-Fc and Fo-Fc densities in a single response.</small></h2>
   <div id="coordserver-documentation-ambientResidues-body" style="margin: 24px 24px 0 24px">    
     <h4>Example</h4>
-    <a href="/DensityServer/emd/8003/-2,7,10/4,10,15.5?text=1" class="cs-docs-template-link" target="_blank" rel="nofollow">/emd/8003/-2,7,10/4,10,15.5?text=1</a>
+    <a href="/DensityServer/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian" class="cs-docs-template-link" target="_blank" rel="nofollow">/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian</a>
     <h4>Parameters</h4>
     <table cellpadding="0" cellspacing="0" style='width: 100%'>
     <tbody><tr><th style='width: 80px'>Name</th><th>Description</th></tr>
@@ -97,7 +97,10 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
     </tr>
     <tr>
     <td class="cs-docs-param-name">text</td>
-    <td>If 1, the data is returned in text based CIF rather than binary. Useful for debugging and being able to 'read' the data. An optional argument.</td>
+    <td>If 1, the data is returned in text based CIF rather than binary. Useful for debugging and being able to 'read' the data. An optional argument, default is BinaryCIF encoding.</td>
+    </tr>
+    <td class="cs-docs-param-name">space</td>
+    <td>Determines the coordinate space the query is in. Can be <span class='id'>cartesian</span> or <span class='id'>fractional</span>. An optional argument, default values is <span class='id'>cartesian</span>.</td>
     </tr>
     </tbody></table>
     <h4>Consuming the Data</h4>

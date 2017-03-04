@@ -5,16 +5,32 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var Coords = require("./Coordinate");
 function cartesianToFractional(box, spacegroup, axisOrder) {
-    return {
-        a: Coords.cartesianToFractional(box.a, spacegroup, axisOrder),
-        b: Coords.cartesianToFractional(box.b, spacegroup, axisOrder)
-    };
+    var l = box.a, r = box.b;
+    var corners = [
+        [l[0], l[1], l[2]],
+        [r[0], l[1], l[2]],
+        [l[0], r[1], l[2]],
+        [l[0], l[1], r[2]],
+        [r[0], r[1], l[2]],
+        [r[0], l[1], r[2]],
+        [l[0], r[1], r[2]],
+        [r[0], r[1], r[2]],
+    ].map(function (c) { return Coords.cartesianToFractional(Coords.cartesian(c), spacegroup, axisOrder); });
+    return bounding(corners);
 }
 exports.cartesianToFractional = cartesianToFractional;
 function fractionalToGrid(box, domain) {
     return { a: Coords.fractionalToGrid(box.a, domain, 'floor'), b: Coords.fractionalToGrid(box.b, domain, 'ceil') };
 }
 exports.fractionalToGrid = fractionalToGrid;
+function gridToFractional(box) {
+    return { a: Coords.gridToFractional(box.a), b: Coords.gridToFractional(box.b) };
+}
+exports.gridToFractional = gridToFractional;
+function fractionalRoundToGrid(box, domain) {
+    return { a: Coords.fractionalToGrid(box.a, domain, 'round'), b: Coords.fractionalToGrid(box.b, domain, 'round') };
+}
+exports.fractionalRoundToGrid = fractionalRoundToGrid;
 function shift(box, offset) {
     return { a: Coords.add(box.a, offset), b: Coords.add(box.b, offset) };
 }
@@ -23,18 +39,34 @@ function clampGridToSamples(box) {
     return { a: Coords.clampGridToSamples(box.a), b: Coords.clampGridToSamples(box.b) };
 }
 exports.clampGridToSamples = clampGridToSamples;
+function fractionalToDomain(box, kind, delta) {
+    var ds = Coords.fractional(dimensions(box));
+    return Coords.domain(kind, {
+        delta: delta,
+        origin: box.a,
+        dimensions: ds,
+        sampleCount: Coords.sampleCounts(ds, delta, 'ceil')
+    });
+}
+exports.fractionalToDomain = fractionalToDomain;
 function fractionalFromBlock(block) {
-    throw '';
+    var domain = block.domain;
+    var a = Coords.gridToFractional(block);
+    var b = Coords.add(a, domain.delta);
+    for (var i = 0; i < 3; i++) {
+        b[i] = Math.min(b[i], domain.origin[i] + domain.dimensions[i]);
+    }
+    return { a: a, b: b };
 }
 exports.fractionalFromBlock = fractionalFromBlock;
 function bounding(xs) {
-    var a = xs[0].coord.slice();
-    var b = xs[1].coord.slice();
+    var a = [xs[0][0], xs[0][1], xs[0][2]];
+    var b = [xs[0][0], xs[0][1], xs[0][2]];
     for (var _i = 0, xs_1 = xs; _i < xs_1.length; _i++) {
         var x = xs_1[_i];
         for (var i = 0; i < 3; i++) {
-            a[i] = Math.min(a[i], x.coord[i]);
-            b[i] = Math.max(b[i], x.coord[i]);
+            a[i] = Math.min(a[i], x[i]);
+            b[i] = Math.max(b[i], x[i]);
         }
     }
     return { a: Coords.withCoord(xs[0], a), b: Coords.withCoord(xs[0], b) };
@@ -42,8 +74,8 @@ function bounding(xs) {
 exports.bounding = bounding;
 function areIntersecting(box1, box2) {
     for (var i = 0; i < 3; i++) {
-        var x = box1.a.coord[i], y = box1.b.coord[i];
-        var u = box2.a.coord[i], v = box2.b.coord[i];
+        var x = box1.a[i], y = box1.b[i];
+        var u = box2.a[i], v = box2.b[i];
         if (x > v || y < u)
             return false;
     }
@@ -54,8 +86,8 @@ function intersect(box1, box2) {
     var a = [0.1, 0.1, 0.1];
     var b = [0.1, 0.1, 0.1];
     for (var i = 0; i < 3; i++) {
-        var x = box1.a.coord[i], y = box1.b.coord[i];
-        var u = box2.a.coord[i], v = box2.b.coord[i];
+        var x = box1.a[i], y = box1.b[i];
+        var u = box2.a[i], v = box2.b[i];
         if (x > v || y < u)
             return void 0;
         a[i] = Math.max(x, u);
@@ -65,7 +97,7 @@ function intersect(box1, box2) {
 }
 exports.intersect = intersect;
 function dimensions(box) {
-    return Coords.sub(box.b, box.a).coord;
+    return [box.b[0] - box.a[0], box.b[1] - box.a[1], box.b[2] - box.a[2]];
 }
 exports.dimensions = dimensions;
 function volume(box) {

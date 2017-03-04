@@ -2,18 +2,32 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-// TODO: create context, analyze query limits, which sampling to choose etc.
-
 import * as DataFormat from '../../Common/DataFormat'
 import * as Data from './DataModel'
 import * as Coords from '../Algebra/Coordinate'
 import * as Box from '../Algebra/Box'
 import * as CIF from '../../lib/CIFTools'
+import * as Logger from '../Utils/Logger'
+import { State } from '../State'
 
 import identify from './Identify'
 import compose from './Compose'
 import encode from './Encode'
 
+function getTime() {
+    let t = process.hrtime();
+    return t[0] * 1000 + t[1] / 1000000;
+}
+
+function generateUUID() {
+    var d = new Date().getTime() + getTime();    
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (d + Math.random()*16)%16 | 0;
+        d = Math.floor(d/16);
+        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+    });
+    return uuid;
+}
 
 export function blockDomain(domain: Coords.GridDomain<'Data'>, blockSize: number): Coords.GridDomain<'Block'> {
     const delta = Coords.fractional([ blockSize * domain.delta[0], blockSize * domain.delta[1], blockSize * domain.delta[2] ]);
@@ -54,21 +68,15 @@ async function createDataContext(file: number): Promise<Data.DataContext> {
         header,
         spacegroup: Coords.spacegroup(header.spacegroup),
         dataBox: { a: Coords.fractional(header.origin), b: Coords.add(Coords.fractional(header.origin), Coords.fractional(header.dimensions)) },
-        sampling: header.sampling.map(s => createSampling(header, s, dataOffset))
+        sampling: header.sampling.map((s, i) => createSampling(header, i, dataOffset))
     }
 }
-
-function getQueryGridBox(sampling: Data.Sampling, fractional: Box.Fractional): Box.Grid<'Query'> {
-    const domain = Box.fractionalToDomain<'Query'>(fractional, 'Query', sampling.dataDomain.delta)
-    
-}
-
 
 function pickSampling(data: Data.DataContext, queryBox: Box.Fractional) {
     return data.sampling[0];
 }
 
-function createQueryContext(data: Data.DataContext, params: Data.QueryParams): Data.QueryContext {
+function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number,): Data.QueryContext {
     const queryBox = params.box.a.kind === Coords.Space.Fractional 
         ? params.box as Box.Fractional
         : Box.cartesianToFractional(params.box as Box.Cartesian, data.spacegroup, data.header.axisOrder);
@@ -76,14 +84,15 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams): D
     const sampling = pickSampling(data, queryBox);
     // snap the query box to the sampling grid:
     const fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
-    const gridBox = getQueryGridBox(sampling, fractionalBox);
 
     return {
+        guid,
+        serialNumber,
         data,
         params,
         sampling,
         fractionalBox,
-        gridBox,
+        gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta),
         result: { error: void 0, isEmpty: true } as any
     }
 }
@@ -93,14 +102,21 @@ function validateQueryContext(query: Data.QueryContext) {
 }
 
 function allocateResult(query: Data.QueryContext) {
-
+    const size = query.gridDomain.sampleVolume;
+    const numChannels = query.data.header.channels.length;
+    query.result.values = [];
+    for (let i = 0; i < numChannels; i++) {
+        query.result.values.push(DataFormat.createValueArray(query.data.header.valueType, size));
+    }
 }
 
-async function _execute(file: number, params: Data.QueryParams, outputProvider: () => CIF.OutputStream) {
+async function _execute(file: number, params: Data.QueryParams, guid: string, serialNumber: number, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
     // Step 1a: Create data context
     const data = await createDataContext(file);
     // Step 1b: Create query context
-    const query = createQueryContext(data, params);
+    const query = createQueryContext(data, params, guid, serialNumber);
+
+    let output: any = void 0;
 
     try {
         // Step 2a: Validate query context
@@ -122,23 +138,40 @@ async function _execute(file: number, params: Data.QueryParams, outputProvider: 
         }
 
         // Step 4: Encode the result
-        encode(query, outputProvider());
+        output = outputProvider()
+        encode(query, output);
     } catch (e) {
         query.result.error = `${e}`;
         query.result.isEmpty = true;
         query.result.values = void 0;
+    } finally {
+        if (output) output.end();
     }
 }
 
-/**
- * Execute the query.
- * 
- * Closing the file and the output provider is the responsibility of the caller!
- */
-export default async function execute(file: number, params: Data.QueryParams, outputProvider: () => CIF.OutputStream) {
-    try {
-        await _execute(file, params, outputProvider)
-    } catch (e) {
+export async function execute(file: number, params: Data.QueryParams, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
+    const start = getTime();
+    State.pendingQueries++;
 
+    const guid = generateUUID();
+    const serialNumber = State.querySerial++;
+
+    const { a, b } = params.box;
+    Logger.log(`[GUID] ${guid}`, serialNumber);
+    Logger.log(`[Id] ${params.source}/${params.id}`, serialNumber);
+    Logger.log(`[Box] ${a.kind === Coords.Space.Cartesian ? 'cart' : 'frac'} [${a[0]},${a[1]},${a[2]}] [${b[0]},${b[1]},${b[2]}]`, serialNumber);
+    Logger.log(`[Encoding] ${params.asBinary ? 'bcif' : 'cif'}`, serialNumber);
+
+    try {
+        await _execute(file, params, guid, serialNumber, outputProvider);
+        Logger.log(`[OK]`, serialNumber); 
+        return true;
+    } catch (e) {
+        Logger.log(`[Error] ${e}`, serialNumber); 
+    } finally {
+        State.pendingQueries--;
+        const time = getTime() - start;
+        Logger.log(`[Time] ${Math.round(time)}ms`, serialNumber);
+        return false;
     }
 }

@@ -77,6 +77,13 @@ function getValueByteSize(type) {
     return 1;
 }
 exports.getValueByteSize = getValueByteSize;
+function createValueArray(type, size) {
+    if (type === 0 /* Float32 */) {
+        return new Float32Array(new ArrayBuffer(4 * size));
+    }
+    return new Int8Array(new ArrayBuffer(size));
+}
+exports.createValueArray = createValueArray;
 function encodeHeader(header) {
     return Schema.encode(headerSchema, header);
 }

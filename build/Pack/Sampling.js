@@ -46,7 +46,7 @@ var Writer = require("./Writer");
 var DataFormat = require("../Common/DataFormat");
 function getSamplingRates(baseSampleCount, blockSize) {
     var allowedDivisors = [2, 3, 5];
-    var maxDiv = 2 * Math.ceil(baseSampleCount.reduce(function (m, v) { return Math.min(m, v); }, baseSampleCount[0]) / blockSize);
+    var maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce(function (m, v) { return Math.min(m, v); }, baseSampleCount[0]) / blockSize), blockSize / 2);
     var ret = [1];
     var _loop_1 = function (i) {
         // we do not want "large"" prime divisors such as 13 or 17.
@@ -59,16 +59,10 @@ function getSamplingRates(baseSampleCount, blockSize) {
     }
     return ret;
 }
-function createBuffer(type, size) {
-    if (type === 0 /* Float32 */) {
-        return new Float32Array(new ArrayBuffer(4 * size));
-    }
-    return new Int8Array(new ArrayBuffer(size));
-}
 function createBlocksLayer(sampleCount, blockSize, valueType, numChannels) {
     var values = [];
     for (var i = 0; i < numChannels; i++)
-        values[i] = createBuffer(valueType, sampleCount[0] * sampleCount[1] * blockSize);
+        values[i] = DataFormat.createValueArray(valueType, sampleCount[0] * sampleCount[1] * blockSize);
     return {
         dimensions: [sampleCount[0], sampleCount[1], blockSize],
         values: values,
@@ -118,9 +112,10 @@ function createContext(filename, channels, blockSize, isPeriodic) {
                     litteEndianCubeBuffer = File.IsNativeEndianLittle
                         ? cubeBuffer
                         : new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
-                    // The data can be periodic iff the extent is the same as the grid.
-                    if (header.grid.some(function (v, i) { return v !== header.extent[i]; }))
+                    // The data can be periodic iff the extent is the same as the grid and origin is 0.
+                    if (header.grid.some(function (v, i) { return v !== header.extent[i]; }) || header.origin.some(function (v) { return v !== 0; })) {
                         isPeriodic = false;
+                    }
                     _a = {};
                     return [4 /*yield*/, File.createFile(filename)];
                 case 1:

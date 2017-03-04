@@ -40,15 +40,16 @@ export interface QueryParams {
     source: string,
     id: string,
     box: Box.Cartesian | Box.Fractional,
-    guid: string
 }
 
 export interface QueryContext {
+    guid: string,
+    serialNumber: number,
     data: DataContext,
     params: QueryParams,
     sampling: Sampling,
     fractionalBox: Box.Fractional,
-    gridBox: Box.Grid<'Query'>,
+    gridDomain: Coords.GridDomain<'Query'>,
     result: QueryResult
 }
 

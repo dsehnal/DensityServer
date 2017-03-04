@@ -103,6 +103,13 @@ export function getValueByteSize(type: ValueType) {
     return 1;
 }
 
+export function createValueArray(type: ValueType, size: number) {
+    if (type === ValueType.Float32) {
+        return new Float32Array(new ArrayBuffer(4 * size));
+    }
+    return new Int8Array(new ArrayBuffer(size));
+}
+
 export function encodeHeader(header: Header) {
     return Schema.encode(headerSchema, header);
 }

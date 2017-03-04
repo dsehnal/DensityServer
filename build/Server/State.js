@@ -3,3 +3,8 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.State = {
+    pendingQueries: 0,
+    shutdownOnZeroPending: false,
+    querySerial: 0
+};

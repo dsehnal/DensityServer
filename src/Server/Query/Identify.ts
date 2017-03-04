@@ -67,7 +67,7 @@ function addUniqueBlock(blocks: UniqueBlocks, coord: Coords.Grid<'Block'>, offse
 
 function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractional, blocks: UniqueBlocks) {
     const shifted = Box.shift(query.fractionalBox, offset);
-    const intersection = Box.intersect(shifted, query.data.coordinates.dataBox);
+    const intersection = Box.intersect(shifted, query.data.dataBox);
 
     // Intersection can be empty in the case of "aperiodic spacegroups"
     if (!intersection) return;

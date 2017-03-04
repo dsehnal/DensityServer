@@ -23,15 +23,15 @@ export async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Bl
     };
 }
 
-function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGridBox: Box.Grid<'BlockGrid'>) {
+function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGridBox: Box.Grid<'BlockGrid'>, queryGridBox: Box.Grid<'Query'>) {
     const { values: source, sampleCount: blockSampleCount } = blockData;
 
-    const tSizeH = query.gridBox.a.domain.sampleCount[0], 
-          tSizeHK = query.gridBox.a.domain.sampleCount[0] * query.gridBox.a.domain.sampleCount[1];
+    const tSizeH = query.gridDomain.sampleCount[0], 
+          tSizeHK = query.gridDomain.sampleCount[0] * query.gridDomain.sampleCount[1];
     const sSizeH = blockSampleCount[0],
           sSizeHK = blockSampleCount[0] * blockSampleCount[1];
 
-    const offsetTarget = query.gridBox.a[0] + query.gridBox.a[1] * tSizeH + query.gridBox.a[2] * tSizeHK;
+    const offsetTarget = queryGridBox.a[0] + queryGridBox.a[1] * tSizeH + queryGridBox.a[2] * tSizeHK;
 
     const [maxH, maxK, maxL] = Box.dimensions(blockGridBox);
 
@@ -70,7 +70,8 @@ async function fillBlock(query: Data.QueryContext, block: Identify.UniqueBlock) 
         const dataBox = Box.intersect(offsetBlockBox, query.fractionalBox);
         if (!dataBox) continue;
         const blockGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, blockGridDomain));
-        fillData(query, blockData, blockGridBox);
+        const queryGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, query.gridDomain));
+        fillData(query, blockData, blockGridBox, queryGridBox);
     }
 }
 

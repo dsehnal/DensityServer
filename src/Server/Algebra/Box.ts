@@ -45,8 +45,14 @@ export function clampGridToSamples<C extends Coords.Grid<K>, K>(box: Box<C>): Bo
     return { a: Coords.clampGridToSamples(box.a), b: Coords.clampGridToSamples(box.b) } as Box<C>;
 }
 
-export function fractionalToDomain<K>(box: Fractional, domain: K, delta: Coords.Fractional): Coords.GridDomain<K> {
-
+export function fractionalToDomain<K>(box: Fractional, kind: K, delta: Coords.Fractional): Coords.GridDomain<K> {
+    const ds = Coords.fractional(dimensions(box));
+    return Coords.domain(kind, {
+        delta,
+        origin: box.a,
+        dimensions: ds,
+        sampleCount: Coords.sampleCounts(ds, delta, 'ceil')
+    });
 }
 
 export function fractionalFromBlock(block: Coords.Grid<'Block'>): Fractional {

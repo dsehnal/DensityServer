@@ -1,3 +1,6 @@
+# 0.9.0
+* Rewrote pretty much everything.
+
 # 0.8.4
 * Add support for converting CCP4 mode 0 maps.
 

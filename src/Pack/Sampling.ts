@@ -10,28 +10,22 @@ import * as Writer from './Writer'
 import * as DataFormat from '../Common/DataFormat'
 
 function getSamplingRates(baseSampleCount: number[], blockSize: number) {
-    const allowedDivisors = [2, 3, 5];
-    const maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce((m, v) => Math.min(m, v), baseSampleCount[0]) / blockSize), blockSize / 2);
     const ret = [1];
-    for (let i = 2; i <= maxDiv; i++) {
-        // we do not want "large"" prime divisors such as 13 or 17.
-        if (allowedDivisors.some(d => (i % d) === 0)) {
-            ret.push(i);
-        }
-    }
+    // TODO
+    //const allowedDivisors = [2, 3, 5];
+    //const maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce((m, v) => Math.min(m, v), baseSampleCount[0]) / blockSize), blockSize / 2);
+    // for (let i = 2; i <= maxDiv; i++) {
+    //     // we do not want "large"" prime divisors such as 13 or 17.
+    //     if (allowedDivisors.some(d => (i % d) === 0)) {
+    //         ret.push(i);
+    //     }
+    // }
     return ret;
-}
-
-function createBuffer(type: DataFormat.ValueType, size: number): DataFormat.ValueArray {
-    if (type === DataFormat.ValueType.Float32) {
-        return new Float32Array(new ArrayBuffer(4 * size));
-    }
-    return new Int8Array(new ArrayBuffer(size));
 }
 
 function createBlocksLayer(sampleCount: number[], blockSize: number, valueType: DataFormat.ValueType, numChannels: number): Data.BlocksLayer {
     const values = [];
-    for (let i = 0; i < numChannels; i++) values[i] = createBuffer(valueType, sampleCount[0] * sampleCount[1] * blockSize);
+    for (let i = 0; i < numChannels; i++) values[i] = DataFormat.createValueArray(valueType, sampleCount[0] * sampleCount[1] * blockSize);
     return {
         dimensions: [sampleCount[0], sampleCount[1], blockSize],
         values,

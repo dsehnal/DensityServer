@@ -1,129 +1,236 @@
-// /*
-//  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
-//  */
+/*
+ * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
+ */
 "use strict";
-// import * as express from 'express'
-// import * as Query from './Query'
-// import * as Data from './DataModel'
-// import Docs from './Documentation'
-// import * as CIFTools from '../lib/CIFTools'
-// import ServerConfig from '../ServerConfig'
-// import * as Logger from '../Utils/Logger'
-// export const State = {
-//     pendingQueries: 0,
-//     shutdownOnZeroPending: false,
-//     querySerial: 0
-// }
-// function makePath(p: string) {
-//     return ServerConfig.apiPrefix + '/' + p;
-// }
-// function mapFile(type: string, id: string) {
-//     return ServerConfig.mapFile(type || '', id || '');
-// }
-// function getOutputFilename(source: string, id: string, isBinary: boolean, box: Data.Box) {
-//     function n(s: string) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase() }
-//     let b = box.a.map(a => Math.round(a)).join('_') + '-' + box.b.map(a => Math.round(a)).join('_'); 
-//     return `${n(source)}_${n(id)}-${b}.${isBinary ? 'bcif' : 'cif'}`;
-// }
-// function wrapResponse(fn: string, res: express.Response): CIFTools.OutputStream & { headerWritten: boolean } {
-//     let w = {
-//         writeHeader(this: any, binary: boolean) {
-//             res.writeHead(200, {
-//                 'Content-Type': binary ? 'application/octet-stream' : 'text/plain; charset=utf-8',
-//                 'Access-Control-Allow-Origin': '*',
-//                 'Access-Control-Allow-Headers': 'X-Requested-With',
-//                 'Content-Disposition': `inline; filename="${fn}"`
-//             });
-//             this.headerWritten = true;
-//         },
-//         writeBinary(this: any, data: Uint8Array) {
-//             if (!this.headerWritten) this.writeHeader(true);
-//             return res.write(new Buffer(data.buffer));
-//         },
-//         writeString(this: any, data: string) {
-//             if (!this.headerWritten) this.writeHeader(false);
-//             return res.write(data);
-//         },
-//         headerWritten: false
-//     };
-//     return w;
-// }
-// function queryDone() {
-//     State.pendingQueries--;
-//     if (State.shutdownOnZeroPending) {
-//         process.exit(0);
-//     }
-// }
-// function getTime() {
-//     let t = process.hrtime();
-//     return t[0] * 1000 + t[1] / 1000000;
-// }
-// function generateUUID() {
-//     var d = new Date().getTime() + getTime();    
-//     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-//         var r = (d + Math.random()*16)%16 | 0;
-//         d = Math.floor(d/16);
-//         return (c=='x' ? r : (r&0x3|0x8)).toString(16);
-//     });
-//     return uuid;
-// }
-// export function init(app: express.Express) {
-//     app.get(makePath(':source/:id/?$'), async (req, res) => {
-//         State.pendingQueries++;
-//         Logger.log(`[Info] ${req.params.source}/${req.params.id}`);
-//         try {
-//             let info = await Query.info(mapFile(req.params.source, req.params.id))
-//             let ret = JSON.stringify(info, null, 2);
-//             res.writeHead(200, {
-//                 'Content-Type': 'application/json; charset=utf-8',
-//                 'Access-Control-Allow-Origin': '*',
-//                 'Access-Control-Allow-Headers': 'X-Requested-With'
-//             });
-//             res.write(ret);
-//         } catch (e) {
-//             res.writeHead(404);
-//             Logger.log(`[Info] [Error] ${req.params.source}/${req.params.id}: ${e}`);
-//         } finally {
-//             res.end();
-//             queryDone();
-//         }
-//     });
-//     app.get(makePath(':source/:id/:a1,:a2,:a3/:b1,:b2,:b3/?'), async (req, res) => {   
-//         State.pendingQueries++;
-//         let qs = ++State.querySerial;
-//         let guid = generateUUID();
-//         Logger.log(`[GUID] ${guid}`, qs);
-//         Logger.log(`[Id] ${req.params.source}/${req.params.id}`, qs);
-//         Logger.log(`[Params] ${req.params.a1},${req.params.a2},${req.params.a3}/${req.params.b1},${req.params.b2},${req.params.b3}/?text=${req.query.text !== '1' ? '0' : '1'}`, qs);
-//         let started = getTime();
-//         let box: Data.Box = { 
-//             a: [+req.params.a1, +req.params.a2, +req.params.a3], 
-//             b: [+req.params.b1, +req.params.b2, +req.params.b3]
-//         };
-//         let asBinary = req.query.text !== '1';
-//         let fn = getOutputFilename(req.params.source, req.params.id, asBinary, box);
-//         let s = wrapResponse(fn, res);
-//         try {
-//             let params: Data.QueryParams = { asBinary, box, id: req.params.id, source: req.params.source, guid };    
-//             let ok = await Query.query(params, s);
-//             if (!ok) {
-//                 res.writeHead(404);
-//                 Logger.log('[Error] Failed.', qs);
-//                 return;
-//             }
-//             Logger.log(`[OK]`, qs); 
-//         } catch (e) {
-//             if (!s.headerWritten) res.writeHead(404);
-//             Logger.log(`[Error] ${e}`, qs);            
-//         } finally {
-//             res.end();
-//             queryDone();
-//             let ended = getTime() - started;
-//             Logger.log(`[Time] ${Math.round(ended)}ms`, qs);
-//         }
-//     });
-//     app.get('*', (req, res) => {
-//         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-//         res.end(Docs);
-//     });
-// }  
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
+    return { next: verb(0), "throw": verb(1), "return": verb(2) };
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var File = require("../Common/File");
+var Query = require("./Query/Execute");
+var Coords = require("./Algebra/Coordinate");
+var Documentation_1 = require("./Documentation");
+var ServerConfig_1 = require("../ServerConfig");
+var Logger = require("./Utils/Logger");
+var DataFormat = require("../Common/DataFormat");
+var State_1 = require("./State");
+function makePath(p) {
+    return ServerConfig_1.default.apiPrefix + '/' + p;
+}
+function mapFile(type, id) {
+    return ServerConfig_1.default.mapFile(type || '', id || '');
+}
+function getOutputFilename(source, id, isBinary, _a) {
+    var a = _a.a, b = _a.b;
+    function n(s) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase(); }
+    function r(v) { return Math.round(10 * v) / 10; }
+    var box = r(a[0]) + "_" + r(a[1]) + "+" + r(a[2]) + "_" + r(b[0]) + "_" + r(b[1]) + "+" + r(b[2]);
+    return n(source) + "_" + n(id) + "-" + box + "." + (isBinary ? 'bcif' : 'cif');
+}
+function wrapResponse(fn, res) {
+    var w = {
+        do404: function () {
+            if (!this.headerWritten) {
+                res.writeHead(404);
+                this.headerWritten = true;
+            }
+            this.end();
+        },
+        writeHeader: function (binary) {
+            if (this.headerWritten)
+                return;
+            res.writeHead(200, {
+                'Content-Type': binary ? 'application/octet-stream' : 'text/plain; charset=utf-8',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'X-Requested-With',
+                'Content-Disposition': "inline; filename=\"" + fn + "\""
+            });
+            this.headerWritten = true;
+        },
+        writeBinary: function (data) {
+            if (!this.headerWritten)
+                this.writeHeader(true);
+            return res.write(new Buffer(data.buffer));
+        },
+        writeString: function (data) {
+            if (!this.headerWritten)
+                this.writeHeader(false);
+            return res.write(data);
+        },
+        end: function () {
+            if (this.ended)
+                return;
+            res.end();
+            this.ended = true;
+        },
+        ended: false,
+        headerWritten: false
+    };
+    return w;
+}
+function queryDone() {
+    if (State_1.State.shutdownOnZeroPending) {
+        process.exit(0);
+    }
+}
+function readHeader(src, id) {
+    return __awaiter(this, void 0, void 0, function () {
+        var filename, file, header, e_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    filename = mapFile(src, id);
+                    if (!filename)
+                        return [2 /*return*/, void 0];
+                    return [4 /*yield*/, File.openRead(filename)];
+                case 1:
+                    file = _a.sent();
+                    return [4 /*yield*/, DataFormat.readHeader(file)];
+                case 2:
+                    header = _a.sent();
+                    return [2 /*return*/, header];
+                case 3:
+                    e_1 = _a.sent();
+                    Logger.log("[Info] [Error] " + src + "/" + id + ": " + e_1);
+                    return [2 /*return*/, void 0];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function init(app) {
+    var _this = this;
+    // Header
+    app.get(makePath(':source/:id/?$'), function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+        var headerWritten, header, json;
+        return __generator(this, function (_a) {
+            Logger.log("[Info] " + req.params.source + "/" + req.params.id);
+            headerWritten = false;
+            try {
+                header = readHeader(req.params.source, req.params.id);
+                if (header) {
+                    json = JSON.stringify(header, null, 2);
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Headers': 'X-Requested-With'
+                    });
+                    headerWritten = true;
+                    res.write(json);
+                }
+                else {
+                    res.writeHead(404);
+                    headerWritten = true;
+                }
+            }
+            catch (e) {
+                Logger.log("[Info] [Error] " + req.params.source + "/" + req.params.id + ": " + e);
+                if (!headerWritten) {
+                    res.writeHead(404);
+                }
+            }
+            finally {
+                res.end();
+            }
+            return [2 /*return*/];
+        });
+    }); });
+    // Box
+    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+        var a, b, isCartesian, box, asBinary, outputFilename, response, file, params, filename, ok, e_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    a = [+req.params.a1, +req.params.a2, +req.params.a3];
+                    b = [+req.params.b1, +req.params.b2, +req.params.b3];
+                    isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
+                    box = isCartesian
+                        ? { a: Coords.cartesian(a), b: Coords.cartesian(b) }
+                        : { a: Coords.fractional(a), b: Coords.fractional(b) };
+                    asBinary = req.query.text !== '1';
+                    outputFilename = getOutputFilename(req.params.source, req.params.id, asBinary, box);
+                    response = wrapResponse(outputFilename, res);
+                    file = void 0;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 4, 5, 6]);
+                    params = {
+                        asBinary: asBinary,
+                        box: box,
+                        id: req.params.id,
+                        source: req.params.source
+                    };
+                    filename = mapFile(req.params.source, req.params.id);
+                    if (!filename) {
+                        response.do404();
+                        return [2 /*return*/];
+                    }
+                    return [4 /*yield*/, File.openRead(filename)];
+                case 2:
+                    file = _a.sent();
+                    return [4 /*yield*/, Query.execute(file, params, function () { return response; })];
+                case 3:
+                    ok = _a.sent();
+                    if (!ok) {
+                        response.do404();
+                        return [2 /*return*/];
+                    }
+                    return [3 /*break*/, 6];
+                case 4:
+                    e_2 = _a.sent();
+                    Logger.log("[Error] " + e_2);
+                    response.do404();
+                    return [3 /*break*/, 6];
+                case 5:
+                    if (file !== void 0) {
+                        try {
+                            File.close(file);
+                        }
+                        catch (e) { }
+                    }
+                    response.end();
+                    queryDone();
+                    return [7 /*endfinally*/];
+                case 6: return [2 /*return*/];
+            }
+        });
+    }); });
+    app.get('*', function (req, res) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(Documentation_1.default);
+    });
+}
+exports.init = init;

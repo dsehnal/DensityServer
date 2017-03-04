@@ -172,10 +172,15 @@ module Helpers {
         return transformInPlace([x[0], x[1], x[2]], matrix);
     }
 
+    // to prevent floating point rounding errors
+    function round(v: number) {
+        return Math.round(10000000 * v) / 10000000;
+    }
+
     export function snap(v: number, to: 'floor' | 'ceil' | 'round') {
         switch (to) {
-            case 'floor': return Math.floor(v) | 0; 
-            case 'ceil': return Math.ceil(v) | 0; 
+            case 'floor': return Math.floor(round(v)) | 0; 
+            case 'ceil': return Math.ceil(round(v)) | 0; 
             case 'round': return Math.round(v) | 0; 
         }
     }

@@ -28,8 +28,9 @@ function overlapMultiplierRange(a, b, u, v) {
 function findDataOverlapTranslationList(box, domain) {
     var ranges = [];
     var translations = [];
+    var origin = domain.origin, dimensions = domain.dimensions;
     for (var i = 0; i < 3; i++) {
-        var range = overlapMultiplierRange(box.a.coord[i], box.b.coord[i], domain.origin[i], domain.origin[i] + domain.boxDimensions[i]);
+        var range = overlapMultiplierRange(box.a[i], box.b[i], origin[i], origin[i] + dimensions[i]);
         if (!range)
             return translations;
         ranges[i] = range;
@@ -55,9 +56,9 @@ function addUniqueBlock(blocks, coord, offset) {
     }
 }
 function findUniqueBlocksOffset(query, offset, blocks) {
-    var shifted = Box.shift(query.box, offset);
-    var intersection = Box.intersect(shifted, query.data.coordinates.dataBox);
-    // this should not ever happen :)
+    var shifted = Box.shift(query.fractionalBox, offset);
+    var intersection = Box.intersect(shifted, query.data.dataBox);
+    // Intersection can be empty in the case of "aperiodic spacegroups"
     if (!intersection)
         return;
     var blockDomain = query.sampling.blockDomain;
@@ -65,7 +66,7 @@ function findUniqueBlocksOffset(query, offset, blocks) {
     // with the query region.
     //
     // Clamping the data makes sure we avoid silly rounding errors (hopefully :))
-    var _a = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain)), min = _a.a.coord, max = _a.b.coord;
+    var _a = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain)), min = _a.a, max = _a.b;
     for (var i = min[0]; i < max[0]; i++) {
         for (var j = min[1]; j < max[1]; j++) {
             for (var k = min[2]; k < max[2]; k++) {
@@ -76,7 +77,9 @@ function findUniqueBlocksOffset(query, offset, blocks) {
 }
 /** Find a list of unique blocks+offsets that overlap with the query region. */
 function findUniqueBlocks(query) {
-    var translations = findDataOverlapTranslationList(query.box, query.sampling.dataDomain);
+    var translations = query.data.header.spacegroup.isPeriodic
+        ? findDataOverlapTranslationList(query.fractionalBox, query.sampling.dataDomain)
+        : [Coords.fractional([0, 0, 0])];
     var blocks = Collections_1.FastMap.create();
     for (var _i = 0, translations_1 = translations; _i < translations_1.length; _i++) {
         var t = translations_1[_i];
@@ -87,7 +90,7 @@ function findUniqueBlocks(query) {
     // this is because that's how the data is laid out in the underlaying 
     // data format and reading the data 'in order' makes it faster.
     blockList.sort(function (a, b) {
-        var x = a.coord.coord, y = b.coord.coord;
+        var x = a.coord, y = b.coord;
         for (var i = 2; i >= 0; i--) {
             if (x[i] !== y[i])
                 return x[i] - y[i];
@@ -96,4 +99,4 @@ function findUniqueBlocks(query) {
     });
     return blockList;
 }
-exports.findUniqueBlocks = findUniqueBlocks;
+exports.default = findUniqueBlocks;
