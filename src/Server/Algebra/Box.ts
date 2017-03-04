@@ -21,6 +21,10 @@ export function fractionalToGrid<K>(box: Fractional, domain: Coords.GridDomain<K
     return { a: Coords.fractionalToGrid(box.a, domain, 'floor'), b: Coords.fractionalToGrid(box.b, domain, 'ceil') }
 }
 
+export function fractionalRoundToGrid<K>(box: Fractional, domain: Coords.GridDomain<K>): Grid<K> {
+    return { a: Coords.fractionalToGrid(box.a, domain, 'round'), b: Coords.fractionalToGrid(box.b, domain, 'round') }
+}
+
 export function shift<C extends Coords.Coord<S>, S extends Coords.Space>(box: Box<C>, offset: C): Box<C> {
     return { a: Coords.add(box.a, offset), b: Coords.add(box.b, offset) } as Box<C>;
 }

@@ -19,7 +19,9 @@ export interface GridInfo {
     /** Box dimensions in fractional coords. */
     dimensions: Fractional,
     /** Grid delta in fractional coordinates along each axis (in axis order) */
-    delta: Fractional
+    delta: Fractional,
+    /** Sample count of the grid box */
+    sampleCount: number[] 
 }
 
 /** 
@@ -28,7 +30,7 @@ export interface GridInfo {
  * can distinguish between different types of grids, 
  * e.g. GridDomain<'Data'>, GridDomain<'Query'>, GridDomain<'Block'>, etc.
  */
-export interface GridDomain<K> extends GridInfo { kind: K, sampleCount: number[] }
+export interface GridDomain<K> extends GridInfo { kind: K }
 
 export const enum Space { Cartesian, Fractional, Grid }
 export interface Coord<S extends Space> { kind: S, '0': number, '1': number, '2': number, [index: number]: number }
@@ -69,9 +71,9 @@ export function spacegroup(info: SpacegroupInfo): Spacegroup {
 // CONSTRUCTORS
 ///////////////////////////////////////////
 
-// export function domain<K>(kind: K, info: GridInfo): GridDomain<K> {
-//     return { kind, ...info };
-// }
+export function domain<K>(kind: K, info: GridInfo): GridDomain<K> {
+    return { kind, ...info };
+}
 
 export function cartesian(coord: number[]): Cartesian {
     return { kind: Space.Cartesian, 0: coord[0], 1: coord[1], 2: coord[2] };
@@ -98,7 +100,7 @@ export function cartesianToFractional(a: Cartesian, spacegroup: Spacegroup, axis
     return fractional([coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]]);
 }
 
-export function fractionalToGrid<K>(a: Fractional, domain: GridDomain<K>, snap: 'floor' | 'ceil'): Grid<K> {
+export function fractionalToGrid<K>(a: Fractional, domain: GridDomain<K>, snap: 'floor' | 'ceil' | 'round'): Grid<K> {
     const { origin, delta } = domain;
     const coord = [0, 0, 0];
 
@@ -146,6 +148,14 @@ export function perfectGridHash<K>(a: Grid<K>) {
     return a[0] + samples[0] * (a[1] + a[2] * samples[1]);
 }
 
+export function sampleCounts(dimensions: Fractional, delta: Fractional, snap: 'floor' | 'ceil' | 'round') {
+    return [
+        Helpers.snap(dimensions[0] / delta[0], snap), 
+        Helpers.snap(dimensions[1] / delta[1], snap), 
+        Helpers.snap(dimensions[2] / delta[2], snap)
+    ];
+}
+
 module Helpers {
     const u = { x: 0.1, y: 0.1, z: 0.1 };
     const v = { x: 0.1, y: 0.1, z: 0.1 };
@@ -161,7 +171,11 @@ module Helpers {
         return transformInPlace([x[0], x[1], x[2]], matrix);
     }
 
-    export function snap(v: number, to: 'floor' | 'ceil') {
-        return to === 'floor' ? Math.floor(v) | 0 : Math.ceil(v);
+    export function snap(v: number, to: 'floor' | 'ceil' | 'round') {
+        switch (to) {
+            case 'floor': return Math.floor(v) | 0; 
+            case 'ceil': return Math.ceil(v) | 0; 
+            case 'round': return Math.round(v) | 0; 
+        }
     }
 }

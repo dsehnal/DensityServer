@@ -29,6 +29,7 @@ export interface Coordinates {
 export interface DataContext {
     file: number,
     header: DataFormat.Header,
+    dataByteOffset: number,
     coordinates: Coordinates
 }
 
@@ -46,7 +47,7 @@ export interface QueryParams {
     asBinary: boolean,
     source: string,
     id: string,
-    box: Box.Cartesian,
+    box: Box.Cartesian | Box.Fractional,
     guid: string
 }
 
@@ -55,15 +56,11 @@ export interface QueryContext {
     params: QueryParams,
     sampling: Sampling,
     box: Box.Fractional,
-    domain: Coords.GridDomain<'Query'>
-}
-
-export interface QueryData {
-
+    domain: Coords.GridDomain<'Query'>,
+    result: QueryResult
 }
 
 export interface QueryResult {
-    context: QueryContext,
     isEmpty: boolean,
     error?: string,
     values?: DataFormat.ValueArray[]

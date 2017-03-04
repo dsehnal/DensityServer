@@ -11,7 +11,7 @@ import * as DataFormat from '../Common/DataFormat'
 
 function getSamplingRates(baseSampleCount: number[], blockSize: number) {
     const allowedDivisors = [2, 3, 5];
-    const maxDiv = 2 * Math.ceil(baseSampleCount.reduce((m, v) => Math.min(m, v), baseSampleCount[0]) / blockSize);
+    const maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce((m, v) => Math.min(m, v), baseSampleCount[0]) / blockSize), blockSize / 2);
     const ret = [1];
     for (let i = 2; i <= maxDiv; i++) {
         // we do not want "large"" prime divisors such as 13 or 17.
@@ -82,8 +82,10 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
         ? cubeBuffer
         : new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
     
-    // The data can be periodic iff the extent is the same as the grid.
-    if (header.grid.some((v, i) => v !== header.extent[i])) isPeriodic = false;
+    // The data can be periodic iff the extent is the same as the grid and origin is 0.
+    if (header.grid.some((v, i) => v !== header.extent[i]) || header.origin.some(v => v !== 0) ) {
+        isPeriodic = false;
+    } 
     
     const ctx: Data.Context = {
         file: await File.createFile(filename),

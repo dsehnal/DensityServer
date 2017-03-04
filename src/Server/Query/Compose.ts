@@ -18,29 +18,33 @@ function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGrid
     }
 }
 
-function createBlockGridDomain(block: Coords.Grid<'Block'>, blockSize: number): Coords.GridDomain<'BlockGrid'> {
-    throw '';
+function createBlockGridDomain(block: Coords.Grid<'Block'>, grid: Coords.GridDomain<'Data'>, blockSize: number): Coords.GridDomain<'BlockGrid'> {
+    const blockBox = Box.fractionalFromBlock(block);
+    const origin = blockBox.a;
+    const dimensions = Coords.sub(blockBox.b, blockBox.a);
+    const sampleCount = Coords.sampleCounts(dimensions, grid.delta, 'round');
+    return Coords.domain<'BlockGrid'>('BlockGrid', { origin, dimensions, delta: grid.delta, sampleCount });
 }
 
 /** Read the block data and fill all the overlaps with the query region. */
 async function fillBlock(query: Data.QueryContext, block: Identify.UniqueBlock) {
     const baseBox = Box.fractionalFromBlock(block.coord);
-    const blockGridDomain = createBlockGridDomain(block.coord, query.data.header.blockSize);
+    const blockGridDomain = createBlockGridDomain(block.coord, query.sampling.dataDomain, query.data.header.blockSize);
 
-    const blockData: Data.BlockData = await readBlock(query.data, block.coord);
+    const blockData: Data.BlockData = await readBlock(query, block.coord, baseBox);
 
     for (const offset of block.offsets) {
         const offsetBlockBox = Box.shift(baseBox, offset);
         const dataBox = Box.intersect(offsetBlockBox, query.box);
         if (!dataBox) continue;
-        const blockGridBox = Box.fractionalToGrid(dataBox, blockGridDomain);
-        const queryGridBox = Box.fractionalToGrid(dataBox, query.domain);
+        const blockGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, blockGridDomain));
+        const queryGridBox = Box.clampGridToSamples(Box.fractionalRoundToGrid(dataBox, query.domain));
         fillData(query, blockData, blockGridBox, queryGridBox);
     }
 }
 
 export async function compose(query: Data.QueryContext, blocks: Identify.UniqueBlock[]) {
     for (const block of blocks) {
-        fillBlock(query, block);
+        await fillBlock(query, block);
     }
 }

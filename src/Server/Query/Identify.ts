@@ -69,7 +69,7 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
     const shifted = Box.shift(query.box, offset);
     const intersection = Box.intersect(shifted, query.data.coordinates.dataBox);
 
-    // this should not ever happen :)
+    // Intersection can be empty in the case of "aperiodic spacegroups"
     if (!intersection) return;
 
     const blockDomain = query.sampling.blockDomain;
@@ -92,7 +92,12 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
 
 /** Find a list of unique blocks+offsets that overlap with the query region. */
 export function findUniqueBlocks(query: Data.QueryContext) {
-    const translations = findDataOverlapTranslationList(query.box, query.sampling.dataDomain);
+    const translations = query.data.header.spacegroup.isPeriodic
+        // find all query box translations that overlap with the unit cell.
+        ? findDataOverlapTranslationList(query.box, query.sampling.dataDomain) 
+        // no translations
+        : [Coords.fractional([0, 0, 0])];
+        
     const blocks: UniqueBlocks = FastMap.create<number, UniqueBlock>();
 
     for (const t of translations) {
