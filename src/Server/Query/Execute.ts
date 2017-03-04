@@ -78,13 +78,33 @@ function pickSampling(data: Data.DataContext, queryBox: Box.Fractional) {
 }
 
 function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number,): Data.QueryContext {
-    const queryBox = params.box.a.kind === Coords.Space.Fractional 
+    const inputQueryBox = params.box.a.kind === Coords.Space.Fractional 
         ? params.box as Box.Fractional
         : Box.cartesianToFractional(params.box as Box.Cartesian, data.spacegroup, data.header.axisOrder);
+
+    let queryBox;
+    if (!data.header.spacegroup.isPeriodic) {
+        if (!Box.areIntersecting(data.dataBox, inputQueryBox)) {
+            return {
+                guid,
+                serialNumber,
+                data,
+                params,
+                sampling: data.sampling[0],
+                fractionalBox: { a: Coords.fractional([0,0,0]), b: Coords.fractional([0,0,0]) },
+                gridDomain: Box.fractionalToDomain<'Query'>({ a: Coords.fractional([0,0,0]), b: Coords.fractional([0,0,0]) }, 'Query', data.sampling[0].dataDomain.delta),
+                result: { error: void 0, isEmpty: true } as any
+            }
+        }
+        queryBox = Box.intersect(data.dataBox, inputQueryBox)!;
+    } else {
+        queryBox = inputQueryBox;
+    }
 
     const sampling = pickSampling(data, queryBox);
     // snap the query box to the sampling grid:
     const fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+
 
     console.log({ gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta) });
 
@@ -96,7 +116,7 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
         sampling,
         fractionalBox,
         gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta),
-        result: { error: void 0, isEmpty: true } as any
+        result: { error: void 0, isEmpty: false } as any
     }
 }
 
@@ -122,22 +142,24 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, se
     let output: any = void 0;
 
     try {
-        // Step 2a: Validate query context
-        validateQueryContext(query);
+        if (!query.result.isEmpty) {
+            // Step 2a: Validate query context
+            validateQueryContext(query);
 
-        // Step 2b: Identify blocks that overlap with the query data.
-        const blocks = identify(query);
+            // Step 2b: Identify blocks that overlap with the query data.
+            const blocks = identify(query);
 
-        if (blocks.length === 0) {
-            query.result.isEmpty = true;
-        } else {
-            query.result.isEmpty = false;
+            if (blocks.length === 0) {
+                query.result.isEmpty = true;
+            } else {
+                query.result.isEmpty = false;
 
-            // Step 3a: Allocate space for result data
-            allocateResult(query);
+                // Step 3a: Allocate space for result data
+                allocateResult(query);
 
-            // Step 3b: Compose the result data
-            await compose(query, blocks);
+                // Step 3b: Compose the result data
+                await compose(query, blocks);
+            }
         }
 
         // Step 4: Encode the result

@@ -113,9 +113,28 @@ function pickSampling(data, queryBox) {
     return data.sampling[0];
 }
 function createQueryContext(data, params, guid, serialNumber) {
-    var queryBox = params.box.a.kind === 1 /* Fractional */
+    var inputQueryBox = params.box.a.kind === 1 /* Fractional */
         ? params.box
         : Box.cartesianToFractional(params.box, data.spacegroup, data.header.axisOrder);
+    var queryBox;
+    if (!data.header.spacegroup.isPeriodic) {
+        if (!Box.areIntersecting(data.dataBox, inputQueryBox)) {
+            return {
+                guid: guid,
+                serialNumber: serialNumber,
+                data: data,
+                params: params,
+                sampling: data.sampling[0],
+                fractionalBox: { a: Coords.fractional([0, 0, 0]), b: Coords.fractional([0, 0, 0]) },
+                gridDomain: Box.fractionalToDomain({ a: Coords.fractional([0, 0, 0]), b: Coords.fractional([0, 0, 0]) }, 'Query', data.sampling[0].dataDomain.delta),
+                result: { error: void 0, isEmpty: true }
+            };
+        }
+        queryBox = Box.intersect(data.dataBox, inputQueryBox);
+    }
+    else {
+        queryBox = inputQueryBox;
+    }
     var sampling = pickSampling(data, queryBox);
     // snap the query box to the sampling grid:
     var fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
@@ -128,7 +147,7 @@ function createQueryContext(data, params, guid, serialNumber) {
         sampling: sampling,
         fractionalBox: fractionalBox,
         gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta),
-        result: { error: void 0, isEmpty: true }
+        result: { error: void 0, isEmpty: false }
     };
 }
 function validateQueryContext(query) {
@@ -155,6 +174,7 @@ function _execute(file, params, guid, serialNumber, outputProvider) {
                     _a.label = 2;
                 case 2:
                     _a.trys.push([2, 6, 7, 8]);
+                    if (!!query.result.isEmpty) return [3 /*break*/, 5];
                     // Step 2a: Validate query context
                     validateQueryContext(query);
                     blocks = Identify_1.default(query);
