@@ -138,12 +138,13 @@
 //         string(ctx, 'error', ctx => ctx.error!),
 //         string(ctx, 'query_source', ctx => ctx.params.source),
 //         string(ctx, 'query_id', ctx => ctx.params.id),
-//         float64(ctx, 'query_region_a[0]', ctx => ctx.params.box.a.coord[0]),
-//         float64(ctx, 'query_region_a[1]', ctx => ctx.params.box.a.coord[1]),
-//         float64(ctx, 'query_region_a[2]', ctx => ctx.params.box.a.coord[2]),     
-//         float64(ctx, 'query_region_b[0]', ctx => ctx.params.box.b.coord[0]),
-//         float64(ctx, 'query_region_b[1]', ctx => ctx.params.box.b.coord[1]),
-//         float64(ctx, 'query_region_b[2]', ctx => ctx.params.box.b.coord[2]),
+//         string(ctx, 'region_type', ctx => ctx.params.box.a.kind.toLowerCase()),
+//         float64(ctx, 'query_region_a[0]', ctx => ctx.params.box.a[0]),
+//         float64(ctx, 'query_region_a[1]', ctx => ctx.params.box.a[1]),
+//         float64(ctx, 'query_region_a[2]', ctx => ctx.params.box.a[2]),     
+//         float64(ctx, 'query_region_b[0]', ctx => ctx.params.box.b[0]),
+//         float64(ctx, 'query_region_b[1]', ctx => ctx.params.box.b[1]),
+//         float64(ctx, 'query_region_b[2]', ctx => ctx.params.box.b[2]),
 //     ];
 
 //     return <CategoryInstance<ServerContext>>{
