@@ -12,14 +12,14 @@ import * as DataFormat from '../Common/DataFormat'
 function getSamplingRates(baseSampleCount: number[], blockSize: number) {
     const ret = [1];
     // TODO
-    //const allowedDivisors = [2, 3, 5];
-    //const maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce((m, v) => Math.min(m, v), baseSampleCount[0]) / blockSize), blockSize / 2);
-    // for (let i = 2; i <= maxDiv; i++) {
-    //     // we do not want "large"" prime divisors such as 13 or 17.
-    //     if (allowedDivisors.some(d => (i % d) === 0)) {
-    //         ret.push(i);
-    //     }
-    // }
+    const allowedDivisors = [2, 3, 5];
+    const maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce((m, v) => Math.min(m, v), baseSampleCount[0]) / blockSize), blockSize / 2);
+    for (let i = 2; i <= maxDiv; i++) {
+        // we do not want "large"" prime divisors such as 13 or 17.
+        if (allowedDivisors.some(d => (i % d) === 0)) {
+            ret.push(i);
+        }
+    }
     return ret;
 }
 

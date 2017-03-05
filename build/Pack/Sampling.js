@@ -47,14 +47,17 @@ var DataFormat = require("../Common/DataFormat");
 function getSamplingRates(baseSampleCount, blockSize) {
     var ret = [1];
     // TODO
-    //const allowedDivisors = [2, 3, 5];
-    //const maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce((m, v) => Math.min(m, v), baseSampleCount[0]) / blockSize), blockSize / 2);
-    // for (let i = 2; i <= maxDiv; i++) {
-    //     // we do not want "large"" prime divisors such as 13 or 17.
-    //     if (allowedDivisors.some(d => (i % d) === 0)) {
-    //         ret.push(i);
-    //     }
-    // }
+    var allowedDivisors = [2, 3, 5];
+    var maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce(function (m, v) { return Math.min(m, v); }, baseSampleCount[0]) / blockSize), blockSize / 2);
+    var _loop_1 = function (i) {
+        // we do not want "large"" prime divisors such as 13 or 17.
+        if (allowedDivisors.some(function (d) { return (i % d) === 0; })) {
+            ret.push(i);
+        }
+    };
+    for (var i = 2; i <= maxDiv; i++) {
+        _loop_1(i);
+    }
     return ret;
 }
 function createBlocksLayer(sampleCount, blockSize, valueType, numChannels) {

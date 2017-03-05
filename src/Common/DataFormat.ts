@@ -54,11 +54,11 @@ export interface Header {
     /** Axis order from the slowest to fastest moving, same as in CCP4 */
     axisOrder: number[],
 
-    /** Dimensions in fractional coordinates, in axisOrder */
-    dimensions: number[],
-
     /** Origin in fractional coordinates, in axisOrder */
     origin: number[],
+
+    /** Dimensions in fractional coordinates, in axisOrder */
+    dimensions: number[],
 
     spacegroup: Spacegroup,
     channels: Channel[],    
@@ -73,8 +73,8 @@ module _schema {
         ['valueType', int],
         ['blockSize', int],
         ['axisOrder', array(int)],
-        ['dimensions', array(float)],
         ['origin', array(float)],
+        ['dimensions', array(float)],
         ['spacegroup', obj<Spacegroup>([
             ['number', int],
             ['size', array(float)],

@@ -100,8 +100,8 @@ export function createHeader(ctx: Context): DataFormat.Header {
         valueType: header.mode === CCP4.Mode.Float32 ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8,
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,
-        dimensions: normalize(header.extent),
         origin: normalize(header.origin),
+        dimensions: normalize(header.extent),
         spacegroup: { number: header.spacegroupNumber, size: header.cellSize, angles: header.cellAngles, isPeriodic: ctx.isPeriodic },
         channels: ctx.channels.map(c => ({ 
             name: c.header.name,

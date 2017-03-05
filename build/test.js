@@ -42,7 +42,8 @@ function run() {
         sourceFilename: 'g:/test/mdb/xray-1cbs.mdb',
         sourceId: 'x-ray/1cbs',
         asBinary: false,
-        box: { a: Coordinate.fractional([0, 0, 0]), b: Coordinate.fractional([1, 1, 1]) },
+        //box: { a: Coordinate.fractional([0.1,0.1,0.1]), b: Coordinate.fractional([1,1,1]) },
+        box: { a: Coordinate.fractional([0.1, 0.1, 0.1]), b: Coordinate.fractional([0.3, 0.3, 0.3]) },
     };
     Query.execute(params, function () { return wrapResponse('g:/test/1cbs.cif'); });
 }

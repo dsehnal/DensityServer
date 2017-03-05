@@ -43,10 +43,17 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
 <div style='text-align: center; margin-top: 12px;'>version <span style='font-weight: bold'>${VERSION}</span></div>
 
 <div style='text-align: justify; padding: 24px 0; border-bottom: 1px solid #eee'>
-  <b>DensityServer</b> is an application for serving slices of molecular density data. The main use case of the server is for 
-  browser-based viewing of the data. It uses the <a href='https://github.com/dsehnal/BinaryCIF' target='_blank' style='font-weight: bold'>BinaryCIF</a> 
-  format to deliver the data to the client. 
-  The server support is integrated into the <a href='https://github.com/dsehnal/LiteMol' target='_blank' style='font-weight: bold'>LiteMol</a> viewer.
+  <p>
+    <b>DensityServer</b> is a service for accessing subsets of volumetric density data. It automatically downsamples the data 
+    depending on the volume of the requested region to reduce the bandwidth requirements and provide near-instant access to even the 
+    largest data sets.
+  </p>
+  <p>
+    It uses the text based <a href='https://en.wikipedia.org/wiki/Crystallographic_Information_File'>CIF</a> and binary 
+    <a href='https://github.com/dsehnal/BinaryCIF' style='font-weight: bold'>BinaryCIF</a> 
+    formats to deliver the data to the client. 
+    The server support is integrated into the <a href='https://github.com/dsehnal/LiteMol' style='font-weight: bold'>LiteMol Viewer</a>.
+  </p>
 </div>
 
 <div class="cs-docs-query-wrap">
@@ -74,8 +81,9 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
   <h2>Query Data <span>/&lt;source&gt;/&lt;id&gt;/box/&lt;a,b,c&gt;/&lt;u,v,w&gt;[?text=1][&space=cartesian]</span><br> 
   <small>Returns density data inside the specified box for the given entry. For X-ray data, returns 2Fo-Fc and Fo-Fc densities in a single response.</small></h2>
   <div id="coordserver-documentation-ambientResidues-body" style="margin: 24px 24px 0 24px">    
-    <h4>Example</h4>
-    <a href="/DensityServer/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian" class="cs-docs-template-link" target="_blank" rel="nofollow">/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian</a>
+    <h4>Examples</h4>
+    <a href="/DensityServer/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian" class="cs-docs-template-link" target="_blank" rel="nofollow">/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian</a><br>
+    <a href="/DensityServer/x-ray/1cbs/box/0.1,0.1,0.1/0.23,0.31,0.18?space=fractional" class="cs-docs-template-link" target="_blank" rel="nofollow">/x-ray/1cbs/box/0.1,0.1,0.1/0.23,0.31,0.18?space=fractional</a>
     <h4>Parameters</h4>
     <table cellpadding="0" cellspacing="0" style='width: 100%'>
     <tbody><tr><th style='width: 80px'>Name</th><th>Description</th></tr>
@@ -105,10 +113,26 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
     </tbody></table>
     <h4>Consuming the Data</h4>
     <div>
-      The data can be consumed in any (modern) browser using the <a href='https://github.com/dsehnal/CIFTools.js' target='_blank'>CIFTools.js library</a> 
-      (or any other piece of code that can read text or binary CIF). The order or raw values read from the <span class='id'>_density_data.values</span> field is
-      the same as in the <a href='http://www.ccp4.ac.uk/html/maplib.html#description' target='_blank'>CCP4 format</a> with regards to
-      the <span class='id'>_density_info.axis_order</span> and <span class='id'>_density_info.extent</span>.
+      The data can be consumed in any (modern) browser using the <a href='https://github.com/dsehnal/CIFTools.js'>CIFTools.js library</a>
+      (or any other piece of code that can read text or binary CIF).
+      <ul style='padding-left: 22px'>
+        <li>
+          Each data channel (e.g. 2Fo-Fc and Fo-Fc for x-ray data) is stored as a separate data block.
+        </li>
+        <li>
+          The order of raw values in the <span class='id'>_volume_data_3d.values</span> field is
+          the same as in the <a href='http://www.ccp4.ac.uk/html/maplib.html#description'>CCP4 format</a> with regards to
+          the <span class='id'>_volume_data_3d_info.axis_order</span> and <span class='id'>_volume_data_3d_info.sample_count</span> (equivalent to <span class='id'>extent</span> in CCP4 format).
+        </li>
+        <li>
+          The stored region is described in the fractional coordinates in the fields <span class='id'>_volume_data_3d_info.origin</span> and 
+          <span class='id'>_volume_data_3d_info.dimensions</span>.
+        </li>
+        <li>
+          Spacegroup parameters are given by the fields <span class='id'>_volume_data_3d_info.spacegroup_number</span>, 
+          <span class='id'>_volume_data_3d_info.spacegroup_cell_size</span>, and <span class='id'>_volume_data_3d_info.spacegroup_cell_angles</span>.
+        </li>
+      </ul>
     </div>
   </div>
 </div>

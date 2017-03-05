@@ -48,8 +48,8 @@ var _schema;
         ['valueType', int],
         ['blockSize', int],
         ['axisOrder', array(int)],
-        ['dimensions', array(float)],
         ['origin', array(float)],
+        ['dimensions', array(float)],
         ['spacegroup', obj([
                 ['number', int],
                 ['size', array(float)],

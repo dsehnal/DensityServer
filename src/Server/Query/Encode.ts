@@ -31,11 +31,12 @@ function float64<T>(ctx: T, name: string, v: (data: T, i: number) => number, pre
     return { name, string: (data, i) => '' + Math.round(precision * v(data, i)) / precision, number: v, typedArray: Float64Array, encoder: E.by(E.byteArray) };
 }
 
-function _density_info(result: ResultContext) {
+function _volume_data_3d_info(result: ResultContext) {
     const ctx = {
         header: result.query.data.header,
         channelIndex: result.channelIndex,
-        grid: result.query.gridDomain
+        grid: result.query.gridDomain,
+        sampleRate: result.query.sampling.rate
     }
     let fields: FieldDesc<typeof ctx>[] = [
         string(ctx, 'name', ctx => ctx.header.channels[ctx.channelIndex].name),
@@ -52,19 +53,20 @@ function _density_info(result: ResultContext) {
         int32(ctx, 'dimensions[1]', ctx => ctx.grid.dimensions[1]),
         int32(ctx, 'dimensions[2]', ctx => ctx.grid.dimensions[2]),
 
+        int32(ctx, 'sample_rate', ctx => ctx.sampleRate),
         int32(ctx, 'sample_count[0]', ctx => ctx.grid.sampleCount[0]),
         int32(ctx, 'sample_count[1]', ctx => ctx.grid.sampleCount[1]),
         int32(ctx, 'sample_count[2]', ctx => ctx.grid.sampleCount[2]),
 
         int32(ctx, 'spacegroup_number', ctx => ctx.header.spacegroup.number),
 
-        float64(ctx, 'cell_size[0]', ctx => ctx.header.spacegroup.size[0], 1000),
-        float64(ctx, 'cell_size[1]', ctx => ctx.header.spacegroup.size[1], 1000),
-        float64(ctx, 'cell_size[2]', ctx => ctx.header.spacegroup.size[2], 1000),
+        float64(ctx, 'spacegroup_cell_size[0]', ctx => ctx.header.spacegroup.size[0], 1000),
+        float64(ctx, 'spacegroup_cell_size[1]', ctx => ctx.header.spacegroup.size[1], 1000),
+        float64(ctx, 'spacegroup_cell_size[2]', ctx => ctx.header.spacegroup.size[2], 1000),
 
-        float64(ctx, 'cell_angles[0]', ctx => ctx.header.spacegroup.angles[0], 1000),
-        float64(ctx, 'cell_angles[1]', ctx => ctx.header.spacegroup.angles[1], 1000),
-        float64(ctx, 'cell_angles[2]', ctx => ctx.header.spacegroup.angles[2], 1000),
+        float64(ctx, 'spacegroup_cell_angles[0]', ctx => ctx.header.spacegroup.angles[0], 1000),
+        float64(ctx, 'spacegroup_cell_angles[1]', ctx => ctx.header.spacegroup.angles[1], 1000),
+        float64(ctx, 'spacegroup_cell_angles[2]', ctx => ctx.header.spacegroup.angles[2], 1000),
 
         float64(ctx, 'global_mean', ctx => ctx.header.channels[ctx.channelIndex].mean),
         float64(ctx, 'global_sigma', ctx => ctx.header.channels[ctx.channelIndex].sigma),
@@ -76,13 +78,13 @@ function _density_info(result: ResultContext) {
         data: ctx,
         count: 1,
         desc: {
-            name: '_density_info',
+            name: '_volume_data_3d_info',
             fields
         }
     };
 }
 
-function _density_data(ctx: ResultContext) {
+function _volume_data_3d(ctx: ResultContext) {
     let data = ctx.query.result.values![ctx.channelIndex];
 
     let precision = 1000000;
@@ -118,7 +120,7 @@ function _density_data(ctx: ResultContext) {
         data,
         count: data.length,
         desc: {
-            name: '_density_data',
+            name: '_volume_data_3d',
             fields
         }
     };
@@ -163,8 +165,8 @@ function write(writer: Writer, query: Data.QueryContext) {
             writer.startDataBlock(header.channels[i].name);
             const ctx: ResultContext[] = [{ query, channelIndex: i }];
 
-            writer.writeCategory(_density_info, ctx);
-            writer.writeCategory(_density_data, ctx);
+            writer.writeCategory(_volume_data_3d_info, ctx);
+            writer.writeCategory(_volume_data_3d, ctx);
         }
     }
 }

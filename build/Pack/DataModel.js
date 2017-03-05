@@ -17,8 +17,8 @@ function createHeader(ctx) {
         valueType: header.mode === 2 /* Float32 */ ? 0 /* Float32 */ : 2 /* Int8 */,
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,
-        dimensions: normalize(header.extent),
         origin: normalize(header.origin),
+        dimensions: normalize(header.extent),
         spacegroup: { number: header.spacegroupNumber, size: header.cellSize, angles: header.cellAngles, isPeriodic: ctx.isPeriodic },
         channels: ctx.channels.map(function (c) { return ({
             name: c.header.name,
