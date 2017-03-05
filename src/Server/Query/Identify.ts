@@ -82,9 +82,10 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
     const { a: min, b: max } 
         = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain));
 
-
-    console.log({ frac: blockDomain })
-    console.log({ min, max });
+    //console.log({offset, intersection})
+    // console.log({offset, frac: Box.fractionalToGrid(intersection, blockDomain)})
+    // console.log({ frac: blockDomain })
+     console.log({ min, max });
 
     for (let i = min[0]; i < max[0]; i++) {
         for (let j = min[1]; j < max[1]; j++) {
@@ -105,13 +106,15 @@ export default function findUniqueBlocks(query: Data.QueryContext) {
 
     const blocks: UniqueBlocks = FastMap.create<number, UniqueBlock>();
 
+    console.log({translations});
+
     for (const t of translations) {
         findUniqueBlocksOffset(query, t, blocks);
     }
     
     const blockList = blocks.forEach((b, _, ctx) => { ctx!.push(b) }, [] as UniqueBlock[]);
 
-    console.log(blockList);
+    console.log('list', blockList);
 
     // sort the data so that the first coodinate changes the fastest 
     // this is because that's how the data is laid out in the underlaying 

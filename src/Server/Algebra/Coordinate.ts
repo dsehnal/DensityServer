@@ -101,7 +101,7 @@ export function cartesianToFractional(a: Cartesian, spacegroup: Spacegroup, axis
     return fractional([coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]]);
 }
 
-export function fractionalToGrid<K>(a: Fractional, domain: GridDomain<K>, snap: 'floor' | 'ceil' | 'round'): Grid<K> {
+export function fractionalToGrid<K>(a: Fractional, domain: GridDomain<K>, snap: 'bottom' | 'top'): Grid<K> {
     const { origin, delta } = domain;
     const coord = [0, 0, 0];
 
@@ -159,11 +159,11 @@ export function gridMetrics(dimensions: { [i: number]: number }) {
     };
 }
 
-export function sampleCounts(dimensions: Fractional, delta: Fractional, snap: 'floor' | 'ceil' | 'round') {
+export function sampleCounts(dimensions: Fractional, delta: Fractional) {
     return [
-        Helpers.snap(dimensions[0] / delta[0], snap) + 1, 
-        Helpers.snap(dimensions[1] / delta[1], snap) + 1, 
-        Helpers.snap(dimensions[2] / delta[2], snap) + 1
+        Helpers.snap(dimensions[0] / delta[0], 'top'), 
+        Helpers.snap(dimensions[1] / delta[1], 'top'), 
+        Helpers.snap(dimensions[2] / delta[2], 'top')
     ];
 }
 
@@ -178,11 +178,10 @@ module Helpers {
         return applyTransform([0.1, 0.1, 0.1], x, matrix);
     }
 
-    export function snap(v: number, to: 'floor' | 'ceil' | 'round') {
+    export function snap(v: number, to: 'bottom' | 'top') {
         switch (to) {
-            case 'floor': return Math.floor(round(v)) | 0; 
-            case 'ceil': return Math.ceil(round(v)) | 0; 
-            case 'round': return Math.round(v) | 0; 
+            case 'bottom': return Math.floor(round(v)) | 0; 
+            case 'top': return Math.ceil(round(v)) | 0; 
         }
     }
 }

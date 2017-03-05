@@ -124,11 +124,11 @@ function gridMetrics(dimensions) {
     };
 }
 exports.gridMetrics = gridMetrics;
-function sampleCounts(dimensions, delta, snap) {
+function sampleCounts(dimensions, delta) {
     return [
-        Helpers.snap(dimensions[0] / delta[0], snap) + 1,
-        Helpers.snap(dimensions[1] / delta[1], snap) + 1,
-        Helpers.snap(dimensions[2] / delta[2], snap) + 1
+        Helpers.snap(dimensions[0] / delta[0], 'top'),
+        Helpers.snap(dimensions[1] / delta[1], 'top'),
+        Helpers.snap(dimensions[2] / delta[2], 'top')
     ];
 }
 exports.sampleCounts = sampleCounts;
@@ -146,9 +146,8 @@ var Helpers;
     Helpers.transform = transform;
     function snap(v, to) {
         switch (to) {
-            case 'floor': return Math.floor(round(v)) | 0;
-            case 'ceil': return Math.ceil(round(v)) | 0;
-            case 'round': return Math.round(v) | 0;
+            case 'bottom': return Math.floor(round(v)) | 0;
+            case 'top': return Math.ceil(round(v)) | 0;
         }
     }
     Helpers.snap = snap;

@@ -23,17 +23,16 @@ function cartesianToFractional(box, spacegroup, axisOrder) {
 }
 exports.cartesianToFractional = cartesianToFractional;
 function fractionalToGrid(box, domain) {
-    return { a: Coords.fractionalToGrid(box.a, domain, 'floor'), b: Coords.fractionalToGrid(box.b, domain, 'ceil') };
+    return { a: Coords.fractionalToGrid(box.a, domain, 'bottom'), b: Coords.fractionalToGrid(box.b, domain, 'top') };
 }
 exports.fractionalToGrid = fractionalToGrid;
 function gridToFractional(box) {
     return { a: Coords.gridToFractional(box.a), b: Coords.gridToFractional(box.b) };
 }
 exports.gridToFractional = gridToFractional;
-function fractionalRoundToGrid(box, domain) {
-    return { a: Coords.fractionalToGrid(box.a, domain, 'round'), b: Coords.fractionalToGrid(box.b, domain, 'round') };
-}
-exports.fractionalRoundToGrid = fractionalRoundToGrid;
+// export function fractionalRoundToGrid<K>(box: Fractional, domain: Coords.GridDomain<K>): Grid<K> {
+//     return { a: Coords.fractionalToGrid(box.a, domain, 'round'), b: Coords.fractionalToGrid(box.b, domain, 'round') }
+// }
 ///////////////////////////////////////////
 // MISC
 ///////////////////////////////////////////
@@ -51,7 +50,7 @@ function fractionalToDomain(box, kind, delta) {
         delta: delta,
         origin: box.a,
         dimensions: ds,
-        sampleCount: Coords.sampleCounts(ds, delta, 'ceil')
+        sampleCount: Coords.sampleCounts(ds, delta)
     });
 }
 exports.fractionalToDomain = fractionalToDomain;

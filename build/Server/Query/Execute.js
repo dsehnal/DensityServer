@@ -66,7 +66,7 @@ function blockDomain(domain, blockSize) {
         origin: domain.origin,
         dimensions: domain.dimensions,
         delta: delta,
-        sampleCount: Coords.sampleCounts(domain.dimensions, delta, 'ceil')
+        sampleCount: Coords.sampleCounts(domain.dimensions, delta)
     });
 }
 exports.blockDomain = blockDomain;
@@ -76,9 +76,9 @@ function createSampling(header, index, dataOffset) {
         origin: Coords.fractional(header.origin),
         dimensions: Coords.fractional(header.dimensions),
         delta: Coords.fractional([
-            header.dimensions[0] / (sampling.sampleCount[0] - 1),
-            header.dimensions[1] / (sampling.sampleCount[1] - 1),
-            header.dimensions[2] / (sampling.sampleCount[2] - 1)
+            header.dimensions[0] / (sampling.sampleCount[0]),
+            header.dimensions[1] / (sampling.sampleCount[1]),
+            header.dimensions[2] / (sampling.sampleCount[2])
         ]),
         sampleCount: sampling.sampleCount
     });
@@ -139,6 +139,7 @@ function createQueryContext(data, params, guid, serialNumber) {
     // snap the query box to the sampling grid:
     var fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
     console.log({ gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta) });
+    console.log({ fractionalBox: fractionalBox });
     return {
         guid: guid,
         serialNumber: serialNumber,
@@ -206,10 +207,10 @@ function _execute(file, params, guid, serialNumber, outputProvider) {
                             output = outputProvider();
                         Encode_1.default(query, output);
                     }
-                    catch (e) {
-                        throw e;
+                    catch (f) {
+                        throw f;
                     }
-                    return [3 /*break*/, 8];
+                    throw e_1;
                 case 7:
                     if (output)
                         output.end();

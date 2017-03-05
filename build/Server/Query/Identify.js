@@ -68,7 +68,9 @@ function findUniqueBlocksOffset(query, offset, blocks) {
     //
     // Clamping the data makes sure we avoid silly rounding errors (hopefully :))
     var _a = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain)), min = _a.a, max = _a.b;
-    console.log({ frac: blockDomain });
+    //console.log({offset, intersection})
+    // console.log({offset, frac: Box.fractionalToGrid(intersection, blockDomain)})
+    // console.log({ frac: blockDomain })
     console.log({ min: min, max: max });
     for (var i = min[0]; i < max[0]; i++) {
         for (var j = min[1]; j < max[1]; j++) {
@@ -84,12 +86,13 @@ function findUniqueBlocks(query) {
         ? findDataOverlapTranslationList(query.fractionalBox, query.sampling.dataDomain)
         : [Coords.fractional([0, 0, 0])];
     var blocks = Collections_1.FastMap.create();
+    console.log({ translations: translations });
     for (var _i = 0, translations_1 = translations; _i < translations_1.length; _i++) {
         var t = translations_1[_i];
         findUniqueBlocksOffset(query, t, blocks);
     }
     var blockList = blocks.forEach(function (b, _, ctx) { ctx.push(b); }, []);
-    console.log(blockList);
+    console.log('list', blockList);
     // sort the data so that the first coodinate changes the fastest 
     // this is because that's how the data is laid out in the underlaying 
     // data format and reading the data 'in order' makes it faster.

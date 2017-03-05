@@ -31,12 +31,12 @@ function generateUUID() {
 }
 
 export function blockDomain(domain: Coords.GridDomain<'Data'>, blockSize: number): Coords.GridDomain<'Block'> {
-    const delta = Coords.fractional([ blockSize * domain.delta[0], blockSize * domain.delta[1], blockSize * domain.delta[2] ]);
+    const delta = Coords.fractional([blockSize * domain.delta[0], blockSize * domain.delta[1], blockSize * domain.delta[2] ]);
     return Coords.domain<'Block'>('Block', {
         origin: domain.origin,
         dimensions: domain.dimensions,
         delta,
-        sampleCount: Coords.sampleCounts(domain.dimensions, delta, 'ceil')
+        sampleCount: Coords.sampleCounts(domain.dimensions, delta)
     });
 }
 
@@ -46,9 +46,9 @@ function createSampling(header: DataFormat.Header, index: number, dataOffset: nu
         origin: Coords.fractional(header.origin),
         dimensions: Coords.fractional(header.dimensions),
         delta: Coords.fractional([
-            header.dimensions[0] / (sampling.sampleCount[0] - 1),
-            header.dimensions[1] / (sampling.sampleCount[1] - 1),
-            header.dimensions[2] / (sampling.sampleCount[2] - 1)
+            header.dimensions[0] / (sampling.sampleCount[0] ),
+            header.dimensions[1] / (sampling.sampleCount[1] ),
+            header.dimensions[2] / (sampling.sampleCount[2] )
         ]),
         sampleCount: sampling.sampleCount
     });
@@ -107,6 +107,7 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
 
 
     console.log({ gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta) });
+    console.log({ fractionalBox })
 
     return {
         guid,
@@ -172,9 +173,10 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, se
         try {
             if (!output) output = outputProvider();
             encode(query, output);
-        } catch (e) {
-            throw e;
+        } catch (f) {
+            throw f;
         }
+        throw e;
     } finally {
         if (output) output.end();
     }
@@ -196,7 +198,7 @@ export async function execute(params: Data.QueryParams, outputProvider: () => (C
     let sourceFile: number | undefined = void 0;
     try {
         sourceFile = await File.openRead(params.sourceFilename);
-        await _execute(sourceFile, params, guid, serialNumber, outputProvider);
+        await _execute(sourceFile, params, guid, serialNumber, outputProvider);     
         Logger.log(`[OK]`, serialNumber); 
         return true;
     } catch (e) {
