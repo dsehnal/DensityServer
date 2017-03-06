@@ -144,7 +144,7 @@ function createQueryContext(data, params, guid, serialNumber) {
         sampling: sampling,
         fractionalBox: fractionalBox,
         gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta),
-        result: { error: void 0, isEmpty: false }
+        result: { isEmpty: false }
     };
 }
 function validateQueryContext(query) {

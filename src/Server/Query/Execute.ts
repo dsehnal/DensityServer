@@ -79,8 +79,9 @@ function pickSampling(data: Data.DataContext, queryBox: Box.Fractional) {
     return data.sampling[0];
 }
 
-function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number,): Data.QueryContext {
+function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number): Data.QueryContext {
     const inputQueryBox = params.box.a.kind === Coords.Space.Fractional 
+        // the input is in "X,Y,Z" axis order so we need to reorder it
         ? Box.fractionalBoxReorderAxes(params.box as Box.Fractional, data.header.axisOrder)
         : Box.cartesianToFractional(params.box as Box.Cartesian, data.spacegroup, data.header.axisOrder);
 
@@ -115,7 +116,7 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
         sampling,
         fractionalBox,
         gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta),
-        result: { error: void 0, isEmpty: false } as any
+        result: { isEmpty: false }
     }
 }
 
@@ -133,8 +134,6 @@ function allocateResult(query: Data.QueryContext) {
 }
 
 async function _execute(file: number, params: Data.QueryParams, guid: string, serialNumber: number, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
-
-
     // Step 1a: Create data context
     const data = await createDataContext(file);
     // Step 1b: Create query context

@@ -88,11 +88,11 @@ export function cartesian(x: number, y: number, z: number): Cartesian {
 }
 
 export function fractional(x: number, y: number, z: number): Fractional {
-    return { kind: Space.Fractional,  0: x, 1: y, 2: z };
+    return { kind: Space.Fractional, 0: x, 1: y, 2: z };
 }
 
 export function grid<K>(domain: GridDomain<K>, x: number, y: number, z: number): Grid<K> {
-    return { kind: Space.Grid, domain,  0: x, 1: y, 2: z };
+    return { kind: Space.Grid, domain, 0: x, 1: y, 2: z };
 }
 
 export function withCoord<C extends (Coord<Space> | Grid<any>)>(a: C, x: number, y: number, z: number): C {

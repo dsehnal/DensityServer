@@ -19,75 +19,90 @@ type CategoryInstance<T> = CIF.CategoryInstance<T>
 
 import E = CIF.Binary.Encoder
 
-function string<T>(ctx: T, name: string, v: (data: T, i: number) => string): FieldDesc<T> {
+function string<T>(name: string, v: (data: T, i: number) => string): FieldDesc<T> {
     return { name, string: v };
 }
 
-function int32<T>(ctx: T, name: string, v: (data: T, i: number) => number): FieldDesc<T> {
+function int32<T>(name: string, v: (data: T, i: number) => number): FieldDesc<T> {
     return { name, string: (data, i) => '' + v(data, i), number: v, typedArray: Int32Array, encoder: E.by(E.byteArray) };
 }
 
-function float64<T>(ctx: T, name: string, v: (data: T, i: number) => number, precision = 1000000): FieldDesc<T> {
+function float64<T>(name: string, v: (data: T, i: number) => number, precision = 1000000): FieldDesc<T> {
     return { name, string: (data, i) => '' + Math.round(precision * v(data, i)) / precision, number: v, typedArray: Float64Array, encoder: E.by(E.byteArray) };
 }
 
+interface _vd3d_Ctx {
+    header: DataFormat.Header,
+    channelIndex: number,
+    grid: Coords.GridDomain<'Query'>,
+    sampleRate: number
+}
+
+const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
+    string<_vd3d_Ctx>('name', ctx => ctx.header.channels[ctx.channelIndex].name),
+        
+    int32<_vd3d_Ctx>('axis_order[0]', ctx => ctx.header.axisOrder[0]),
+    int32<_vd3d_Ctx>('axis_order[1]', ctx => ctx.header.axisOrder[1]),
+    int32<_vd3d_Ctx>('axis_order[2]', ctx => ctx.header.axisOrder[2]),
+
+    int32<_vd3d_Ctx>('origin[0]', ctx => ctx.grid.origin[0]),
+    int32<_vd3d_Ctx>('origin[1]', ctx => ctx.grid.origin[1]),
+    int32<_vd3d_Ctx>('origin[2]', ctx => ctx.grid.origin[2]),
+
+    int32<_vd3d_Ctx>('dimensions[0]', ctx => ctx.grid.dimensions[0]),
+    int32<_vd3d_Ctx>('dimensions[1]', ctx => ctx.grid.dimensions[1]),
+    int32<_vd3d_Ctx>('dimensions[2]', ctx => ctx.grid.dimensions[2]),
+
+    int32<_vd3d_Ctx>('sample_rate', ctx => ctx.sampleRate),
+    int32<_vd3d_Ctx>('sample_count[0]', ctx => ctx.grid.sampleCount[0]),
+    int32<_vd3d_Ctx>('sample_count[1]', ctx => ctx.grid.sampleCount[1]),
+    int32<_vd3d_Ctx>('sample_count[2]', ctx => ctx.grid.sampleCount[2]),
+
+    int32<_vd3d_Ctx>('spacegroup_number', ctx => ctx.header.spacegroup.number),
+
+    float64<_vd3d_Ctx>('spacegroup_cell_size[0]', ctx => ctx.header.spacegroup.size[0], 1000),
+    float64<_vd3d_Ctx>('spacegroup_cell_size[1]', ctx => ctx.header.spacegroup.size[1], 1000),
+    float64<_vd3d_Ctx>('spacegroup_cell_size[2]', ctx => ctx.header.spacegroup.size[2], 1000),
+
+    float64<_vd3d_Ctx>('spacegroup_cell_angles[0]', ctx => ctx.header.spacegroup.angles[0], 1000),
+    float64<_vd3d_Ctx>('spacegroup_cell_angles[1]', ctx => ctx.header.spacegroup.angles[1], 1000),
+    float64<_vd3d_Ctx>('spacegroup_cell_angles[2]', ctx => ctx.header.spacegroup.angles[2], 1000),
+
+    float64<_vd3d_Ctx>('global_mean', ctx => ctx.header.channels[ctx.channelIndex].mean),
+    float64<_vd3d_Ctx>('global_sigma', ctx => ctx.header.channels[ctx.channelIndex].sigma),
+    float64<_vd3d_Ctx>('global_min', ctx => ctx.header.channels[ctx.channelIndex].min),
+    float64<_vd3d_Ctx>('global_max', ctx => ctx.header.channels[ctx.channelIndex].max)
+];
+
 function _volume_data_3d_info(result: ResultContext) {
-    const ctx = {
+    const ctx: _vd3d_Ctx = {
         header: result.query.data.header,
         channelIndex: result.channelIndex,
         grid: result.query.gridDomain,
         sampleRate: result.query.sampling.rate
     }
-    let fields: FieldDesc<typeof ctx>[] = [
-        string(ctx, 'name', ctx => ctx.header.channels[ctx.channelIndex].name),
-        
-        int32(ctx, 'axis_order[0]', ctx => ctx.header.axisOrder[0]),
-        int32(ctx, 'axis_order[1]', ctx => ctx.header.axisOrder[1]),
-        int32(ctx, 'axis_order[2]', ctx => ctx.header.axisOrder[2]),
-
-        int32(ctx, 'origin[0]', ctx => ctx.grid.origin[0]),
-        int32(ctx, 'origin[1]', ctx => ctx.grid.origin[1]),
-        int32(ctx, 'origin[2]', ctx => ctx.grid.origin[2]),
-
-        int32(ctx, 'dimensions[0]', ctx => ctx.grid.dimensions[0]),
-        int32(ctx, 'dimensions[1]', ctx => ctx.grid.dimensions[1]),
-        int32(ctx, 'dimensions[2]', ctx => ctx.grid.dimensions[2]),
-
-        int32(ctx, 'sample_rate', ctx => ctx.sampleRate),
-        int32(ctx, 'sample_count[0]', ctx => ctx.grid.sampleCount[0]),
-        int32(ctx, 'sample_count[1]', ctx => ctx.grid.sampleCount[1]),
-        int32(ctx, 'sample_count[2]', ctx => ctx.grid.sampleCount[2]),
-
-        int32(ctx, 'spacegroup_number', ctx => ctx.header.spacegroup.number),
-
-        float64(ctx, 'spacegroup_cell_size[0]', ctx => ctx.header.spacegroup.size[0], 1000),
-        float64(ctx, 'spacegroup_cell_size[1]', ctx => ctx.header.spacegroup.size[1], 1000),
-        float64(ctx, 'spacegroup_cell_size[2]', ctx => ctx.header.spacegroup.size[2], 1000),
-
-        float64(ctx, 'spacegroup_cell_angles[0]', ctx => ctx.header.spacegroup.angles[0], 1000),
-        float64(ctx, 'spacegroup_cell_angles[1]', ctx => ctx.header.spacegroup.angles[1], 1000),
-        float64(ctx, 'spacegroup_cell_angles[2]', ctx => ctx.header.spacegroup.angles[2], 1000),
-
-        float64(ctx, 'global_mean', ctx => ctx.header.channels[ctx.channelIndex].mean),
-        float64(ctx, 'global_sigma', ctx => ctx.header.channels[ctx.channelIndex].sigma),
-        float64(ctx, 'global_min', ctx => ctx.header.channels[ctx.channelIndex].min),
-        float64(ctx, 'global_max', ctx => ctx.header.channels[ctx.channelIndex].max),
-    ];
 
     return <CategoryInstance<typeof ctx>>{
         data: ctx,
         count: 1,
         desc: {
             name: '_volume_data_3d_info',
-            fields
+            fields: _volume_data_3d_info_fields
         }
     };
+}
+
+function _volume_data_3d_str(ctx: DataFormat.ValueArray, i: number): string {
+    return '' + Math.round(1000000 * ctx[i]) / 1000000;
+}
+
+function _volume_data_3d_number(ctx: DataFormat.ValueArray, i: number): number {
+    return ctx[i];
 }
 
 function _volume_data_3d(ctx: ResultContext) {
     let data = ctx.query.result.values![ctx.channelIndex];
 
-    let precision = 1000000;
     let encoder: E;
     let typedArray: any;
 
@@ -110,8 +125,8 @@ function _volume_data_3d(ctx: ResultContext) {
 
     let fields: FieldDesc<typeof data>[] = [{ 
         name: 'values', 
-        string: (ctx, i) => '' + Math.round(precision * ctx[i]) / precision, 
-        number: (ctx, i) => ctx[i], 
+        string: _volume_data_3d_str, 
+        number: _volume_data_3d_number, 
         typedArray, 
         encoder
     }];
@@ -126,30 +141,30 @@ function _volume_data_3d(ctx: ResultContext) {
     };
 }
 
-function _density_server_result(ctx: Data.QueryContext) {
-    let fields: FieldDesc<Data.QueryContext>[] = [
-        string(ctx, 'server_version', ctx => VERSION),        
-        string(ctx, 'datetime_utc', ctx => new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')),
-        string(ctx, 'guid', ctx => ctx.guid),
-        string(ctx, 'is_empty', ctx => ctx.result.isEmpty ? 'yes' : 'no'),
-        string(ctx, 'has_error', ctx => ctx.result.error ? 'yes' : 'no'),
-        string(ctx, 'error', ctx => ctx.result.error!),
-        string(ctx, 'query_source_id', ctx => ctx.params.sourceId),
-        string(ctx, 'query_region_type', ctx => ctx.params.box.a.kind === Coords.Space.Cartesian ? 'cartesian' : 'fractional'),
-        float64(ctx, 'query_region_a[0]', ctx => ctx.params.box.a[0]),
-        float64(ctx, 'query_region_a[1]', ctx => ctx.params.box.a[1]),
-        float64(ctx, 'query_region_a[2]', ctx => ctx.params.box.a[2]),     
-        float64(ctx, 'query_region_b[0]', ctx => ctx.params.box.b[0]),
-        float64(ctx, 'query_region_b[1]', ctx => ctx.params.box.b[1]),
-        float64(ctx, 'query_region_b[2]', ctx => ctx.params.box.b[2]),
-    ];
+const _density_server_result_fields: FieldDesc<Data.QueryContext>[] = [
+    string<Data.QueryContext>('server_version', ctx => VERSION),        
+    string<Data.QueryContext>('datetime_utc', ctx => new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')),
+    string<Data.QueryContext>('guid', ctx => ctx.guid),
+    string<Data.QueryContext>('is_empty', ctx => ctx.result.isEmpty ? 'yes' : 'no'),
+    string<Data.QueryContext>('has_error', ctx => ctx.result.error ? 'yes' : 'no'),
+    string<Data.QueryContext>('error', ctx => ctx.result.error!),
+    string<Data.QueryContext>('query_source_id', ctx => ctx.params.sourceId),
+    string<Data.QueryContext>('query_region_type', ctx => ctx.params.box.a.kind === Coords.Space.Cartesian ? 'cartesian' : 'fractional'),
+    float64<Data.QueryContext>('query_region_a[0]', ctx => ctx.params.box.a[0]),
+    float64<Data.QueryContext>('query_region_a[1]', ctx => ctx.params.box.a[1]),
+    float64<Data.QueryContext>('query_region_a[2]', ctx => ctx.params.box.a[2]),     
+    float64<Data.QueryContext>('query_region_b[0]', ctx => ctx.params.box.b[0]),
+    float64<Data.QueryContext>('query_region_b[1]', ctx => ctx.params.box.b[1]),
+    float64<Data.QueryContext>('query_region_b[2]', ctx => ctx.params.box.b[2])
+]
 
+function _density_server_result(ctx: Data.QueryContext) {
     return <CategoryInstance<Data.QueryContext>>{
         data: ctx,
         count: 1,
         desc: {
             name: '_density_server_result',
-            fields
+            fields: _density_server_result_fields
         }
     };
 }

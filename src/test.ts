@@ -57,7 +57,6 @@ async function run() {
 
     await Query.execute(params, () => wrapResponse('g:/test/1cbs.bcif'));
 
-
     // for (let i = 0; i < 20; i++) {
 
     //     //(global as any).gc()
