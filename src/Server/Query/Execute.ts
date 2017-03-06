@@ -21,7 +21,7 @@ function getTime() {
 }
 
 function generateUUID() {
-    var d = new Date().getTime() + getTime();    
+    var d = getTime();    
     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = (d + Math.random()*16)%16 | 0;
         d = Math.floor(d/16);
@@ -31,7 +31,7 @@ function generateUUID() {
 }
 
 export function blockDomain(domain: Coords.GridDomain<'Data'>, blockSize: number): Coords.GridDomain<'Block'> {
-    const delta = Coords.fractional([blockSize * domain.delta[0], blockSize * domain.delta[1], blockSize * domain.delta[2] ]);
+    const delta = Coords.fractional(blockSize * domain.delta[0], blockSize * domain.delta[1], blockSize * domain.delta[2]);
     return Coords.domain<'Block'>('Block', {
         origin: domain.origin,
         dimensions: domain.dimensions,
@@ -43,13 +43,12 @@ export function blockDomain(domain: Coords.GridDomain<'Data'>, blockSize: number
 function createSampling(header: DataFormat.Header, index: number, dataOffset: number): Data.Sampling {
     const sampling = header.sampling[index];
     const dataDomain = Coords.domain<'Data'>('Data', {
-        origin: Coords.fractional(header.origin),
-        dimensions: Coords.fractional(header.dimensions),
-        delta: Coords.fractional([
+        origin: Coords.fractional(header.origin[0], header.origin[1], header.origin[2]),
+        dimensions: Coords.fractional(header.dimensions[0], header.dimensions[1], header.dimensions[2]),
+        delta: Coords.fractional(
             header.dimensions[0] / (sampling.sampleCount[0] ),
             header.dimensions[1] / (sampling.sampleCount[1] ),
-            header.dimensions[2] / (sampling.sampleCount[2] )
-        ]),
+            header.dimensions[2] / (sampling.sampleCount[2] )),
         sampleCount: sampling.sampleCount
     });
     return {
@@ -64,11 +63,14 @@ function createSampling(header: DataFormat.Header, index: number, dataOffset: nu
 async function createDataContext(file: number): Promise<Data.DataContext> {
     const { header, dataOffset } = await DataFormat.readHeader(file);
 
+    const origin = Coords.fractional(header.origin[0], header.origin[1], header.origin[2]);
+    const dimensions = Coords.fractional(header.dimensions[0], header.dimensions[1], header.dimensions[2]);
+
     return {
         file,
         header,
         spacegroup: Coords.spacegroup(header.spacegroup),
-        dataBox: { a: Coords.fractional(header.origin), b: Coords.add(Coords.fractional(header.origin), Coords.fractional(header.dimensions)) },
+        dataBox: { a: origin, b: Coords.add(origin, dimensions) },
         sampling: header.sampling.map((s, i) => createSampling(header, i, dataOffset))
     }
 }
@@ -79,7 +81,7 @@ function pickSampling(data: Data.DataContext, queryBox: Box.Fractional) {
 
 function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number,): Data.QueryContext {
     const inputQueryBox = params.box.a.kind === Coords.Space.Fractional 
-        ? params.box as Box.Fractional
+        ? Box.fractionalBoxReorderAxes(params.box as Box.Fractional, data.header.axisOrder)
         : Box.cartesianToFractional(params.box as Box.Cartesian, data.spacegroup, data.header.axisOrder);
 
     let queryBox;
@@ -91,8 +93,8 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
                 data,
                 params,
                 sampling: data.sampling[0],
-                fractionalBox: { a: Coords.fractional([0,0,0]), b: Coords.fractional([0,0,0]) },
-                gridDomain: Box.fractionalToDomain<'Query'>({ a: Coords.fractional([0,0,0]), b: Coords.fractional([0,0,0]) }, 'Query', data.sampling[0].dataDomain.delta),
+                fractionalBox: { a: Coords.fractional(0,0,0), b: Coords.fractional(0,0,0) },
+                gridDomain: Box.fractionalToDomain<'Query'>({ a: Coords.fractional(0,0,0), b: Coords.fractional(0,0,0) }, 'Query', data.sampling[0].dataDomain.delta),
                 result: { error: void 0, isEmpty: true } as any
             }
         }
@@ -104,10 +106,6 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
     const sampling = pickSampling(data, queryBox);
     // snap the query box to the sampling grid:
     const fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
-
-
-    console.log({ gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta) });
-    console.log({ fractionalBox })
 
     return {
         guid,
@@ -135,6 +133,8 @@ function allocateResult(query: Data.QueryContext) {
 }
 
 async function _execute(file: number, params: Data.QueryParams, guid: string, serialNumber: number, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
+
+
     // Step 1a: Create data context
     const data = await createDataContext(file);
     // Step 1b: Create query context
@@ -157,15 +157,15 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, se
 
                 // Step 3a: Allocate space for result data
                 allocateResult(query);
-
                 // Step 3b: Compose the result data
                 await compose(query, blocks);
             }
         }
-
+        
         // Step 4: Encode the result
         output = outputProvider();
         encode(query, output);
+        output.end();
     } catch (e) {
         query.result.error = `${e}`;
         query.result.isEmpty = true;
@@ -188,13 +188,13 @@ export async function execute(params: Data.QueryParams, outputProvider: () => (C
 
     const guid = generateUUID();
     const serialNumber = State.querySerial++;
-
+        
     const { a, b } = params.box;
     Logger.log(`[GUID] ${guid}`, serialNumber);
     Logger.log(`[Id] ${params.sourceId}`, serialNumber);
     Logger.log(`[Box] ${a.kind === Coords.Space.Cartesian ? 'cart' : 'frac'} [${a[0]},${a[1]},${a[2]}] [${b[0]},${b[1]},${b[2]}]`, serialNumber);
     Logger.log(`[Encoding] ${params.asBinary ? 'bcif' : 'cif'}`, serialNumber);
-
+    
     let sourceFile: number | undefined = void 0;
     try {
         sourceFile = await File.openRead(params.sourceFilename);
@@ -203,11 +203,10 @@ export async function execute(params: Data.QueryParams, outputProvider: () => (C
         return true;
     } catch (e) {
         Logger.log(`[Error] ${e}`, serialNumber); 
-    } finally {
-        File.tryClose(sourceFile);
-        State.pendingQueries--;
-        const time = getTime() - start;
-        Logger.log(`[Time] ${Math.round(time)}ms`, serialNumber);
         return false;
+    } finally {
+        File.close(sourceFile);
+        Logger.log(`[Time] ${Math.round(getTime() - start)}ms`, serialNumber);
+        State.pendingQueries--;
     }
 }

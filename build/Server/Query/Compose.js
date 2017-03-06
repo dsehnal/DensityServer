@@ -44,26 +44,26 @@ var Coords = require("../Algebra/Coordinate");
 var File = require("../../Common/File");
 function readBlock(query, coord, blockBox) {
     return __awaiter(this, void 0, void 0, function () {
-        var numChannels, dimensions, size, _a, valueType, blockSize, sampleCount, buffer, byteOffset, values;
+        var numChannels, blockSampleCount, size, _a, valueType, blockSize, dataSampleCount, buffer, byteOffset, values;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     numChannels = query.data.header.channels.length;
-                    dimensions = Box.dimensions(Box.fractionalToGrid(blockBox, query.sampling.dataDomain));
-                    size = numChannels * dimensions[0] * dimensions[1] * dimensions[2];
+                    blockSampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.sampling.dataDomain));
+                    size = numChannels * blockSampleCount[0] * blockSampleCount[1] * blockSampleCount[2];
                     _a = query.data.header, valueType = _a.valueType, blockSize = _a.blockSize;
-                    sampleCount = query.data.header.sampling[query.sampling.index].sampleCount;
+                    dataSampleCount = query.data.header.sampling[query.sampling.index].sampleCount;
                     buffer = File.createTypedArrayBufferContext(size, valueType);
                     byteOffset = query.sampling.byteOffset
                         + DataFormat.getValueByteSize(valueType) * numChannels * blockSize
-                            * (dimensions[1] * dimensions[2] * coord[0]
-                                + sampleCount[0] * dimensions[2] * coord[1]
-                                + sampleCount[0] * sampleCount[1] * coord[2]);
+                            * (blockSampleCount[1] * blockSampleCount[2] * coord[0]
+                                + dataSampleCount[0] * blockSampleCount[2] * coord[1]
+                                + dataSampleCount[0] * dataSampleCount[1] * coord[2]);
                     return [4 /*yield*/, File.readTypedArray(buffer, query.data.file, byteOffset, size, 0)];
                 case 1:
                     values = _b.sent();
                     return [2 /*return*/, {
-                            sampleCount: sampleCount,
+                            sampleCount: blockSampleCount,
                             values: values
                         }];
             }
@@ -81,7 +81,6 @@ function fillData(query, blockData, blockGridBox, queryGridBox) {
         var target = query.result.values[channelIndex];
         var offsetSource = channelIndex * blockGridBox.a.domain.sampleVolume
             + blockGridBox.a[0] + blockGridBox.a[1] * sSizeH + blockGridBox.a[2] * sSizeHK;
-        console.log(offsetSource, offsetTarget, [maxH, maxK, maxL], maxH * maxK * maxL, { targetLength: target.length, total: offsetTarget + maxH * maxK * maxL });
         for (var l = 0; l < maxL; l++) {
             for (var k = 0; k < maxK; k++) {
                 for (var h = 0; h < maxH; h++) {
@@ -108,8 +107,6 @@ function fillBlock(query, block) {
                 case 0:
                     baseBox = Box.fractionalFromBlock(block.coord);
                     blockGridDomain = createBlockGridDomain(block.coord, query.sampling.dataDomain);
-                    console.log({ baseBox: baseBox });
-                    console.log({ blockGridDomain: blockGridDomain });
                     return [4 /*yield*/, readBlock(query, block.coord, baseBox)];
                 case 1:
                     blockData = _b.sent();
@@ -117,7 +114,6 @@ function fillBlock(query, block) {
                         offset = _a[_i];
                         offsetBlockBox = Box.shift(baseBox, offset);
                         dataBox = Box.intersect(offsetBlockBox, query.fractionalBox);
-                        //console.log({ dataBox, blockGridDomain });
                         if (!dataBox)
                             continue;
                         blockGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, blockGridDomain));
@@ -132,21 +128,17 @@ function fillBlock(query, block) {
 }
 function compose(query, blocks) {
     return __awaiter(this, void 0, void 0, function () {
-        var count, _i, blocks_1, block;
+        var _i, blocks_1, block;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    count = 0;
                     _i = 0, blocks_1 = blocks;
                     _a.label = 1;
                 case 1:
                     if (!(_i < blocks_1.length)) return [3 /*break*/, 4];
                     block = blocks_1[_i];
-                    count++;
-                    //if (count < 2) continue;
                     return [4 /*yield*/, fillBlock(query, block)];
                 case 2:
-                    //if (count < 2) continue;
                     _a.sent();
                     _a.label = 3;
                 case 3:

@@ -19,10 +19,10 @@ function formatTime(t) {
 }
 exports.formatTime = formatTime;
 function log(msg, reqId) {
-    console.log("[" + new Date().toLocaleString('en-US') + "]" + (reqId !== void 0 ? " [" + reqId + "]" : '') + " " + msg);
+    console.log("" + (reqId !== void 0 ? "[" + reqId + "] " : '') + msg);
 }
 exports.log = log;
 function error(msg, reqId) {
-    console.error("[" + new Date().toLocaleString('en-US') + "]" + (reqId !== void 0 ? " [" + reqId + "]" : '') + " " + msg);
+    console.error("" + (reqId !== void 0 ? "[" + reqId + "] " : '') + msg);
 }
 exports.error = error;

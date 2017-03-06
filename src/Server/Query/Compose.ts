@@ -11,19 +11,20 @@ import * as File from '../../Common/File'
 
 export async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Block'>, blockBox: Box.Fractional): Promise<Data.BlockData> {
     const numChannels = query.data.header.channels.length;
-    const dimensions = Box.dimensions(Box.fractionalToGrid(blockBox, query.sampling.dataDomain));
-    const size = numChannels * dimensions[0] * dimensions[1] * dimensions[2];
+    const blockSampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.sampling.dataDomain));
+    const size = numChannels * blockSampleCount[0] * blockSampleCount[1] * blockSampleCount[2];
     const { valueType, blockSize } = query.data.header;
-    const sampleCount = query.data.header.sampling[query.sampling.index].sampleCount;
+    const dataSampleCount = query.data.header.sampling[query.sampling.index].sampleCount;
     const buffer = File.createTypedArrayBufferContext(size, valueType);
     const byteOffset = query.sampling.byteOffset 
         + DataFormat.getValueByteSize(valueType) * numChannels * blockSize 
-          * (dimensions[1] * dimensions[2] * coord[0]
-           + sampleCount[0] * dimensions[2] * coord[1]
-           + sampleCount[0] * sampleCount[1] * coord[2]);        
+          * (blockSampleCount[1] * blockSampleCount[2] * coord[0]
+           + dataSampleCount[0] * blockSampleCount[2] * coord[1]
+           + dataSampleCount[0] * dataSampleCount[1] * coord[2]);  
+
     const values = await File.readTypedArray(buffer, query.data.file, byteOffset, size, 0);
     return {
-        sampleCount,
+        sampleCount: blockSampleCount,
         values
     };
 }
@@ -42,9 +43,6 @@ function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGrid
         const target = query.result.values![channelIndex];
         const offsetSource = channelIndex * blockGridBox.a.domain.sampleVolume 
             + blockGridBox.a[0] + blockGridBox.a[1] * sSizeH + blockGridBox.a[2] * sSizeHK;
-
-        console.log(offsetSource, offsetTarget, [maxH, maxK, maxL], maxH*maxK*maxL,
-            { targetLength: target.length, total: offsetTarget +  maxH*maxK*maxL });
 
         for (let l = 0; l < maxL; l++) {
             for (let k = 0; k < maxK; k++) {
@@ -70,21 +68,20 @@ async function fillBlock(query: Data.QueryContext, block: Identify.UniqueBlock) 
     const baseBox = Box.fractionalFromBlock(block.coord);
     const blockGridDomain = createBlockGridDomain(block.coord, query.sampling.dataDomain);
 
-    console.log({ baseBox });
+    //console.log({ baseBox });
 
-    console.log({ blockGridDomain });
+    //console.log({ blockGridDomain });
 
     const blockData: Data.BlockData = await readBlock(query, block.coord, baseBox);
-
+        
     for (const offset of block.offsets) {
         const offsetBlockBox = Box.shift(baseBox, offset);
         const dataBox = Box.intersect(offsetBlockBox, query.fractionalBox);
 
-        //console.log({ dataBox, blockGridDomain });
-
         if (!dataBox) continue;
         const blockGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, blockGridDomain));
         const queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.gridDomain));
+
 
         //console.log({ blockOrig: Box.fractionalToGrid(dataBox, blockGridDomain), blockGridBox, queryGridBox })
 
@@ -93,11 +90,7 @@ async function fillBlock(query: Data.QueryContext, block: Identify.UniqueBlock) 
 }
 
 export default async function compose(query: Data.QueryContext, blocks: Identify.UniqueBlock[]) {
-    let count = 0;
     for (const block of blocks) {
-        count++;
-        //if (count < 2) continue;
         await fillBlock(query, block);
-        //break;
     }
 }

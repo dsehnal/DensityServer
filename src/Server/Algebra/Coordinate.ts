@@ -64,7 +64,7 @@ export function spacegroup(info: SpacegroupInfo): Spacegroup {
     ]);
     const toFrac = LA.Matrix4.invert(LA.Matrix4.empty(), fromFrac)!;
 
-    return { ...info, toFrac, fromFrac };
+    return { angles: info.angles, size: info.size, number: info.number, toFrac, fromFrac };
 }
 
 ///////////////////////////////////////////
@@ -73,23 +73,38 @@ export function spacegroup(info: SpacegroupInfo): Spacegroup {
 
 export function domain<K>(kind: K, info: GridInfo): GridDomain<K> {
     const sc = info.sampleCount;
-    return { kind, ...info, sampleVolume: sc[0] * sc[1] * sc[2] };
+    return { 
+        kind, 
+        delta: info.delta, 
+        dimensions: info.dimensions, 
+        origin: info.origin, 
+        sampleCount: info.sampleCount, 
+        sampleVolume: sc[0] * sc[1] * sc[2]
+    };
 }
 
-export function cartesian(coord: number[]): Cartesian {
-    return { kind: Space.Cartesian, 0: coord[0], 1: coord[1], 2: coord[2] };
+export function cartesian(x: number, y: number, z: number): Cartesian {
+    return { kind: Space.Cartesian, 0: x, 1: y, 2: z };
 }
 
-export function fractional(coord: number[]): Fractional {
-    return { kind: Space.Fractional, 0: coord[0], 1: coord[1], 2: coord[2] };
+export function fractional(x: number, y: number, z: number): Fractional {
+    return { kind: Space.Fractional,  0: x, 1: y, 2: z };
 }
 
-export function grid<K>(coord: number[], domain: GridDomain<K>): Grid<K> {
-    return { kind: Space.Grid, domain, 0: coord[0], 1: coord[1], 2: coord[2] };
+export function grid<K>(domain: GridDomain<K>, x: number, y: number, z: number): Grid<K> {
+    return { kind: Space.Grid, domain,  0: x, 1: y, 2: z };
 }
 
-export function withCoord<C extends Coord<Space>>(a: C, coord: number[]): C {
-    return { ...a as any, 0: coord[0], 1: coord[1], 2: coord[2] };
+export function withCoord<C extends (Coord<Space> | Grid<any>)>(a: C, x: number, y: number, z: number): C {
+    switch (a.kind) {
+        case Space.Cartesian: return cartesian(x, y, z) as C;
+        case Space.Fractional: return fractional(x, y, z) as C;
+        case Space.Grid: return grid((a as Grid<any>).domain, x, y, z) as C;
+    }
+}
+
+export function clone<C extends (Coord<Space> | Grid<any>)>(a: C): C {
+    return withCoord(a, a[0], a[1], a[2]);
 }
 
 ///////////////////////////////////////////
@@ -98,27 +113,25 @@ export function withCoord<C extends Coord<Space>>(a: C, coord: number[]): C {
 
 export function cartesianToFractional(a: Cartesian, spacegroup: Spacegroup, axisOrder: number[]): Fractional {
     const coord = Helpers.transform(a, spacegroup.toFrac);
-    return fractional([coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]]);
+    return fractional(coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]);
 }
 
 export function fractionalToGrid<K>(a: Fractional, domain: GridDomain<K>, snap: 'bottom' | 'top'): Grid<K> {
     const { origin, delta } = domain;
-    const coord = [0, 0, 0];
-
+    const coord = grid(domain, 0.1, 0.1, 0.1);
     for (let i = 0; i < 3; i++) {
         coord[i] = Helpers.snap((a[i] - origin[i]) / delta[i], snap);
     }
-    return grid(coord, domain);
+    return coord;
 }
 
 export function gridToFractional<K>(a: Grid<K>): Fractional {
     const { origin, delta } = a.domain;
-    const coord = [0.1, 0.1, 0.1];
-
+    const coord = fractional(0.1, 0.1, 0.1);
     for (let i = 0; i < 3; i++) {
         coord[i] = a[i] * delta[i] + origin[i];
     }
-    return fractional(coord);
+    return coord;
 }
 
 ///////////////////////////////////////////
@@ -127,22 +140,21 @@ export function gridToFractional<K>(a: Grid<K>): Fractional {
 
 export function clampGridToSamples<K>(a: Grid<K>): Grid<K> {
     const { sampleCount } = a.domain;
-    const coord = [0, 0, 0];
-
+    const coord = withCoord(a, 0, 0, 0);
     for (let i = 0; i < 3; i++) {
         if (a[i] < 0) coord[i] = 0;
         else if (a[i] > sampleCount[i]) coord[i] = sampleCount[i];
         else coord[i] = a[i];
     }
-    return { ...a, 0: coord[0], 1: coord[1], 2: coord[2] };
+    return coord;
 }
 
 export function add<S extends Space>(a: Coord<S>, b: Coord<S>): Coord<S> {
-    return { ...a, 0: a[0] + b[0], 1: a[1] + b[1], 2: a[2] + b[2] };
+    return withCoord(a, a[0] + b[0], a[1] + b[1], a[2] + b[2]);
 }
 
 export function sub<S extends Space>(a: Coord<S>, b: Coord<S>): Coord<S> {
-    return { ...a, 0: a[0] - b[0], 1: a[1] - b[1], 2: a[2] - b[2] };
+    return withCoord(a, a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 
 /** Maps each grid point to a unique integer */

@@ -130,7 +130,7 @@ function readHeader(src, id) {
                     Logger.log("[Info] [Error] " + src + "/" + id + ": " + e_1);
                     return [2 /*return*/, void 0];
                 case 5:
-                    File.tryClose(file);
+                    File.close(file);
                     return [7 /*endfinally*/];
                 case 6: return [2 /*return*/];
             }
@@ -193,8 +193,8 @@ function init(app) {
                     b = [+req.params.b1, +req.params.b2, +req.params.b3];
                     isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
                     box = isCartesian
-                        ? { a: Coords.cartesian(a), b: Coords.cartesian(b) }
-                        : { a: Coords.fractional(a), b: Coords.fractional(b) };
+                        ? { a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
+                        : { a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) };
                     asBinary = req.query.text !== '1';
                     outputFilename = getOutputFilename(req.params.source, req.params.id, asBinary, box);
                     response = wrapResponse(outputFilename, res);

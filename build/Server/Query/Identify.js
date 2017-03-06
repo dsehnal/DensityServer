@@ -12,7 +12,7 @@ var Collections_1 = require("../Utils/Collections");
  */
 function overlapMultiplierRange(a, b, u, v) {
     var x = Math.ceil(u - b) | 0, y = Math.floor(v - a) | 0;
-    console.log(x, y, { a: a, b: b, u: u, v: v });
+    //console.log(x, y, { a, b, u, v });
     if (Coords.round(b + x) <= Coords.round(u))
         x++;
     if (Coords.round(a + y) >= Coords.round(v))
@@ -40,7 +40,7 @@ function findDataOverlapTranslationList(box, domain) {
     for (var k = w[0]; k <= w[1]; k++) {
         for (var j = v[0]; j <= v[1]; j++) {
             for (var i = u[0]; i <= u[1]; i++) {
-                translations.push(Coords.fractional([i, j, k]));
+                translations.push(Coords.fractional(i, j, k));
             }
         }
     }
@@ -71,11 +71,11 @@ function findUniqueBlocksOffset(query, offset, blocks) {
     //console.log({offset, intersection})
     // console.log({offset, frac: Box.fractionalToGrid(intersection, blockDomain)})
     // console.log({ frac: blockDomain })
-    console.log({ min: min, max: max });
+    // console.log({ min, max });
     for (var i = min[0]; i < max[0]; i++) {
         for (var j = min[1]; j < max[1]; j++) {
             for (var k = min[2]; k < max[2]; k++) {
-                addUniqueBlock(blocks, Coords.grid([i, j, k], blockDomain), offset);
+                addUniqueBlock(blocks, Coords.grid(blockDomain, i, j, k), offset);
             }
         }
     }
@@ -84,15 +84,15 @@ function findUniqueBlocksOffset(query, offset, blocks) {
 function findUniqueBlocks(query) {
     var translations = query.data.header.spacegroup.isPeriodic
         ? findDataOverlapTranslationList(query.fractionalBox, query.sampling.dataDomain)
-        : [Coords.fractional([0, 0, 0])];
+        : [Coords.fractional(0, 0, 0)];
     var blocks = Collections_1.FastMap.create();
-    console.log({ translations: translations });
+    //console.log({translations});
     for (var _i = 0, translations_1 = translations; _i < translations_1.length; _i++) {
         var t = translations_1[_i];
         findUniqueBlocksOffset(query, t, blocks);
     }
     var blockList = blocks.forEach(function (b, _, ctx) { ctx.push(b); }, []);
-    console.log('list', blockList);
+    //console.log('list', blockList);
     // sort the data so that the first coodinate changes the fastest 
     // this is because that's how the data is laid out in the underlaying 
     // data format and reading the data 'in order' makes it faster.

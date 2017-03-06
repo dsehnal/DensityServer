@@ -52,7 +52,7 @@ function getTime() {
     return t[0] * 1000 + t[1] / 1000000;
 }
 function generateUUID() {
-    var d = new Date().getTime() + getTime();
+    var d = getTime();
     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         var r = (d + Math.random() * 16) % 16 | 0;
         d = Math.floor(d / 16);
@@ -61,7 +61,7 @@ function generateUUID() {
     return uuid;
 }
 function blockDomain(domain, blockSize) {
-    var delta = Coords.fractional([blockSize * domain.delta[0], blockSize * domain.delta[1], blockSize * domain.delta[2]]);
+    var delta = Coords.fractional(blockSize * domain.delta[0], blockSize * domain.delta[1], blockSize * domain.delta[2]);
     return Coords.domain('Block', {
         origin: domain.origin,
         dimensions: domain.dimensions,
@@ -73,13 +73,9 @@ exports.blockDomain = blockDomain;
 function createSampling(header, index, dataOffset) {
     var sampling = header.sampling[index];
     var dataDomain = Coords.domain('Data', {
-        origin: Coords.fractional(header.origin),
-        dimensions: Coords.fractional(header.dimensions),
-        delta: Coords.fractional([
-            header.dimensions[0] / (sampling.sampleCount[0]),
-            header.dimensions[1] / (sampling.sampleCount[1]),
-            header.dimensions[2] / (sampling.sampleCount[2])
-        ]),
+        origin: Coords.fractional(header.origin[0], header.origin[1], header.origin[2]),
+        dimensions: Coords.fractional(header.dimensions[0], header.dimensions[1], header.dimensions[2]),
+        delta: Coords.fractional(header.dimensions[0] / (sampling.sampleCount[0]), header.dimensions[1] / (sampling.sampleCount[1]), header.dimensions[2] / (sampling.sampleCount[2])),
         sampleCount: sampling.sampleCount
     });
     return {
@@ -92,17 +88,19 @@ function createSampling(header, index, dataOffset) {
 }
 function createDataContext(file) {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, header, dataOffset;
+        var _a, header, dataOffset, origin, dimensions;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0: return [4 /*yield*/, DataFormat.readHeader(file)];
                 case 1:
                     _a = _b.sent(), header = _a.header, dataOffset = _a.dataOffset;
+                    origin = Coords.fractional(header.origin[0], header.origin[1], header.origin[2]);
+                    dimensions = Coords.fractional(header.dimensions[0], header.dimensions[1], header.dimensions[2]);
                     return [2 /*return*/, {
                             file: file,
                             header: header,
                             spacegroup: Coords.spacegroup(header.spacegroup),
-                            dataBox: { a: Coords.fractional(header.origin), b: Coords.add(Coords.fractional(header.origin), Coords.fractional(header.dimensions)) },
+                            dataBox: { a: origin, b: Coords.add(origin, dimensions) },
                             sampling: header.sampling.map(function (s, i) { return createSampling(header, i, dataOffset); })
                         }];
             }
@@ -114,7 +112,7 @@ function pickSampling(data, queryBox) {
 }
 function createQueryContext(data, params, guid, serialNumber) {
     var inputQueryBox = params.box.a.kind === 1 /* Fractional */
-        ? params.box
+        ? Box.fractionalBoxReorderAxes(params.box, data.header.axisOrder)
         : Box.cartesianToFractional(params.box, data.spacegroup, data.header.axisOrder);
     var queryBox;
     if (!data.header.spacegroup.isPeriodic) {
@@ -125,8 +123,8 @@ function createQueryContext(data, params, guid, serialNumber) {
                 data: data,
                 params: params,
                 sampling: data.sampling[0],
-                fractionalBox: { a: Coords.fractional([0, 0, 0]), b: Coords.fractional([0, 0, 0]) },
-                gridDomain: Box.fractionalToDomain({ a: Coords.fractional([0, 0, 0]), b: Coords.fractional([0, 0, 0]) }, 'Query', data.sampling[0].dataDomain.delta),
+                fractionalBox: { a: Coords.fractional(0, 0, 0), b: Coords.fractional(0, 0, 0) },
+                gridDomain: Box.fractionalToDomain({ a: Coords.fractional(0, 0, 0), b: Coords.fractional(0, 0, 0) }, 'Query', data.sampling[0].dataDomain.delta),
                 result: { error: void 0, isEmpty: true }
             };
         }
@@ -138,8 +136,6 @@ function createQueryContext(data, params, guid, serialNumber) {
     var sampling = pickSampling(data, queryBox);
     // snap the query box to the sampling grid:
     var fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
-    console.log({ gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta) });
-    console.log({ fractionalBox: fractionalBox });
     return {
         guid: guid,
         serialNumber: serialNumber,
@@ -196,6 +192,7 @@ function _execute(file, params, guid, serialNumber, outputProvider) {
                     // Step 4: Encode the result
                     output = outputProvider();
                     Encode_1.default(query, output);
+                    output.end();
                     return [3 /*break*/, 8];
                 case 6:
                     e_1 = _a.sent();
@@ -222,7 +219,7 @@ function _execute(file, params, guid, serialNumber, outputProvider) {
 }
 function execute(params, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
-        var start, guid, serialNumber, _a, a, b, sourceFile, e_2, time;
+        var start, guid, serialNumber, _a, a, b, sourceFile, e_2;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -250,13 +247,12 @@ function execute(params, outputProvider) {
                 case 4:
                     e_2 = _b.sent();
                     Logger.log("[Error] " + e_2, serialNumber);
-                    return [3 /*break*/, 6];
-                case 5:
-                    File.tryClose(sourceFile);
-                    State_1.State.pendingQueries--;
-                    time = getTime() - start;
-                    Logger.log("[Time] " + Math.round(time) + "ms", serialNumber);
                     return [2 /*return*/, false];
+                case 5:
+                    File.close(sourceFile);
+                    Logger.log("[Time] " + Math.round(getTime() - start) + "ms", serialNumber);
+                    State_1.State.pendingQueries--;
+                    return [7 /*endfinally*/];
                 case 6: return [2 /*return*/];
             }
         });

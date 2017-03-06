@@ -104,7 +104,7 @@ function _volume_data_3d(ctx) {
 function _density_server_result(ctx) {
     var fields = [
         string(ctx, 'server_version', function (ctx) { return Version_1.default; }),
-        string(ctx, 'datetime', function (ctx) { return new Date().toLocaleString('en-US'); }),
+        string(ctx, 'datetime_utc', function (ctx) { return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); }),
         string(ctx, 'guid', function (ctx) { return ctx.guid; }),
         string(ctx, 'is_empty', function (ctx) { return ctx.result.isEmpty ? 'yes' : 'no'; }),
         string(ctx, 'has_error', function (ctx) { return ctx.result.error ? 'yes' : 'no'; }),

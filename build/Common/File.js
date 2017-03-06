@@ -132,19 +132,16 @@ function createFile(filename) {
     });
 }
 exports.createFile = createFile;
+var __emptyFunc = function () { };
 function close(file) {
-    fs.closeSync(file);
-}
-exports.close = close;
-function tryClose(file) {
     try {
         if (file !== void 0)
-            fs.closeSync(file);
+            fs.close(file, __emptyFunc);
     }
     catch (e) {
     }
 }
-exports.tryClose = tryClose;
+exports.close = close;
 var smallBuffer = new Buffer(8);
 function writeInt(file, value, position) {
     return __awaiter(this, void 0, void 0, function () {
@@ -161,14 +158,13 @@ function writeInt(file, value, position) {
     });
 }
 exports.writeInt = writeInt;
-var ValueType = DataFormat.ValueType;
 function getElementByteSize(type) {
-    if (type === ValueType.Float32)
+    if (type === DataFormat.ValueType.Float32)
         return 4;
     return 1;
 }
 function makeTypedArray(type, buffer) {
-    if (type === ValueType.Float32)
+    if (type === DataFormat.ValueType.Float32)
         return new Float32Array(buffer);
     var ret = new Int8Array(buffer);
     return ret;

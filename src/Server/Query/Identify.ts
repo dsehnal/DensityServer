@@ -15,7 +15,7 @@ type Translations = Coords.Fractional[]
  */
 function overlapMultiplierRange(a: number, b: number, u: number, v: number): number[] | undefined {
     let x = Math.ceil(u - b) | 0, y =  Math.floor(v - a) | 0;
-    console.log(x, y, { a, b, u, v });
+    //console.log(x, y, { a, b, u, v });
     if (Coords.round(b + x) <= Coords.round(u)) x++;
     if (Coords.round(a + y) >= Coords.round(v)) y--;
     if (x > y) return void 0;
@@ -45,7 +45,7 @@ function findDataOverlapTranslationList(box: Box.Fractional, domain: Coords.Grid
     for (let k = w[0]; k <= w[1]; k++) {
         for (let j = v[0]; j <= v[1]; j++) {
             for (let i = u[0]; i <= u[1]; i++) {
-                translations.push(Coords.fractional([i, j, k]));
+                translations.push(Coords.fractional(i, j, k));
             }
         }
     }
@@ -85,12 +85,12 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
     //console.log({offset, intersection})
     // console.log({offset, frac: Box.fractionalToGrid(intersection, blockDomain)})
     // console.log({ frac: blockDomain })
-     console.log({ min, max });
+    // console.log({ min, max });
 
     for (let i = min[0]; i < max[0]; i++) {
         for (let j = min[1]; j < max[1]; j++) {
             for (let k = min[2]; k < max[2]; k++) {
-                addUniqueBlock(blocks, Coords.grid([i, j, k], blockDomain), offset);
+                addUniqueBlock(blocks, Coords.grid(blockDomain, i, j, k), offset);
             }                   
         }    
     }
@@ -102,11 +102,11 @@ export default function findUniqueBlocks(query: Data.QueryContext) {
         // find all query box translations that overlap with the unit cell.
         ? findDataOverlapTranslationList(query.fractionalBox, query.sampling.dataDomain) 
         // no translations
-        : [Coords.fractional([0, 0, 0])];
+        : [Coords.fractional(0, 0, 0)];
 
     const blocks: UniqueBlocks = FastMap.create<number, UniqueBlock>();
 
-    console.log({translations});
+    //console.log({translations});
 
     for (const t of translations) {
         findUniqueBlocksOffset(query, t, blocks);
@@ -114,7 +114,7 @@ export default function findUniqueBlocks(query: Data.QueryContext) {
     
     const blockList = blocks.forEach((b, _, ctx) => { ctx!.push(b) }, [] as UniqueBlock[]);
 
-    console.log('list', blockList);
+    //console.log('list', blockList);
 
     // sort the data so that the first coodinate changes the fastest 
     // this is because that's how the data is laid out in the underlaying 

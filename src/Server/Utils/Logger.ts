@@ -19,9 +19,9 @@ export function formatTime(t: number) {
 }
 
 export function log(msg: string, reqId?: number) {
-    console.log(`[${new Date().toLocaleString('en-US')}]${reqId !== void 0 ? ` [${reqId}]` : ''} ${msg}`);
+    console.log(`${reqId !== void 0 ? `[${reqId}] ` : ''}${msg}`);
 }
 
 export function error(msg: string, reqId?: number) {
-    console.error(`[${new Date().toLocaleString('en-US')}]${reqId !== void 0 ? ` [${reqId}]` : ''} ${msg}`);
+    console.error(`${reqId !== void 0 ? `[${reqId}] ` : ''}${msg}`);
 }

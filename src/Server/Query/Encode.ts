@@ -129,7 +129,7 @@ function _volume_data_3d(ctx: ResultContext) {
 function _density_server_result(ctx: Data.QueryContext) {
     let fields: FieldDesc<Data.QueryContext>[] = [
         string(ctx, 'server_version', ctx => VERSION),        
-        string(ctx, 'datetime', ctx => new Date().toLocaleString('en-US')),
+        string(ctx, 'datetime_utc', ctx => new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')),
         string(ctx, 'guid', ctx => ctx.guid),
         string(ctx, 'is_empty', ctx => ctx.result.isEmpty ? 'yes' : 'no'),
         string(ctx, 'has_error', ctx => ctx.result.error ? 'yes' : 'no'),

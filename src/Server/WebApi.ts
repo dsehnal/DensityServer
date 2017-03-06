@@ -88,7 +88,7 @@ async function readHeader(src: string, id: string) {
         Logger.log(`[Info] [Error] ${src}/${id}: ${e}`);
         return void 0;
     } finally {
-        File.tryClose(file);
+        File.close(file);
     }
 }
 
@@ -133,8 +133,8 @@ export function init(app: express.Express) {
         const isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
 
         const box: Box.Fractional | Box.Cartesian = isCartesian
-            ? { a: Coords.cartesian(a), b: Coords.cartesian(b) }
-            : { a: Coords.fractional(a), b: Coords.fractional(b) }
+            ? { a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
+            : { a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) }
         const asBinary = req.query.text !== '1';
         const outputFilename = getOutputFilename(req.params.source, req.params.id, asBinary, box);
         const response = wrapResponse(outputFilename, res);

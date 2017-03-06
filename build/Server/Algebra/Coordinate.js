@@ -2,14 +2,6 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 "use strict";
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var LA = require("./Linear");
 /** Constructs spacegroup skew matrix from supplied info */
@@ -32,7 +24,7 @@ function spacegroup(info) {
         [0, 0, 0, 1.0]
     ]);
     var toFrac = LA.Matrix4.invert(LA.Matrix4.empty(), fromFrac);
-    return __assign({}, info, { toFrac: toFrac, fromFrac: fromFrac });
+    return { angles: info.angles, size: info.size, number: info.number, toFrac: toFrac, fromFrac: fromFrac };
 }
 exports.spacegroup = spacegroup;
 ///////////////////////////////////////////
@@ -40,49 +32,64 @@ exports.spacegroup = spacegroup;
 ///////////////////////////////////////////
 function domain(kind, info) {
     var sc = info.sampleCount;
-    return __assign({ kind: kind }, info, { sampleVolume: sc[0] * sc[1] * sc[2] });
+    return {
+        kind: kind,
+        delta: info.delta,
+        dimensions: info.dimensions,
+        origin: info.origin,
+        sampleCount: info.sampleCount,
+        sampleVolume: sc[0] * sc[1] * sc[2]
+    };
 }
 exports.domain = domain;
-function cartesian(coord) {
-    return { kind: 0 /* Cartesian */, 0: coord[0], 1: coord[1], 2: coord[2] };
+function cartesian(x, y, z) {
+    return { kind: 0 /* Cartesian */, 0: x, 1: y, 2: z };
 }
 exports.cartesian = cartesian;
-function fractional(coord) {
-    return { kind: 1 /* Fractional */, 0: coord[0], 1: coord[1], 2: coord[2] };
+function fractional(x, y, z) {
+    return { kind: 1 /* Fractional */, 0: x, 1: y, 2: z };
 }
 exports.fractional = fractional;
-function grid(coord, domain) {
-    return { kind: 2 /* Grid */, domain: domain, 0: coord[0], 1: coord[1], 2: coord[2] };
+function grid(domain, x, y, z) {
+    return { kind: 2 /* Grid */, domain: domain, 0: x, 1: y, 2: z };
 }
 exports.grid = grid;
-function withCoord(a, coord) {
-    return __assign({}, a, { 0: coord[0], 1: coord[1], 2: coord[2] });
+function withCoord(a, x, y, z) {
+    switch (a.kind) {
+        case 0 /* Cartesian */: return cartesian(x, y, z);
+        case 1 /* Fractional */: return fractional(x, y, z);
+        case 2 /* Grid */: return grid(a.domain, x, y, z);
+    }
 }
 exports.withCoord = withCoord;
+function clone(a) {
+    return withCoord(a, a[0], a[1], a[2]);
+}
+exports.clone = clone;
 ///////////////////////////////////////////
 // CONVERSIONS
 ///////////////////////////////////////////
 function cartesianToFractional(a, spacegroup, axisOrder) {
     var coord = Helpers.transform(a, spacegroup.toFrac);
-    return fractional([coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]]);
+    return fractional(coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]);
 }
 exports.cartesianToFractional = cartesianToFractional;
 function fractionalToGrid(a, domain, snap) {
     var origin = domain.origin, delta = domain.delta;
-    var coord = [0, 0, 0];
+    var coord = grid(domain, 0.1, 0.1, 0.1);
     for (var i = 0; i < 3; i++) {
         coord[i] = Helpers.snap((a[i] - origin[i]) / delta[i], snap);
     }
-    return grid(coord, domain);
+    return coord;
 }
 exports.fractionalToGrid = fractionalToGrid;
 function gridToFractional(a) {
     var _a = a.domain, origin = _a.origin, delta = _a.delta;
-    var coord = [0.1, 0.1, 0.1];
+    var coord = fractional(0.1, 0.1, 0.1);
     for (var i = 0; i < 3; i++) {
         coord[i] = a[i] * delta[i] + origin[i];
     }
-    return fractional(coord);
+    return coord;
 }
 exports.gridToFractional = gridToFractional;
 ///////////////////////////////////////////
@@ -90,7 +97,7 @@ exports.gridToFractional = gridToFractional;
 ///////////////////////////////////////////
 function clampGridToSamples(a) {
     var sampleCount = a.domain.sampleCount;
-    var coord = [0, 0, 0];
+    var coord = withCoord(a, 0, 0, 0);
     for (var i = 0; i < 3; i++) {
         if (a[i] < 0)
             coord[i] = 0;
@@ -99,15 +106,15 @@ function clampGridToSamples(a) {
         else
             coord[i] = a[i];
     }
-    return __assign({}, a, { 0: coord[0], 1: coord[1], 2: coord[2] });
+    return coord;
 }
 exports.clampGridToSamples = clampGridToSamples;
 function add(a, b) {
-    return __assign({}, a, { 0: a[0] + b[0], 1: a[1] + b[1], 2: a[2] + b[2] });
+    return withCoord(a, a[0] + b[0], a[1] + b[1], a[2] + b[2]);
 }
 exports.add = add;
 function sub(a, b) {
-    return __assign({}, a, { 0: a[0] - b[0], 1: a[1] - b[1], 2: a[2] - b[2] });
+    return withCoord(a, a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 exports.sub = sub;
 /** Maps each grid point to a unique integer */

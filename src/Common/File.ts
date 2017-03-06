@@ -87,14 +87,12 @@ export function createFile(filename: string) {
     });
 }
 
-export function close(file: number) {
-    fs.closeSync(file);
-}
-
-export function tryClose(file: number | undefined) {
+const __emptyFunc = function() {};
+export function close(file: number | undefined) {
     try {
-        if (file !== void 0) fs.closeSync(file);
+        if (file !== void 0) fs.close(file, __emptyFunc);
     } catch (e) {
+
     }
 }
 
@@ -104,29 +102,26 @@ export async function writeInt(file: number, value: number, position: number) {
     await writeBuffer(file, position, smallBuffer, 4);
 }
 
-import ValueType = DataFormat.ValueType
-import ValueArray = DataFormat.ValueArray
-
 export interface TypedArrayBufferContext {
-    type: ValueType,
+    type: DataFormat.ValueType,
     elementByteSize: number,
     readBuffer: Buffer,
     valuesBuffer: Uint8Array,
-    values: ValueArray
+    values: DataFormat.ValueArray
 } 
 
-function getElementByteSize(type: ValueType) {
-    if (type === ValueType.Float32) return 4;
+function getElementByteSize(type: DataFormat.ValueType) {
+    if (type === DataFormat.ValueType.Float32) return 4;
     return 1;
 }
 
-function makeTypedArray(type: ValueType, buffer: ArrayBuffer): ValueArray {
-    if (type === ValueType.Float32) return new Float32Array(buffer);
+function makeTypedArray(type: DataFormat.ValueType, buffer: ArrayBuffer): DataFormat.ValueArray {
+    if (type === DataFormat.ValueType.Float32) return new Float32Array(buffer);
     let ret = new Int8Array(buffer);
     return ret;
 }
 
-export function createTypedArrayBufferContext(size: number, type: ValueType): TypedArrayBufferContext {
+export function createTypedArrayBufferContext(size: number, type: DataFormat.ValueType): TypedArrayBufferContext {
     let elementByteSize = getElementByteSize(type);
     let arrayBuffer = new ArrayBuffer(elementByteSize * size);    
     let readBuffer = new Buffer(arrayBuffer); 
