@@ -40,6 +40,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var path = require("path");
+var DataFormat = require("./DataFormat");
 exports.IsNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
 function openRead(filename) {
     return __awaiter(this, void 0, void 0, function () {
@@ -160,13 +161,14 @@ function writeInt(file, value, position) {
     });
 }
 exports.writeInt = writeInt;
+var ValueType = DataFormat.ValueType;
 function getElementByteSize(type) {
-    if (type === 0 /* Float32 */)
+    if (type === ValueType.Float32)
         return 4;
     return 1;
 }
 function makeTypedArray(type, buffer) {
-    if (type === 0 /* Float32 */)
+    if (type === ValueType.Float32)
         return new Float32Array(buffer);
     var ret = new Int8Array(buffer);
     return ret;

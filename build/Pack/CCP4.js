@@ -42,14 +42,14 @@ var File = require("../Common/File");
 var DataFormat = require("../Common/DataFormat");
 function getValueType(header) {
     if (header.mode === 2 /* Float32 */)
-        return 0 /* Float32 */;
-    return 2 /* Int8 */;
+        return DataFormat.ValueType.Float32;
+    return DataFormat.ValueType.Int8;
 }
 exports.getValueType = getValueType;
 function createDataLayer(header, blockSize) {
     var extent = header.extent;
     var size = blockSize * extent[0] * extent[1];
-    var buffer = File.createTypedArrayBufferContext(size, header.mode === 2 /* Float32 */ ? 0 /* Float32 */ : 2 /* Int8 */);
+    var buffer = File.createTypedArrayBufferContext(size, header.mode === 2 /* Float32 */ ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8);
     return {
         buffer: buffer,
         readSize: (blockSize / 2) | 0,

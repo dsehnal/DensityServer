@@ -14,7 +14,7 @@ function createHeader(ctx) {
     }
     return {
         formatVersion: FORMAT_VERSION,
-        valueType: header.mode === 2 /* Float32 */ ? 0 /* Float32 */ : 2 /* Int8 */,
+        valueType: header.mode === 2 /* Float32 */ ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8,
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,
         origin: normalize(header.origin),

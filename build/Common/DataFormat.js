@@ -40,12 +40,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var File = require("./File");
 var Schema = require("./BinarySchema");
+var ValueType;
+(function (ValueType) {
+    ValueType.Float32 = 'float32';
+    ValueType.Int8 = 'int8';
+})(ValueType = exports.ValueType || (exports.ValueType = {}));
 var _schema;
 (function (_schema) {
     var array = Schema.array, obj = Schema.obj, int = Schema.int, bool = Schema.bool, float = Schema.float, str = Schema.str;
     _schema.schema = obj([
         ['formatVersion', str],
-        ['valueType', int],
+        ['valueType', str],
         ['blockSize', int],
         ['axisOrder', array(int)],
         ['origin', array(float)],
@@ -72,13 +77,13 @@ var _schema;
 })(_schema || (_schema = {}));
 var headerSchema = _schema.schema;
 function getValueByteSize(type) {
-    if (type === 0 /* Float32 */)
+    if (type === ValueType.Float32)
         return 4;
     return 1;
 }
 exports.getValueByteSize = getValueByteSize;
 function createValueArray(type, size) {
-    if (type === 0 /* Float32 */) {
+    if (type === ValueType.Float32) {
         return new Float32Array(new ArrayBuffer(4 * size));
     }
     return new Int8Array(new ArrayBuffer(size));

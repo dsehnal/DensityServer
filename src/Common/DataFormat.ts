@@ -5,12 +5,11 @@
 import * as File from './File'
 import * as Schema from './BinarySchema'
 
-export const enum ValueType { 
-    Float32 = 0, 
-    // Float64 = 1
-    Int8 = 2,
-    // Uint8 = 3
-    // ...
+export type ValueType = 'float32' | 'int8'
+
+export namespace ValueType {
+    export const Float32: ValueType = 'float32';
+    export const Int8: ValueType = 'int8';
 }
 
 export type ValueArray = Float32Array | Int8Array
@@ -70,7 +69,7 @@ module _schema {
 
     export const schema = obj<Header>([
         ['formatVersion', str],
-        ['valueType', int],
+        ['valueType', str],
         ['blockSize', int],
         ['axisOrder', array(int)],
         ['origin', array(float)],
