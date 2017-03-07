@@ -5,85 +5,125 @@
 import * as Data from './DataModel'
 import * as DataFormat from '../Common/DataFormat'
 
-/** A cube addressed by binary index 0bXYZ */
-type Cube = number[]
-function lerp(cube: Cube, tU: number, tV: number, tW: number) {    
-    const tU1 = 1 - tU, tV1 = 1 - tV;
-    return ((cube[0b000] * tU1 + cube[0b100] * tU) * tV1 + 
-            (cube[0b010] * tU1 + cube[0b110] * tU) * tV) * (1 - tW) 
-         + ((cube[0b001] * tU1 + cube[0b101] * tU) * tV1 + 
-            (cube[0b011] * tU1 + cube[0b111] * tU) * tV) * tW;
+function downsampleX(srcDims: number[], src: DataFormat.ValueArray, srcLOffset: number, target: DataFormat.ValueArray) {
+    const sizeH = srcDims[0], sizeK = srcDims[1], srcBaseOffset = srcLOffset * sizeH * sizeK;
+    const targetH = Math.floor((sizeH + 1) / 2);
+    const isEven = sizeH % 2 === 0;
+    const w = 1.0 / 8.0;
+
+    //console.log(srcDims);
+
+    for (let k = 0; k < sizeK; k++) {
+        let srcOffset = srcBaseOffset + k * sizeH;        
+        const targetOffset = k;
+        target[targetOffset] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 2]);
+        for (let h = 1; h < targetH - 1; h++) {
+            srcOffset += 2;
+            target[targetOffset + h * sizeK] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 2]);
+        }
+        if (isEven) target[targetOffset + (targetH - 1) * sizeK] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 1]);
+        else target[targetOffset + (targetH - 1) * sizeK] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset] + src[srcOffset]);
+    }
+    
+    //console.log('X', target.slice(0, 10));
 }
 
-function fillLerpCube(ctx: Data.LerpCube, values: DataFormat.ValueArray, i: number, j: number, k: number) {
-    const { z0Offset, z1Offset, sizeI, cube } = ctx;
-    cube[0b000] = values[z0Offset + j * sizeI + i];
-    cube[0b001] = values[z1Offset + j * sizeI + i];
-    cube[0b010] = values[z0Offset + (j + 1) * sizeI + i];
-    cube[0b011] = values[z1Offset + (j + 1) * sizeI + i];
-    cube[0b100] = values[z0Offset + j * sizeI + i + 1];
-    cube[0b101] = values[z1Offset + j * sizeI + i + 1];
-    cube[0b110] = values[z0Offset + (j + 1) * sizeI + i + 1];
-    cube[0b111] = values[z1Offset + (j + 1) * sizeI + i + 1];
+function _downsampleXY(dimsX: number[], buffer: Data.DownsamplingBuffer) {
+    const { downsampleX: src, downsampleXY: target, slicesWritten } = buffer;
+
+    //console.log(dimsX);
+
+    const sizeH = dimsX[0], sizeK = dimsX[1];
+    const targetH = Math.floor((sizeH + 1) / 2);
+    const isEven = sizeH % 2 === 0;
+    const targetSliceSize = 4 * sizeK;
+    const targetBaseOffset = slicesWritten % 4;
+    const w = 1.0 / 8.0;
+
+    for (let k = 0; k < sizeK; k++) {
+        let srcOffset = k * sizeH;        
+        const targetOffset = targetBaseOffset + k * 4;        
+        target[targetOffset] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 2]);
+        for (let h = 1; h < targetH - 1; h++) {
+            srcOffset += 2;
+            target[targetOffset + h * targetSliceSize] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 2]);
+        }
+        if (isEven) target[targetOffset + (targetH - 1) * targetSliceSize] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 1]);
+        else target[targetOffset + (targetH - 1) * targetSliceSize] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset] + src[srcOffset]);
+    }
+    //console.log('XY', slicesWritten, targetBaseOffset, targetH, target.slice(0, 10));
+    buffer.slicesWritten++;
+    //console.log(buffer.slicesWritten);
 }
 
-/** Advances sampling rate K */
-function advanceSamplingKbase(sampling: Data.Sampling, ctx: Data.Context) {
-    const { delta, sampleCount, rate } = sampling;
-    const { lerpCube } = ctx;
-    const mI = sampleCount[0] - 1, mJ = sampleCount[1] - 1, mK = rate - 1;
-    let cubeI = 0, cubeJ = 0, cubeK = 0; 
-    let channelIndex = 0;
+function downsampleXY(ctx: Data.Context, sampling: Data.Sampling) {
+    const dimsX = [sampling.sampleCount[1], Math.floor((sampling.sampleCount[0] + 1) / 2)]
+    for (let i = 0, _ii = sampling.blocks.values.length; i < _ii; i++) {
+        downsampleX(sampling.sampleCount, sampling.blocks.values[i], sampling.blocks.slicesWritten - 1, sampling.downsampling![i].downsampleX);
+        _downsampleXY(dimsX, sampling.downsampling![i]);
+    }    
+}
 
-    for (const channel of ctx.channels) {        
-        const target = sampling.blocksLayer.values[channelIndex];
-        fillLerpCube(lerpCube, channel.layer.values, cubeI, cubeJ, cubeK);
 
-        let x = 0.0, y = 0.0, z = delta[2] * sampling.blocksLayer.lastProcessedSlice;
-        
-        for (let k = 0; k < mK; k++) {
-            let w = z - Math.floor(z);
-            for (let j = 0; j < mJ; j++) {
-                let v = y - Math.floor(y);
-                for (let i = 0; i < mI; i++) {
-                    let u = x - Math.floor(x);
-                    target[0] = lerp(lerpCube.cube, u, v, w);
-                    x += delta[0];
-                    const c = Math.floor(x);
-                    if (c !== cubeI) {
-                        cubeI = c;
-                        fillLerpCube(lerpCube, channel.layer.values, cubeI, cubeJ, cubeK);
-                    }
-                }
-                y += delta[1];
-                const c = Math.floor(y);
-                if (c !== cubeJ) {
-                    cubeJ = c;
-                    fillLerpCube(lerpCube, channel.layer.values, cubeI, cubeJ, cubeK);
-                }
-            }
-            z += delta[2];
-            const c = Math.floor(z);
-            if (c !== cubeI) {
-                cubeK = c;
-                fillLerpCube(lerpCube, channel.layer.values, cubeI, cubeJ, cubeK);
-                lerpCube.z0Offset = (lerpCube.z0Offset + ctx.lerpCube.sizeIJ) % channel.layer.values.length;
-                lerpCube.z1Offset = (lerpCube.z1Offset + ctx.lerpCube.sizeIJ) % channel.layer.values.length;
+function canCollapseBuffer(source: Data.Sampling, finishing: boolean): boolean {
+    const buffer = source.downsampling![0];
+    const delta = buffer.slicesWritten - buffer.startSliceIndex;
+    return (finishing && delta > 0) || (delta > 2 && (delta - 3) % 2 === 0);
+}
+
+function collapseBuffer(source: Data.Sampling, target: Data.Sampling, blockSize: number) {
+    const downsampling = source.downsampling!;
+    const { slicesWritten, startSliceIndex } = downsampling[0];
+    const sizeH = target.sampleCount[0], sizeK = target.sampleCount[1], sizeHK = sizeH * sizeK;
+    
+    const x0 = Math.max(0, startSliceIndex - 1) % 4;
+    const x1 = startSliceIndex % 4;
+    const x2 = Math.min(slicesWritten, startSliceIndex + 1) % 4;
+    const x3 = Math.min(slicesWritten, startSliceIndex + 1) % 4;
+    const w = 1.0 / 8.0;
+    
+    const channelCount = downsampling.length;
+    const valuesBaseOffset = target.blocks.slicesWritten * sizeHK;
+
+    for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
+        const downsampleXY = downsampling[channelIndex].downsampleXY;
+        const values = target.blocks.values[channelIndex];
+
+        for (let k = 0; k < sizeK; k++) {
+            const valuesOffset = valuesBaseOffset + k * sizeH;
+            for (let h = 0; h < sizeH; h++) {
+                const srcOffset = 4 * h + 4 * k * sizeH;
+                const s = w * (downsampleXY[srcOffset + x0] + 3 * downsampleXY[srcOffset + x1] + 3 * downsampleXY[srcOffset + x2] + downsampleXY[srcOffset + x3]);
+                values[valuesOffset + h] = s;
             }
         }
-        channelIndex++;
+        downsampling[channelIndex].startSliceIndex += 2;
+    }
+
+    target.blocks.slicesWritten++;
+    target.blocks.isFull = target.blocks.slicesWritten === blockSize;
+}
+
+export function downsampleLayer(ctx: Data.Context) {
+    for (let i = 0, _ii = ctx.sampling.length - 1; i < _ii; i++) {
+        const s = ctx.sampling[i];
+        downsampleXY(ctx, s);
+        if (canCollapseBuffer(s, false)) {
+            collapseBuffer(s, ctx.sampling[i + 1], ctx.blockSize);
+        } else {
+            break;
+        }
     }
 }
 
-/** Advances sampling rate K */
-export async function advanceSamplingK(K: number, sampling: Data.Sampling[], ctx: Data.Context) {
-
-    // TODO: compute how many times we have advanced.
-    // TODO: add the base to the multipliers
-    // TODO: write when full.
-
-    const mult = 3 * sampling.length;
-    for (let m = 0; m < mult; m++) {
-        advanceSamplingKbase(sampling[0], ctx);
+export function finalize(ctx: Data.Context) {
+    for (let i = 0, _ii = ctx.sampling.length - 1; i < _ii; i++) {
+        const s = ctx.sampling[i];
+        if (i > 0) downsampleXY(ctx, s);
+        if (canCollapseBuffer(s, true)) {
+            collapseBuffer(s, ctx.sampling[i + 1], ctx.blockSize);
+        } else {
+            break;
+        }
     }
 }

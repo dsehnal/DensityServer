@@ -26,23 +26,14 @@ export interface Header {
 }
 
 /** Represents a circular buffer for 2 * blockSize layers */
-export interface DataLayer {   
+export interface DataSlices {   
     buffer: File.TypedArrayBufferContext,
-
-    readSize: number,
-
-    /** Index of the slice that is at the valuesOffset */
-    startSlice: number,
-
-    /** Number of slices available in the buffer */
-    endSlice: number,
+    sliceCapacity: number,
+    slicesRead: number,
 
     values: DataFormat.ValueArray,
-    valuesOffset: number,
-
-    readCount: number,
-    readHeight: number,
-
+    sliceCount: number,
+    
     /** Have all the input slice been read? */
     isFinished: boolean
 }
@@ -50,8 +41,7 @@ export interface DataLayer {
 export interface Data {
     header: Header,
     file: number,
-    layer: DataLayer,
-    numLayers: number
+    slices: DataSlices
 }
 
 export function getValueType(header: Header) {
@@ -59,19 +49,19 @@ export function getValueType(header: Header) {
     return DataFormat.ValueType.Int8;
 }
 
-function createDataLayer(header: Header, blockSize: number): DataLayer {
+function createDataSlices(header: Header, blockSize: number): DataSlices {
     const { extent } = header;
-    const size = blockSize * extent[0] * extent[1];
-    const buffer = File.createTypedArrayBufferContext(size, header.mode === Mode.Float32 ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8);
+    const sliceSize = extent[0] * extent[1] * (header.mode === Mode.Float32 ? 4 : 1);
+    const sliceCapacity = Math.max(1, Math.floor(Math.min(64 * 1024 * 1024, sliceSize * extent[2]) / sliceSize));
+    const buffer = File.createTypedArrayBufferContext(
+        sliceCapacity * extent[0] * extent[1], 
+        header.mode === Mode.Float32 ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8);
     return {
         buffer,
-        readSize: (blockSize / 2) | 0,
-        startSlice: 0,
-        endSlice: 0,
+        sliceCapacity,        
+        slicesRead: 0,
         values: buffer.values,
-        valuesOffset: 0,
-        readCount: 0,
-        readHeight: 0,
+        sliceCount: 0,
         isFinished: false
     };
 }
@@ -88,14 +78,14 @@ function compareProp(a: any, b: any) {
 }
 
 export function compareHeaders(a: Header, b: Header) {
-    for (let p of [ 'grid', 'axisOrder', 'extent', 'origin', 'spacegroupNumber', 'cellSize', 'cellAngles', 'mode' ]) {
+    for (const p of [ 'grid', 'axisOrder', 'extent', 'origin', 'spacegroupNumber', 'cellSize', 'cellAngles', 'mode' ]) {
         if (!compareProp((a as any)[p], (b as any)[p])) return false;
     }
     return true;
 }
 
 function getArray(r: (offset: number) => number, offset: number, count: number) {
-    let ret:number[] = [];
+    const ret:number[] = [];
     for (let i = 0; i < count; i++) {
         ret[i] = r(offset + i);
     }
@@ -144,32 +134,26 @@ async function readHeader(name: string, file: number) {
     return header;
 }
 
-export async function readLayer(data: Data, sliceIndex: number) {
-    if (sliceIndex >= data.numLayers) {
-        data.layer.isFinished = true;
-        return 0;
+export async function readSlices(data: Data) {
+    const { slices, header } = data;
+    if (slices.isFinished) { 
+        return; 
     }
 
-    const layer = data.layer;
-    const header = data.header;
     const { extent, mean } = header;
     const sliceSize = extent[0] * extent[1];    
-    const sliceOffsetIndex = sliceIndex * layer.readSize;
-    const sliceByteOffset = layer.buffer.elementByteSize * sliceSize * sliceOffsetIndex;
-    const sliceHeight = Math.min(layer.readSize, extent[2] - sliceOffsetIndex);
-    const sliceCount = sliceHeight * sliceSize;
+    const sliceByteOffset = slices.buffer.elementByteSize * sliceSize * slices.slicesRead;
+    const sliceCount = Math.min(slices.sliceCapacity, extent[2] - slices.slicesRead);
+    const sliceByteCount = sliceCount * sliceSize;
 
-    // are we in the top or bottom layer?
-    const valuesOffset = (layer.readCount % 2) * layer.readSize * sliceSize;
-    let values: DataFormat.ValueArray;
-    
+    // are we in the top or bottom layer?    
     function updateSigma() {
         let sigma = header.sigma;
         let min = header.min;
         let max = header.max;
-        for (let i = valuesOffset, _ii = valuesOffset + sliceCount; i < _ii; i++) {
-            let v = values[i];
-            let t = mean - v;
+        for (let i = 0; i < sliceByteCount; i++) {
+            const v = values[i];
+            const t = mean - v;
             sigma += t * t;
             if (v < min) min = v;
             else if (v > max) max = v;
@@ -179,31 +163,25 @@ export async function readLayer(data: Data, sliceIndex: number) {
         header.max = max;
     }
 
-    values = await File.readTypedArray(layer.buffer, data.file, header.dataOffset + sliceByteOffset, sliceCount, valuesOffset, header.littleEndian);
+    const values = await File.readTypedArray(slices.buffer, data.file, header.dataOffset + sliceByteOffset, sliceByteCount, 0, header.littleEndian);
     updateSigma();
 
-    layer.readCount++;
-    if (layer.readCount > 2) layer.startSlice += layer.readSize;
-    layer.endSlice += sliceHeight;
-    layer.readHeight = sliceHeight;
-    layer.valuesOffset = valuesOffset;
+    slices.slicesRead += sliceCount;
+    slices.sliceCount = sliceCount;
 
-    if (sliceIndex >= data.numLayers - 1) {
+    if (slices.sliceCount >= extent[2]) {
         header.sigma = Math.sqrt(header.sigma / (extent[0] * extent[1] * extent[2]));
-        layer.isFinished = true;
+        slices.isFinished = true;
     }
-
-    return sliceHeight;
 }
 
 export async function open(name: string, filename: string, blockSize: number): Promise<Data> {
-    let file = await File.openRead(filename);
-    let header = await readHeader(name, file);
-    return <Data>{ 
+    const file = await File.openRead(filename);
+    const header = await readHeader(name, file);
+    return { 
         header, 
         file, 
-        layer: createDataLayer(header, blockSize),
-        numLayers: Math.ceil(2 * header.extent[2] / blockSize) | 0
+        slices: createDataSlices(header, blockSize)
     };
 }
 

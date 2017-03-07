@@ -81,7 +81,7 @@ function run() {
                     params = {
                         sourceFilename: 'g:/test/mdb/xray-1cbs.mdb',
                         sourceId: 'x-ray/1cbs',
-                        asBinary: true,
+                        asBinary: false,
                         //box: { a: Coordinate.fractional([0.1,0.1,0.1]), b: Coordinate.fractional([1,1,1]) },
                         // box: { 
                         //     a: Coordinate.fractional([0.31883898467579275, 0.3379941099552041, 0.12689084713255028]),
@@ -92,7 +92,7 @@ function run() {
                             b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793)
                         },
                     };
-                    return [4 /*yield*/, Query.execute(params, function () { return wrapResponse('g:/test/1cbs.bcif'); })];
+                    return [4 /*yield*/, Query.execute(params, function () { return wrapResponse('g:/test/1cbs_1.cif'); })];
                 case 1:
                     _a.sent();
                     return [2 /*return*/];

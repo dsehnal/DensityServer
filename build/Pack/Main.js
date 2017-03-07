@@ -90,37 +90,33 @@ function writeHeader(ctx) {
         });
     });
 }
-function processLayers(ctx) {
+function processData(ctx) {
     return __awaiter(this, void 0, void 0, function () {
-        var numLayers, i, _i, _a, src;
+        var channel, _i, _a, src;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    numLayers = ctx.channels[0].numLayers;
-                    i = 0;
+                    channel = ctx.channels[0];
                     _b.label = 1;
                 case 1:
-                    if (!(i < numLayers)) return [3 /*break*/, 8];
+                    if (!!channel.slices.isFinished) return [3 /*break*/, 7];
                     _i = 0, _a = ctx.channels;
                     _b.label = 2;
                 case 2:
                     if (!(_i < _a.length)) return [3 /*break*/, 5];
                     src = _a[_i];
-                    return [4 /*yield*/, CCP4.readLayer(src, i)];
+                    return [4 /*yield*/, CCP4.readSlices(src)];
                 case 3:
                     _b.sent();
                     _b.label = 4;
                 case 4:
                     _i++;
                     return [3 /*break*/, 2];
-                case 5: return [4 /*yield*/, Sampling.processLayer(ctx)];
+                case 5: return [4 /*yield*/, Sampling.processData(ctx)];
                 case 6:
                     _b.sent();
-                    _b.label = 7;
-                case 7:
-                    i++;
                     return [3 /*break*/, 1];
-                case 8: return [2 /*return*/];
+                case 7: return [2 /*return*/];
             }
         });
     });
@@ -132,8 +128,8 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
             switch (_f.label) {
                 case 0:
                     startedTime = getTime();
-                    if (blockSize % 2 !== 0 || blockSize < 8) {
-                        throw Error('Block size must be an even number greater than 8.');
+                    if (blockSize % 4 !== 0 || blockSize < 4) {
+                        throw Error('Block size must be a positive number divisible by 4.');
                     }
                     if (!sourceDensities.length) {
                         throw Error('Specify at least one source density.');
@@ -180,7 +176,7 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
                     process.stdout.write('\rAllocating...      done.\n');
                     // Step 3: Process and write the data 
                     process.stdout.write('Writing data...    0%');
-                    return [4 /*yield*/, processLayers(context)];
+                    return [4 /*yield*/, processData(context)];
                 case 8:
                     _f.sent();
                     process.stdout.write('\rWriting data...    done.\n');

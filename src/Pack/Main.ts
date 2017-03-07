@@ -40,22 +40,21 @@ async function writeHeader(ctx: Data.Context) {
     await File.writeBuffer(ctx.file, 4, header);
 }
 
-async function processLayers(ctx: Data.Context) {
-    const numLayers = ctx.channels[0].numLayers;
-    
-    for (let i = 0; i < numLayers; i++) {
+async function processData(ctx: Data.Context) {    
+    const channel = ctx.channels[0];
+    while (!channel.slices.isFinished) {
         for (const src of ctx.channels) {
-            await CCP4.readLayer(src, i);
+            await CCP4.readSlices(src);
         }
-        await Sampling.processLayer(ctx);
+        await Sampling.processData(ctx);
     }
 }
  
 async function create(filename: string, sourceDensities: { name: string, filename: string }[], blockSize: number, isPeriodic: boolean) {
     const startedTime = getTime();
 
-    if (blockSize % 2 !== 0 || blockSize < 8) {
-        throw Error('Block size must be an even number greater than 8.');
+    if (blockSize % 4 !== 0 || blockSize < 4) {
+        throw Error('Block size must be a positive number divisible by 4.');
     }
 
     if (!sourceDensities.length) {
@@ -88,7 +87,7 @@ async function create(filename: string, sourceDensities: { name: string, filenam
 
         // Step 3: Process and write the data 
         process.stdout.write('Writing data...    0%');
-        await processLayers(context);
+        await processData(context);
         process.stdout.write('\rWriting data...    done.\n');
 
         // Step 4: Write the header at the start of the file.

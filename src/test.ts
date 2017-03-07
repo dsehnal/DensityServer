@@ -43,7 +43,7 @@ async function run() {
     const params: Data.QueryParams = {
         sourceFilename: 'g:/test/mdb/xray-1cbs.mdb',
         sourceId: 'x-ray/1cbs',
-        asBinary: true,
+        asBinary: false,
         //box: { a: Coordinate.fractional([0.1,0.1,0.1]), b: Coordinate.fractional([1,1,1]) },
         // box: { 
         //     a: Coordinate.fractional([0.31883898467579275, 0.3379941099552041, 0.12689084713255028]),
@@ -55,7 +55,7 @@ async function run() {
         },
     }
 
-    await Query.execute(params, () => wrapResponse('g:/test/1cbs.bcif'));
+    await Query.execute(params, () => wrapResponse('g:/test/1cbs_1.cif'));
 
     // for (let i = 0; i < 20; i++) {
 

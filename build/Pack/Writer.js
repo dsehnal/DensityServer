@@ -40,26 +40,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var File = require("../Common/File");
 var DataFormat = require("../Common/DataFormat");
-/** Divides each value by rate^3 */
-function averageSampling(sampling) {
-    if (sampling.rate === 1)
-        return;
-    var factor = 1 / (sampling.rate * sampling.rate * sampling.rate);
-    for (var _i = 0, _a = sampling.blocksLayer.values; _i < _a.length; _i++) {
-        var buffer = _a[_i];
-        for (var i = 0, _ii = buffer.length; i < _ii; i++) {
-            buffer[i] = factor * buffer[i];
-        }
-    }
-}
 /** Fill a cube at position (u,v) with values from each of the channel */
 function fillCubeBuffer(ctx, sampling, u, v) {
     var blockSize = ctx.blockSize, cubeBuffer = ctx.cubeBuffer;
-    var _a = sampling.blocksLayer, dimensions = _a.dimensions, buffers = _a.buffers, slicesWritten = _a.slicesWritten;
+    var sampleCount = sampling.sampleCount;
+    var _a = sampling.blocks, buffers = _a.buffers, slicesWritten = _a.slicesWritten;
     var elementSize = DataFormat.getValueByteSize(ctx.valueType);
-    var sizeH = dimensions[0], sizeHK = dimensions[0] * dimensions[1];
+    var sizeH = sampleCount[0], sizeHK = sampleCount[0] * sampleCount[1];
     var offsetH = u * blockSize, offsetK = v * blockSize;
-    var copyH = Math.min(blockSize, dimensions[0] - offsetH) * elementSize, maxK = offsetK + Math.min(blockSize, dimensions[1] - offsetK), maxL = slicesWritten;
+    var copyH = Math.min(blockSize, sampleCount[0] - offsetH) * elementSize, maxK = offsetK + Math.min(blockSize, sampleCount[1] - offsetK), maxL = slicesWritten;
     var writeOffset = 0;
     for (var _i = 0, buffers_1 = buffers; _i < buffers_1.length; _i++) {
         var src = buffers_1[_i];
@@ -74,16 +63,23 @@ function fillCubeBuffer(ctx, sampling, u, v) {
     File.ensureLittleEndian(ctx.cubeBuffer, ctx.litteEndianCubeBuffer, writeOffset, elementSize, 0);
     return writeOffset;
 }
+function updateProgress(progress, progressDone) {
+    var old = (100 * progress.current / progress.max).toFixed(0);
+    progress.current += progressDone;
+    var $new = (100 * progress.current / progress.max).toFixed(0);
+    if (old !== $new) {
+        process.stdout.write("\rWriting data...    " + $new + "%");
+    }
+}
 /** Converts a layer to blocks and writes them to the output file. */
-function writeSamplingLayer(ctx, sampling) {
+function writeBlockLayer(ctx, sampling) {
     return __awaiter(this, void 0, void 0, function () {
         var nU, nV, startOffset, v, u, size;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    averageSampling(sampling);
-                    nU = Math.ceil(sampling.blocksLayer.dimensions[0] / ctx.blockSize);
-                    nV = Math.ceil(sampling.blocksLayer.dimensions[1] / ctx.blockSize);
+                    nU = Math.ceil(sampling.sampleCount[0] / ctx.blockSize);
+                    nV = Math.ceil(sampling.sampleCount[1] / ctx.blockSize);
                     startOffset = ctx.dataByteOffset + sampling.byteOffset;
                     v = 0;
                     _a.label = 1;
@@ -107,45 +103,11 @@ function writeSamplingLayer(ctx, sampling) {
                     v++;
                     return [3 /*break*/, 1];
                 case 6:
-                    sampling.blocksLayer.isFull = false;
-                    sampling.blocksLayer.slicesWritten = 0;
+                    sampling.blocks.isFull = false;
+                    sampling.blocks.slicesWritten = 0;
                     return [2 /*return*/];
             }
         });
     });
 }
-function updateProgress(progress, progressDone) {
-    var old = (100 * progress.current / progress.max).toFixed(0);
-    progress.current += progressDone;
-    var $new = (100 * progress.current / progress.max).toFixed(0);
-    if (old !== $new) {
-        process.stdout.write("\rWriting data...    " + $new + "%");
-    }
-}
-/** Writes all full buffers */
-function writeCubeLayers(ctx) {
-    return __awaiter(this, void 0, void 0, function () {
-        var _i, _a, s;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    _i = 0, _a = ctx.sampling;
-                    _b.label = 1;
-                case 1:
-                    if (!(_i < _a.length)) return [3 /*break*/, 4];
-                    s = _a[_i];
-                    if (!s.blocksLayer.isFull)
-                        return [3 /*break*/, 3];
-                    return [4 /*yield*/, writeSamplingLayer(ctx, s)];
-                case 2:
-                    _b.sent();
-                    _b.label = 3;
-                case 3:
-                    _i++;
-                    return [3 /*break*/, 1];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.writeCubeLayers = writeCubeLayers;
+exports.writeBlockLayer = writeBlockLayer;

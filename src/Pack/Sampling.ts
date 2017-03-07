@@ -9,67 +9,66 @@ import * as Downsampling from './Downsampling'
 import * as Writer from './Writer'
 import * as DataFormat from '../Common/DataFormat'
 
-function getSamplingRates(baseSampleCount: number[], blockSize: number) {
-    const ret = [1];
-    // TODO
-    const allowedDivisors = [2, 3, 5];
-    const maxDiv = Math.min(2 * Math.ceil(baseSampleCount.reduce((m, v) => Math.min(m, v), baseSampleCount[0]) / blockSize), blockSize / 2);
-    for (let i = 2; i <= maxDiv; i++) {
-        // we do not want "large"" prime divisors such as 13 or 17.
-        if (allowedDivisors.some(d => (i % d) === 0)) {
-            ret.push(i);
+function getSamplingCounts(baseSampleCount: number[]) {
+    const ret = [baseSampleCount];
+    let prev = baseSampleCount;
+    while (true) {
+        let next = [0, 0, 0];        
+        let max = 0;
+        for (let i = 0; i < 3; i++) {
+            const s = Math.floor((prev[i] + 1) / 2);
+            if (s < 2) return ret;
+            if (s > max) max = s;
+            next[i] = s;
         }
+        if (max < 32) return ret;
+        ret.push(next);
+        prev = next;
+        return ret;
     }
-    return ret;
 }
 
-function createBlocksLayer(sampleCount: number[], blockSize: number, valueType: DataFormat.ValueType, numChannels: number): Data.BlocksLayer {
+function createBlockBuffer(sampleCount: number[], blockSize: number, valueType: DataFormat.ValueType, numChannels: number): Data.BlockBuffer {
     const values = [];
     for (let i = 0; i < numChannels; i++) values[i] = DataFormat.createValueArray(valueType, sampleCount[0] * sampleCount[1] * blockSize);
     return {
-        dimensions: [sampleCount[0], sampleCount[1], blockSize],
         values,
         buffers: values.map(xs => new Buffer(xs.buffer)),
-        lastProcessedSlice: 0,
         slicesWritten: 0,
         isFull: false
     };
 }
 
-function createSampling(valueType: DataFormat.ValueType, numChannels: number, baseSampleCount: number[], blockSize: number, rate: number): Data.Sampling {
-    const sampleCount = baseSampleCount.map(s => Math.ceil(s / rate));
-    const delta = [ 
-        baseSampleCount[0] / (rate * sampleCount[0] - 1), 
-        baseSampleCount[1] / (rate * sampleCount[1] - 1), 
-        baseSampleCount[2] / (rate * sampleCount[2] - 1)
-    ];
+function createDownsamplingBuffer(valueType: DataFormat.ValueType, sourceSampleCount: number[], targetSampleCount: number[], numChannels: number): Data.DownsamplingBuffer[] {
+    const ret = [];
+    for (let i = 0; i < numChannels; i++) {
+        ret[ret.length] = {
+            downsampleX: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
+            downsampleXY: DataFormat.createValueArray(valueType, 4 * targetSampleCount[0] * targetSampleCount[1]),
+            slicesWritten: 0,
+            startSliceIndex: 0
+        }
+    }
+    return ret;
+}
 
+function createSampling(index: number, valueType: DataFormat.ValueType, numChannels: number, sampleCounts: number[][], blockSize: number): Data.Sampling {
+    const sampleCount = sampleCounts[index];
     return {
-        rate,
+        rate: 1 << index,
         sampleCount,
-        delta,
-        blocksLayer: createBlocksLayer(sampleCount, blockSize, valueType, numChannels),
+        blocks: createBlockBuffer(sampleCount, blockSize, valueType, numChannels),
+        downsampling: index < sampleCounts.length - 1 ? createDownsamplingBuffer(valueType, sampleCount, sampleCounts[index + 1], numChannels) : void 0,
 
-        dataSliceIndex: 0,
         byteOffset: 0,
         byteSize: numChannels * sampleCount[0] * sampleCount[1] * sampleCount[2] * DataFormat.getValueByteSize(valueType),
         writeByteOffset: 0
     }
 }
 
-function createLerpCube(sampleCounts: number[]): Data.LerpCube {
-    return {
-        cube: [0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1], // 0.1 so that it is backed by a double array
-        z0Offset: 0,
-        z1Offset: 0,
-        sizeI: sampleCounts[0],
-        sizeIJ: sampleCounts[0] * sampleCounts[1]
-    }
-}
-
 export async function createContext(filename: string, channels: CCP4.Data[], blockSize: number, isPeriodic: boolean): Promise<Data.Context> {
     const header = channels[0].header;
-    const rates = getSamplingRates(channels[0].header.extent, blockSize);
+    const samplingCounts = getSamplingCounts(channels[0].header.extent);
     const valueType = CCP4.getValueType(header); 
     const cubeBuffer = new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
     const litteEndianCubeBuffer = File.IsNativeEndianLittle 
@@ -79,8 +78,8 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
     // The data can be periodic iff the extent is the same as the grid and origin is 0.
     if (header.grid.some((v, i) => v !== header.extent[i]) || header.origin.some(v => v !== 0) ) {
         isPeriodic = false;
-    } 
-    
+    }
+
     const ctx: Data.Context = {
         file: await File.createFile(filename),
         isPeriodic,
@@ -89,29 +88,12 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
         blockSize,
         cubeBuffer,
         litteEndianCubeBuffer,
-        sampling: rates.map(r => createSampling(valueType, channels.length, header.extent, blockSize, r)),
-        lerpCube: createLerpCube(header.extent),
-        kSampling: [],
+        sampling: samplingCounts.map((__, i) => createSampling(i, valueType, channels.length, samplingCounts, blockSize)),
         dataByteOffset: 0,
         totalByteSize: 0,
         progress: { current: 0, max: 0 }
     };
     
-    // Create kSampling index.
-    ctx.kSampling.push([]);
-    ctx.kSampling.push([ctx.sampling[0]]);
-    const addedSamplings = new Set<number>();
-
-    for (let k = 2; k < rates[rates.length - 1]; k++) {
-        const current: Data.Sampling[] = [];
-        ctx.kSampling.push(current);
-        for (const s of ctx.sampling) {
-            if (addedSamplings.has(s.rate) || s.rate % k !== 0) continue;
-            addedSamplings.add(s.rate);
-            current.push(s);
-        }
-    }
-
     let byteOffset = 0;
     for (const s of ctx.sampling) {
         // Max progress = total number of blocks that need to be written.
@@ -126,32 +108,45 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
     return ctx;
 }
 
-export async function processLayer(ctx: Data.Context) {
-    const { kSampling } = ctx;    
-    advanceSampling1(kSampling[1][0], ctx);
-    for (let k = 2; k < kSampling.length; k++) {
-        if (!kSampling[k].length) continue;
-        Downsampling.advanceSamplingK(k, kSampling[k], ctx);
-    }
-    await Writer.writeCubeLayers(ctx);
-}
-
-/** Advances sampling rate 1 */
-function advanceSampling1(sampling: Data.Sampling, ctx: Data.Context) {
+function copyLayer(ctx: Data.Context, sliceIndex: number) {
     const { channels } = ctx;
-    const { blocksLayer } = sampling;
-    const size = blocksLayer.dimensions[0] * blocksLayer.dimensions[1] * channels[0].layer.readHeight;    
-    const targetOffset = blocksLayer.slicesWritten * blocksLayer.dimensions[0] * blocksLayer.dimensions[1];
+    const { blocks, sampleCount } = ctx.sampling[0];
 
-    for (let i = 0; i < channels.length; i++) {
-        const layer = channels[i].layer;
-        const target = blocksLayer.values[i];
-        const { values, valuesOffset } = layer;
-        for (let o = 0; o < size; o++) { 
-            target[targetOffset + o] = values[valuesOffset + o];
+    const size = sampleCount[0] * sampleCount[1];
+    const srcOffset = sliceIndex * size;
+    const targetOffset = blocks.slicesWritten * size;
+
+    for (let channelIndex = 0; channelIndex < channels.length; channelIndex++) {
+        const src = channels[channelIndex].slices.values;
+        const target = blocks.values[channelIndex];
+        for (let i = 0; i < size; i++) {
+            target[targetOffset + i] = src[srcOffset + i];
         }
     }
-    blocksLayer.isFull = (channels[0].layer.readCount % 2) === 0 || channels[0].layer.isFinished;
-    blocksLayer.slicesWritten += channels[0].layer.readHeight;
-    blocksLayer.lastProcessedSlice = channels[0].layer.endSlice;
+
+    blocks.slicesWritten++;
+    blocks.isFull = blocks.slicesWritten === ctx.blockSize;
+}
+
+export async function processData(ctx: Data.Context) {
+    const channel = ctx.channels[0];
+    const sliceCount = channel.slices.sliceCount;
+    for (let i = 0; i < sliceCount; i++) {        
+        console.log('layer', i);
+        copyLayer(ctx, i);
+        Downsampling.downsampleLayer(ctx);
+
+        if (i === sliceCount - 1 && channel.slices.isFinished) {
+            Downsampling.finalize(ctx);
+        }
+
+        for (const s of ctx.sampling) {
+            if (i === sliceCount - 1 && channel.slices.isFinished) s.blocks.isFull = true;
+
+            if (s.blocks.isFull) {
+                console.log(' writing rate', s.rate, s.blocks.slicesWritten);
+                await Writer.writeBlockLayer(ctx, s);
+            }
+        }
+    }
 }

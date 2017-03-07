@@ -12,16 +12,21 @@ export interface Progress {
     max: number
 }
 
-export interface BlocksLayer {
-    /** numU * numV * blockSize  */
-    dimensions: number[],
+export interface BlockBuffer {
     values: DataFormat.ValueArray[],
     buffers: Buffer[],
-    /** number of slices that are currently written to the buffer */
     slicesWritten: number,
+    isFull: boolean
+}
 
-    lastProcessedSlice: number,
-    isFull: boolean,
+export interface DownsamplingBuffer {
+    /** dimensions (sampleCount[1], sampleCount[0] / 2, 1) */
+    downsampleX: DataFormat.ValueArray,
+    /** dimensions (4, sampleCount[0] / 2, sampleCount[1] / 2) */
+    downsampleXY: DataFormat.ValueArray,
+
+    slicesWritten: number,
+    startSliceIndex: number
 }
 
 export interface Sampling {
@@ -29,19 +34,17 @@ export interface Sampling {
     rate: number,
 
     sampleCount: number[],
-    delta: number[],    
 
     /** One per channel, same indexing */
-    blocksLayer: BlocksLayer,
-
-    /** How far along the current sampling is in the buffer */
-    dataSliceIndex: number,
+    blocks: BlockBuffer,
+    downsampling?: DownsamplingBuffer[],
 
     /** Info about location in the output file, 0 offset is where the header ends */
     byteOffset: number,
     byteSize: number,
     /** where to write the next block relative to the byteoffset */
-    writeByteOffset: number,
+    writeByteOffset: number,  
+
 }
 
 export interface Context {
@@ -52,39 +55,16 @@ export interface Context {
     
     channels: CCP4.Data[],    
     valueType: DataFormat.ValueType,
-    blockSize: number,
+    blockSize: number,    
     /** Able to store channels.length * blockSize^3 values. */
     cubeBuffer: Buffer, 
     litteEndianCubeBuffer: Buffer,   
 
     sampling: Sampling[],
-    lerpCube: LerpCube,
-
-    /** 
-     * Reordering of sampling where each subarray has rates that are a non-trivial multiple of index 
-     * Each sampling can only occur once!
-     * kSampling[0] = []
-     * kSampling[1] = [rate 1]
-     * kSampling[2] = [rate 2, rate 4, rate 6, ..]
-     * kSampling[3] = [rate 3, rate 9, ...]
-     * kSampling[4] = [] // everything here is in sampling 2
-     * kSampling[5] = [rate 5, ...]
-     * ...
-     */
-    kSampling: Sampling[][],
-
     dataByteOffset: number,
     totalByteSize: number,
 
     progress: Progress
-}
-
-export interface LerpCube {
-    cube: number[],
-    z0Offset: number,
-    z1Offset: number,
-    sizeI: number,
-    sizeIJ: number
 }
 
 export function createHeader(ctx: Context): DataFormat.Header {
