@@ -76,7 +76,7 @@ async function createDataContext(file: number): Promise<Data.DataContext> {
 }
 
 function pickSampling(data: Data.DataContext, queryBox: Box.Fractional) {
-    return data.sampling[2];
+    return data.sampling[4];
 }
 
 function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number): Data.QueryContext {

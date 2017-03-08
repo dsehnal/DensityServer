@@ -29,7 +29,7 @@ function getSamplingCounts(baseSampleCount: number[]) {
         if (max < 32) return ret;
         ret.push(next);
         prev = next;
-       // return ret;
+        //return ret;
     }
 }
 
@@ -74,6 +74,7 @@ function createSampling(index: number, valueType: DataFormat.ValueType, numChann
 export async function createContext(filename: string, channels: CCP4.Data[], blockSize: number, isPeriodic: boolean): Promise<Data.Context> {
     const header = channels[0].header;
     const samplingCounts = getSamplingCounts(channels[0].header.extent);
+    console.log(samplingCounts);
     const valueType = CCP4.getValueType(header); 
     const cubeBuffer = new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
     const litteEndianCubeBuffer = File.IsNativeEndianLittle 
@@ -93,6 +94,7 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
         blockSize,
         cubeBuffer,
         litteEndianCubeBuffer,
+        kernel: { size: 5, coefficients: [0,3,6,3,0], coefficientSum: 12 },
         sampling: samplingCounts.map((__, i) => createSampling(i, valueType, channels.length, samplingCounts, blockSize)),
         dataByteOffset: 0,
         totalByteSize: 0,
@@ -137,7 +139,7 @@ export async function processData(ctx: Data.Context) {
     const channel = ctx.channels[0];
     const sliceCount = channel.slices.sliceCount;
     for (let i = 0; i < sliceCount; i++) {        
-        //console.log('layer', i);
+        console.log('layer', i);
         copyLayer(ctx, i);
         Downsampling.downsampleLayer(ctx);
         if (i > 100000) DownsamplingX.downsample(ctx.sampling[0], ctx.sampling[1], ctx.blockSize);

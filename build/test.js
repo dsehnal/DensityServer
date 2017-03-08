@@ -74,27 +74,10 @@ function wrapResponse(fn) {
 }
 function run() {
     return __awaiter(this, void 0, void 0, function () {
-        var params, params1;
+        var params1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    params = {
-                        sourceFilename: 'g:/test/mdb/xray-1cbs.mdb',
-                        sourceId: 'x-ray/1cbs',
-                        asBinary: false,
-                        //box: { a: Coordinate.fractional([0.1,0.1,0.1]), b: Coordinate.fractional([1,1,1]) },
-                        // box: { 
-                        //     a: Coordinate.fractional([0.31883898467579275, 0.3379941099552041, 0.12689084713255028]),
-                        //     b: Coordinate.fractional([0.6419057651331137, 0.7514086948151544, 0.4127947125514897]) 
-                        // },
-                        box: {
-                            a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
-                            b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793)
-                        },
-                    };
-                    return [4 /*yield*/, Query.execute(params, function () { return wrapResponse('g:/test/1cbs_1.cif'); })];
-                case 1:
-                    _a.sent();
                     params1 = {
                         sourceFilename: 'g:/test/mdb/emd-8116.mdb',
                         sourceId: 'emd/zika',
@@ -102,8 +85,8 @@ function run() {
                         //box: { a: Coordinate.fractional(0.1,0.1,0.1), b: Coordinate.fractional(0.3,0.3,0.3) },
                         box: { a: Coordinate.fractional(-0.5, -0.5, -0.5), b: Coordinate.fractional(0.5, 0.5, 0.5) },
                     };
-                    return [4 /*yield*/, Query.execute(params1, function () { return wrapResponse('g:/test/zika_2.bcif'); })];
-                case 2:
+                    return [4 /*yield*/, Query.execute(params1, function () { return wrapResponse('g:/test/zika_4.bcif'); })];
+                case 1:
                     _a.sent();
                     return [2 /*return*/];
             }

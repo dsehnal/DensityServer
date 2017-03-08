@@ -47,6 +47,12 @@ export interface Sampling {
 
 }
 
+export interface Kernel {
+    size: 5,
+    coefficients: number[],
+    coefficientSum: number
+}
+
 export interface Context {
     file: number, 
 
@@ -60,6 +66,7 @@ export interface Context {
     cubeBuffer: Buffer, 
     litteEndianCubeBuffer: Buffer,   
 
+    kernel: Kernel,
     sampling: Sampling[],
     dataByteOffset: number,
     totalByteSize: number,

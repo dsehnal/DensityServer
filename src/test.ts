@@ -40,22 +40,22 @@ function wrapResponse(fn: string) {
 }
 
 async function run() {
-    const params: Data.QueryParams = {
-        sourceFilename: 'g:/test/mdb/xray-1cbs.mdb',
-        sourceId: 'x-ray/1cbs',
-        asBinary: false,
-        //box: { a: Coordinate.fractional([0.1,0.1,0.1]), b: Coordinate.fractional([1,1,1]) },
-        // box: { 
-        //     a: Coordinate.fractional([0.31883898467579275, 0.3379941099552041, 0.12689084713255028]),
-        //     b: Coordinate.fractional([0.6419057651331137, 0.7514086948151544, 0.4127947125514897]) 
-        // },
-        box: { 
-            a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
-            b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
-        },
-    }
+    // const params: Data.QueryParams = {
+    //     sourceFilename: 'g:/test/mdb/xray-1cbs.mdb',
+    //     sourceId: 'x-ray/1cbs',
+    //     asBinary: false,
+    //     //box: { a: Coordinate.fractional([0.1,0.1,0.1]), b: Coordinate.fractional([1,1,1]) },
+    //     // box: { 
+    //     //     a: Coordinate.fractional([0.31883898467579275, 0.3379941099552041, 0.12689084713255028]),
+    //     //     b: Coordinate.fractional([0.6419057651331137, 0.7514086948151544, 0.4127947125514897]) 
+    //     // },
+    //     box: { 
+    //         a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
+    //         b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
+    //     },
+    // }
 
-    await Query.execute(params, () => wrapResponse('g:/test/1cbs_1.cif'));
+    // await Query.execute(params, () => wrapResponse('g:/test/1cbs_2.cif'));
 
     const params1: Data.QueryParams = {
             sourceFilename: 'g:/test/mdb/emd-8116.mdb',
@@ -72,7 +72,7 @@ async function run() {
             //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
             // },
         }
-        await Query.execute(params1, () => wrapResponse('g:/test/zika_2.bcif'));
+        await Query.execute(params1, () => wrapResponse('g:/test/zika_4.bcif'));
 
     // for (let i = 0; i < 20; i++) {
 

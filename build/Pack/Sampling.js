@@ -67,7 +67,7 @@ function getSamplingCounts(baseSampleCount) {
             return ret;
         ret.push(next);
         prev = next;
-        // return ret;
+        //return ret;
     }
 }
 function createBlockBuffer(sampleCount, blockSize, valueType, numChannels) {
@@ -113,6 +113,7 @@ function createContext(filename, channels, blockSize, isPeriodic) {
                 case 0:
                     header = channels[0].header;
                     samplingCounts = getSamplingCounts(channels[0].header.extent);
+                    console.log(samplingCounts);
                     valueType = CCP4.getValueType(header);
                     cubeBuffer = new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
                     litteEndianCubeBuffer = File.IsNativeEndianLittle
@@ -132,6 +133,7 @@ function createContext(filename, channels, blockSize, isPeriodic) {
                         _a.blockSize = blockSize,
                         _a.cubeBuffer = cubeBuffer,
                         _a.litteEndianCubeBuffer = litteEndianCubeBuffer,
+                        _a.kernel = { size: 5, coefficients: [0, 3, 6, 3, 0], coefficientSum: 12 },
                         _a.sampling = samplingCounts.map(function (__, i) { return createSampling(i, valueType, channels.length, samplingCounts, blockSize); }),
                         _a.dataByteOffset = 0,
                         _a.totalByteSize = 0,
@@ -181,7 +183,7 @@ function processData(ctx) {
                     _b.label = 1;
                 case 1:
                     if (!(i < sliceCount)) return [3 /*break*/, 6];
-                    //console.log('layer', i);
+                    console.log('layer', i);
                     copyLayer(ctx, i);
                     Downsampling.downsampleLayer(ctx);
                     if (i > 100000)

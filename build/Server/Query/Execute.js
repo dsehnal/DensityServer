@@ -108,7 +108,7 @@ function createDataContext(file) {
     });
 }
 function pickSampling(data, queryBox) {
-    return data.sampling[2];
+    return data.sampling[4];
 }
 function createQueryContext(data, params, guid, serialNumber) {
     var inputQueryBox = params.box.a.kind === 1 /* Fractional */
