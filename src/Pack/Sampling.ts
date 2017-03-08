@@ -12,8 +12,8 @@ import * as DataFormat from '../Common/DataFormat'
 
 function getSamplingCounts(baseSampleCount: number[]) {
     // return [
-    //     baseSampleCount,
-    //     [Math.floor((baseSampleCount[0] + 1) / 2), baseSampleCount[1], baseSampleCount[2]]
+    //     baseSampleCount//,
+    //     //[Math.floor((baseSampleCount[0] + 1) / 2), baseSampleCount[1], baseSampleCount[2]]
     // ];
     const ret = [baseSampleCount];
     let prev = baseSampleCount;
@@ -48,8 +48,8 @@ function createDownsamplingBuffer(valueType: DataFormat.ValueType, sourceSampleC
     const ret = [];
     for (let i = 0; i < numChannels; i++) {
         ret[ret.length] = {
-            downsampleX: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
-            downsampleXY: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
+            downsampleU: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
+            downsampleUV: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
             slicesWritten: 0,
             startSliceIndex: 0
         }
@@ -139,7 +139,7 @@ export async function processData(ctx: Data.Context) {
     const channel = ctx.channels[0];
     const sliceCount = channel.slices.sliceCount;
     for (let i = 0; i < sliceCount; i++) {        
-        console.log('layer', i);
+        //console.log('layer', i);
         copyLayer(ctx, i);
         Downsampling.downsampleLayer(ctx);
         if (i > 100000) DownsamplingX.downsample(ctx.sampling[0], ctx.sampling[1], ctx.blockSize);
@@ -152,7 +152,7 @@ export async function processData(ctx: Data.Context) {
             if (i === sliceCount - 1 && channel.slices.isFinished) s.blocks.isFull = true;
 
             if (s.blocks.isFull) {
-                console.log(' writing rate', s.rate, s.blocks.slicesWritten);
+          //      console.log(' writing rate', s.rate, s.blocks.slicesWritten);
                 await Writer.writeBlockLayer(ctx, s);
             }
         }

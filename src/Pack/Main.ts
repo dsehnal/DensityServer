@@ -46,7 +46,6 @@ async function processData(ctx: Data.Context) {
         for (const src of ctx.channels) {
             await CCP4.readSlices(src);
         }
-        console.log('fin', channel.slices.isFinished, channel.slices.slicesRead, channel.slices.sliceCount)
         await Sampling.processData(ctx);
     }
 }

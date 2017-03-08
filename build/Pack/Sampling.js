@@ -47,8 +47,8 @@ var Writer = require("./Writer");
 var DataFormat = require("../Common/DataFormat");
 function getSamplingCounts(baseSampleCount) {
     // return [
-    //     baseSampleCount,
-    //     [Math.floor((baseSampleCount[0] + 1) / 2), baseSampleCount[1], baseSampleCount[2]]
+    //     baseSampleCount//,
+    //     //[Math.floor((baseSampleCount[0] + 1) / 2), baseSampleCount[1], baseSampleCount[2]]
     // ];
     var ret = [baseSampleCount];
     var prev = baseSampleCount;
@@ -85,8 +85,8 @@ function createDownsamplingBuffer(valueType, sourceSampleCount, targetSampleCoun
     var ret = [];
     for (var i = 0; i < numChannels; i++) {
         ret[ret.length] = {
-            downsampleX: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
-            downsampleXY: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
+            downsampleU: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
+            downsampleUV: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
             slicesWritten: 0,
             startSliceIndex: 0
         };
@@ -183,7 +183,7 @@ function processData(ctx) {
                     _b.label = 1;
                 case 1:
                     if (!(i < sliceCount)) return [3 /*break*/, 6];
-                    console.log('layer', i);
+                    //console.log('layer', i);
                     copyLayer(ctx, i);
                     Downsampling.downsampleLayer(ctx);
                     if (i > 100000)
@@ -199,9 +199,10 @@ function processData(ctx) {
                     if (i === sliceCount - 1 && channel.slices.isFinished)
                         s.blocks.isFull = true;
                     if (!s.blocks.isFull) return [3 /*break*/, 4];
-                    console.log(' writing rate', s.rate, s.blocks.slicesWritten);
+                    //      console.log(' writing rate', s.rate, s.blocks.slicesWritten);
                     return [4 /*yield*/, Writer.writeBlockLayer(ctx, s)];
                 case 3:
+                    //      console.log(' writing rate', s.rate, s.blocks.slicesWritten);
                     _b.sent();
                     _b.label = 4;
                 case 4:

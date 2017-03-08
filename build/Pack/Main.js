@@ -112,9 +112,7 @@ function processData(ctx) {
                 case 4:
                     _i++;
                     return [3 /*break*/, 2];
-                case 5:
-                    console.log('fin', channel.slices.isFinished, channel.slices.slicesRead, channel.slices.sliceCount);
-                    return [4 /*yield*/, Sampling.processData(ctx)];
+                case 5: return [4 /*yield*/, Sampling.processData(ctx)];
                 case 6:
                     _b.sent();
                     return [3 /*break*/, 1];
