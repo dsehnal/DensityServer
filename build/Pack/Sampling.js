@@ -42,9 +42,14 @@ var CCP4 = require("./CCP4");
 var Data = require("./DataModel");
 var File = require("../Common/File");
 var Downsampling = require("./Downsampling");
+var DownsamplingX = require("./DownsamplingX");
 var Writer = require("./Writer");
 var DataFormat = require("../Common/DataFormat");
 function getSamplingCounts(baseSampleCount) {
+    // return [
+    //     baseSampleCount,
+    //     [Math.floor((baseSampleCount[0] + 1) / 2), baseSampleCount[1], baseSampleCount[2]]
+    // ];
     var ret = [baseSampleCount];
     var prev = baseSampleCount;
     while (true) {
@@ -62,7 +67,7 @@ function getSamplingCounts(baseSampleCount) {
             return ret;
         ret.push(next);
         prev = next;
-        return ret;
+        // return ret;
     }
 }
 function createBlockBuffer(sampleCount, blockSize, valueType, numChannels) {
@@ -81,7 +86,7 @@ function createDownsamplingBuffer(valueType, sourceSampleCount, targetSampleCoun
     for (var i = 0; i < numChannels; i++) {
         ret[ret.length] = {
             downsampleX: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
-            downsampleXY: DataFormat.createValueArray(valueType, 4 * targetSampleCount[0] * targetSampleCount[1]),
+            downsampleXY: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
             slicesWritten: 0,
             startSliceIndex: 0
         };
@@ -176,9 +181,11 @@ function processData(ctx) {
                     _b.label = 1;
                 case 1:
                     if (!(i < sliceCount)) return [3 /*break*/, 6];
-                    console.log('layer', i);
+                    //console.log('layer', i);
                     copyLayer(ctx, i);
                     Downsampling.downsampleLayer(ctx);
+                    if (i > 100000)
+                        DownsamplingX.downsample(ctx.sampling[0], ctx.sampling[1], ctx.blockSize);
                     if (i === sliceCount - 1 && channel.slices.isFinished) {
                         Downsampling.finalize(ctx);
                     }

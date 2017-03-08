@@ -6,10 +6,15 @@ import * as CCP4 from './CCP4'
 import * as Data from './DataModel'
 import * as File from '../Common/File'
 import * as Downsampling from './Downsampling'
+import * as DownsamplingX from './DownsamplingX'
 import * as Writer from './Writer'
 import * as DataFormat from '../Common/DataFormat'
 
 function getSamplingCounts(baseSampleCount: number[]) {
+    // return [
+    //     baseSampleCount,
+    //     [Math.floor((baseSampleCount[0] + 1) / 2), baseSampleCount[1], baseSampleCount[2]]
+    // ];
     const ret = [baseSampleCount];
     let prev = baseSampleCount;
     while (true) {
@@ -24,7 +29,7 @@ function getSamplingCounts(baseSampleCount: number[]) {
         if (max < 32) return ret;
         ret.push(next);
         prev = next;
-        return ret;
+       // return ret;
     }
 }
 
@@ -44,7 +49,7 @@ function createDownsamplingBuffer(valueType: DataFormat.ValueType, sourceSampleC
     for (let i = 0; i < numChannels; i++) {
         ret[ret.length] = {
             downsampleX: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
-            downsampleXY: DataFormat.createValueArray(valueType, 4 * targetSampleCount[0] * targetSampleCount[1]),
+            downsampleXY: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
             slicesWritten: 0,
             startSliceIndex: 0
         }
@@ -132,9 +137,10 @@ export async function processData(ctx: Data.Context) {
     const channel = ctx.channels[0];
     const sliceCount = channel.slices.sliceCount;
     for (let i = 0; i < sliceCount; i++) {        
-        console.log('layer', i);
+        //console.log('layer', i);
         copyLayer(ctx, i);
         Downsampling.downsampleLayer(ctx);
+        if (i > 100000) DownsamplingX.downsample(ctx.sampling[0], ctx.sampling[1], ctx.blockSize);
 
         if (i === sliceCount - 1 && channel.slices.isFinished) {
             Downsampling.finalize(ctx);

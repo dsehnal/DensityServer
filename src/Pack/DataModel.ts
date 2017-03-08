@@ -22,7 +22,7 @@ export interface BlockBuffer {
 export interface DownsamplingBuffer {
     /** dimensions (sampleCount[1], sampleCount[0] / 2, 1) */
     downsampleX: DataFormat.ValueArray,
-    /** dimensions (4, sampleCount[0] / 2, sampleCount[1] / 2) */
+    /** dimensions (5, sampleCount[0] / 2, sampleCount[1] / 2) */
     downsampleXY: DataFormat.ValueArray,
 
     slicesWritten: number,

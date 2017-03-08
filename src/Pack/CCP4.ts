@@ -169,7 +169,7 @@ export async function readSlices(data: Data) {
     slices.slicesRead += sliceCount;
     slices.sliceCount = sliceCount;
 
-    if (slices.sliceCount >= extent[2]) {
+    if (slices.slicesRead >= extent[2]) {
         header.sigma = Math.sqrt(header.sigma / (extent[0] * extent[1] * extent[2]));
         slices.isFinished = true;
     }

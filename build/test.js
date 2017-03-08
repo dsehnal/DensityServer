@@ -74,7 +74,7 @@ function wrapResponse(fn) {
 }
 function run() {
     return __awaiter(this, void 0, void 0, function () {
-        var params;
+        var params, params1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -94,6 +94,16 @@ function run() {
                     };
                     return [4 /*yield*/, Query.execute(params, function () { return wrapResponse('g:/test/1cbs_1.cif'); })];
                 case 1:
+                    _a.sent();
+                    params1 = {
+                        sourceFilename: 'g:/test/mdb/emd-8116.mdb',
+                        sourceId: 'emd/zika',
+                        asBinary: true,
+                        //box: { a: Coordinate.fractional(0.1,0.1,0.1), b: Coordinate.fractional(0.3,0.3,0.3) },
+                        box: { a: Coordinate.fractional(-0.5, -0.5, -0.5), b: Coordinate.fractional(0.5, 0.5, 0.5) },
+                    };
+                    return [4 /*yield*/, Query.execute(params1, function () { return wrapResponse('g:/test/zika_2.bcif'); })];
+                case 2:
                     _a.sent();
                     return [2 /*return*/];
             }

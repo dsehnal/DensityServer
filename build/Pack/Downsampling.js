@@ -3,54 +3,61 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Map from L-th slice in src to an array of dimensions (srcDims[1], (srcDims[0] / 2), 1)
+ */
 function downsampleX(srcDims, src, srcLOffset, target) {
     var sizeH = srcDims[0], sizeK = srcDims[1], srcBaseOffset = srcLOffset * sizeH * sizeK;
     var targetH = Math.floor((sizeH + 1) / 2);
     var isEven = sizeH % 2 === 0;
-    var w = 1.0 / 8.0;
+    var w = 1.0 / 16.0;
     //console.log(srcDims);
     for (var k = 0; k < sizeK; k++) {
-        var srcOffset = srcBaseOffset + k * sizeH;
-        var targetOffset = k;
-        target[targetOffset] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 2]);
+        var sO = srcBaseOffset + k * sizeH;
+        var tO = k;
+        target[tO] = w * (src[sO] + 4 * (src[sO] + src[sO + 1]) + 6 * src[sO] + src[sO + 2]);
         for (var h = 1; h < targetH - 1; h++) {
-            srcOffset += 2;
-            target[targetOffset + h * sizeK] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 2]);
+            sO += 2;
+            target[tO + h * sizeK] = w * (src[sO - 2] + 4 * (src[sO - 1] + src[sO + 1]) + 6 * src[sO] + src[sO + 2]);
         }
+        sO += 2;
         if (isEven)
-            target[targetOffset + (targetH - 1) * sizeK] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 1]);
+            target[tO + (targetH - 1) * sizeK] = w * (src[sO - 2] + 4 * (src[sO - 1] + src[sO + 1]) + 6 * src[sO] + src[sO + 1]);
         else
-            target[targetOffset + (targetH - 1) * sizeK] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset] + src[srcOffset]);
+            target[tO + (targetH - 1) * sizeK] = w * (src[sO - 2] + 4 * (src[sO - 1] + src[sO]) + 6 * src[sO] + src[sO]);
     }
-    //console.log('X', target.slice(0, 10));
+    //console.log('X', target);
 }
 function _downsampleXY(dimsX, buffer) {
     var src = buffer.downsampleX, target = buffer.downsampleXY, slicesWritten = buffer.slicesWritten;
     //console.log(dimsX);
+    var kernelSize = 5;
     var sizeH = dimsX[0], sizeK = dimsX[1];
     var targetH = Math.floor((sizeH + 1) / 2);
     var isEven = sizeH % 2 === 0;
-    var targetSliceSize = 4 * sizeK;
-    var targetBaseOffset = slicesWritten % 4;
-    var w = 1.0 / 8.0;
+    var targetSliceSize = kernelSize * sizeK;
+    var targetBaseOffset = slicesWritten % kernelSize;
+    var w = 1.0 / 16.0;
     for (var k = 0; k < sizeK; k++) {
-        var srcOffset = k * sizeH;
-        var targetOffset = targetBaseOffset + k * 4;
-        target[targetOffset] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 2]);
+        var sO = k * sizeH;
+        var tO = targetBaseOffset + k * kernelSize;
+        target[tO] = w * (src[sO] + 4 * (src[sO] + src[sO + 1]) + 6 * src[sO] + src[sO + 2]);
         for (var h = 1; h < targetH - 1; h++) {
-            srcOffset += 2;
-            target[targetOffset + h * targetSliceSize] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 2]);
+            sO += 2;
+            target[tO + h * targetSliceSize] = w * (src[sO - 2] + 4 * (src[sO - 1] + src[sO + 1]) + 6 * src[sO] + src[sO + 2]);
         }
+        sO += 2;
         if (isEven)
-            target[targetOffset + (targetH - 1) * targetSliceSize] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset + 1] + src[srcOffset + 1]);
+            target[tO + (targetH - 1) * targetSliceSize] = w * (src[sO - 2] + 4 * (src[sO - 1] + src[sO + 1]) + 6 * src[sO] + src[sO + 1]);
         else
-            target[targetOffset + (targetH - 1) * targetSliceSize] = w * (src[srcOffset] + 3 * src[srcOffset] + 3 * src[srcOffset] + src[srcOffset]);
+            target[tO + (targetH - 1) * targetSliceSize] = w * (src[sO - 2] + 4 * (src[sO - 1] + src[sO]) + 6 * src[sO] + src[sO]);
     }
     //console.log('XY', slicesWritten, targetBaseOffset, targetH, target.slice(0, 10));
     buffer.slicesWritten++;
     //console.log(buffer.slicesWritten);
 }
 function downsampleXY(ctx, sampling) {
+    //console.log('downsampleXY');
     var dimsX = [sampling.sampleCount[1], Math.floor((sampling.sampleCount[0] + 1) / 2)];
     for (var i = 0, _ii = sampling.blocks.values.length; i < _ii; i++) {
         downsampleX(sampling.sampleCount, sampling.blocks.values[i], sampling.blocks.slicesWritten - 1, sampling.downsampling[i].downsampleX);
@@ -63,24 +70,28 @@ function canCollapseBuffer(source, finishing) {
     return (finishing && delta > 0) || (delta > 2 && (delta - 3) % 2 === 0);
 }
 function collapseBuffer(source, target, blockSize) {
+    //console.log('collapse');
     var downsampling = source.downsampling;
     var _a = downsampling[0], slicesWritten = _a.slicesWritten, startSliceIndex = _a.startSliceIndex;
     var sizeH = target.sampleCount[0], sizeK = target.sampleCount[1], sizeHK = sizeH * sizeK;
-    var x0 = Math.max(0, startSliceIndex - 1) % 4;
-    var x1 = startSliceIndex % 4;
-    var x2 = Math.min(slicesWritten, startSliceIndex + 1) % 4;
-    var x3 = Math.min(slicesWritten, startSliceIndex + 1) % 4;
-    var w = 1.0 / 8.0;
+    var kernelSize = 5;
+    var x02 = Math.max(0, startSliceIndex - 2) % kernelSize;
+    var x01 = Math.max(0, startSliceIndex - 1) % kernelSize;
+    var x0 = startSliceIndex % kernelSize;
+    var x1 = Math.min(slicesWritten, startSliceIndex + 1) % kernelSize;
+    var x2 = Math.min(slicesWritten, startSliceIndex + 2) % kernelSize;
+    var w = 1.0 / 16.0;
+    //console.log(x0, x1, x2, x3);
     var channelCount = downsampling.length;
     var valuesBaseOffset = target.blocks.slicesWritten * sizeHK;
     for (var channelIndex = 0; channelIndex < channelCount; channelIndex++) {
-        var downsampleXY_1 = downsampling[channelIndex].downsampleXY;
+        var src = downsampling[channelIndex].downsampleXY;
         var values = target.blocks.values[channelIndex];
         for (var k = 0; k < sizeK; k++) {
             var valuesOffset = valuesBaseOffset + k * sizeH;
             for (var h = 0; h < sizeH; h++) {
-                var srcOffset = 4 * h + 4 * k * sizeH;
-                var s = w * (downsampleXY_1[srcOffset + x0] + 3 * downsampleXY_1[srcOffset + x1] + 3 * downsampleXY_1[srcOffset + x2] + downsampleXY_1[srcOffset + x3]);
+                var sO = kernelSize * h + kernelSize * k * sizeH;
+                var s = w * (src[sO - x02] + 4 * (src[sO - x01] + src[sO + x1]) + 6 * src[sO + x0] + src[sO + x2]);
                 values[valuesOffset + h] = s;
             }
         }
