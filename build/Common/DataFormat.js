@@ -61,16 +61,16 @@ var _schema;
                 ['angles', array(float)],
                 ['isPeriodic', bool],
             ])],
-        ['channels', array(obj([
-                ['name', str],
-                ['mean', float],
-                ['sigma', float],
-                ['min', float],
-                ['max', float],
-            ]))],
+        ['channels', array(str)],
         ['sampling', array(obj([
                 ['byteOffset', float],
                 ['rate', int],
+                ['valuesInfo', array(obj([
+                        ['mean', float],
+                        ['sigma', float],
+                        ['min', float],
+                        ['max', float]
+                    ]))],
                 ['sampleCount', array(int)]
             ]))]
     ]);

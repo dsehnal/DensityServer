@@ -19,7 +19,7 @@ function float64(name, v, precision) {
     return { name: name, string: function (data, i) { return '' + Math.round(precision * v(data, i)) / precision; }, number: v, typedArray: Float64Array, encoder: E.by(E.byteArray) };
 }
 var _volume_data_3d_info_fields = [
-    string('name', function (ctx) { return ctx.header.channels[ctx.channelIndex].name; }),
+    string('name', function (ctx) { return ctx.header.channels[ctx.channelIndex]; }),
     int32('axis_order[0]', function (ctx) { return ctx.header.axisOrder[0]; }),
     int32('axis_order[1]', function (ctx) { return ctx.header.axisOrder[1]; }),
     int32('axis_order[2]', function (ctx) { return ctx.header.axisOrder[2]; }),
@@ -40,10 +40,6 @@ var _volume_data_3d_info_fields = [
     float64('spacegroup_cell_angles[0]', function (ctx) { return ctx.header.spacegroup.angles[0]; }, 1000),
     float64('spacegroup_cell_angles[1]', function (ctx) { return ctx.header.spacegroup.angles[1]; }, 1000),
     float64('spacegroup_cell_angles[2]', function (ctx) { return ctx.header.spacegroup.angles[2]; }, 1000),
-    float64('global_mean', function (ctx) { return ctx.header.channels[ctx.channelIndex].mean; }),
-    float64('global_sigma', function (ctx) { return ctx.header.channels[ctx.channelIndex].sigma; }),
-    float64('global_min', function (ctx) { return ctx.header.channels[ctx.channelIndex].min; }),
-    float64('global_max', function (ctx) { return ctx.header.channels[ctx.channelIndex].max; })
 ];
 function _volume_data_3d_info(result) {
     var ctx = {
@@ -139,7 +135,7 @@ function write(writer, query) {
     if (!result.isEmpty && !result.error && result.values) {
         var header = query.data.header;
         for (var i = 0; i < header.channels.length; i++) {
-            writer.startDataBlock(header.channels[i].name);
+            writer.startDataBlock(header.channels[i]);
             var ctx = [{ query: query, channelIndex: i }];
             writer.writeCategory(_volume_data_3d_info, ctx);
             writer.writeCategory(_volume_data_3d, ctx);

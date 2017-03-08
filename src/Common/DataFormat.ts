@@ -22,8 +22,7 @@ export interface Spacegroup {
     isPeriodic: boolean,
 }
 
-export interface Channel {
-    name: string,
+export interface ValuesInfo {
     mean: number,
     sigma: number,
     min: number,
@@ -35,6 +34,7 @@ export interface Sampling {
 
     /** How many values along each axis were collapsed into 1 */
     rate: number,
+    valuesInfo: ValuesInfo[],
 
     /** Number of samples along each axis, in axisOrder  */
     sampleCount: number[]
@@ -60,7 +60,7 @@ export interface Header {
     dimensions: number[],
 
     spacegroup: Spacegroup,
-    channels: Channel[],    
+    channels: string[],    
     sampling: Sampling[]
 }
 
@@ -80,16 +80,16 @@ module _schema {
             ['angles', array(float)],
             ['isPeriodic', bool],
         ])],
-        ['channels', array(obj<Channel>([
-            ['name', str],
-            ['mean', float],
-            ['sigma', float],
-            ['min', float],
-            ['max', float],
-        ]))],
+        ['channels', array(str)],
         ['sampling', array(obj<Sampling>([
             ['byteOffset', float],
             ['rate', int],
+            ['valuesInfo', array(obj<ValuesInfo>([
+                ['mean', float],
+                ['sigma', float],
+                ['min', float],
+                ['max', float]
+            ]))],            
             ['sampleCount', array(int)]
         ]))]
     ]);

@@ -6,7 +6,6 @@ import * as CCP4 from './CCP4'
 import * as Data from './DataModel'
 import * as File from '../Common/File'
 import * as Downsampling from './Downsampling'
-import * as DownsamplingX from './DownsamplingX'
 import * as Writer from './Writer'
 import * as DataFormat from '../Common/DataFormat'
 
@@ -48,8 +47,8 @@ function createDownsamplingBuffer(valueType: DataFormat.ValueType, sourceSampleC
     const ret = [];
     for (let i = 0; i < numChannels; i++) {
         ret[ret.length] = {
-            downsampleU: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
-            downsampleUV: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
+            downsampleH: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
+            downsampleHK: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
             slicesWritten: 0,
             startSliceIndex: 0
         }
@@ -59,10 +58,20 @@ function createDownsamplingBuffer(valueType: DataFormat.ValueType, sourceSampleC
 
 function createSampling(index: number, valueType: DataFormat.ValueType, numChannels: number, sampleCounts: number[][], blockSize: number): Data.Sampling {
     const sampleCount = sampleCounts[index];
+    const valuesInfo: Data.ValuesInfo[] = [];
+    for (let i = 0; i < numChannels; i++) {
+        valuesInfo[valuesInfo.length] = {
+            sum: 0.0,
+            sqSum: 0.0,
+            max: Number.NEGATIVE_INFINITY,
+            min: Number.POSITIVE_INFINITY           
+        }
+    }
     return {
         rate: 1 << index,
         sampleCount,
         blocks: createBlockBuffer(sampleCount, blockSize, valueType, numChannels),
+        valuesInfo,
         downsampling: index < sampleCounts.length - 1 ? createDownsamplingBuffer(valueType, sampleCount, sampleCounts[index + 1], numChannels) : void 0,
 
         byteOffset: 0,
@@ -94,7 +103,7 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
         blockSize,
         cubeBuffer,
         litteEndianCubeBuffer,
-        kernel: { size: 5, coefficients: [0,3,6,3,0], coefficientSum: 12 },
+        kernel: { size: 5, coefficients: [1,4,6,4,1], coefficientSum: 16 },
         sampling: samplingCounts.map((__, i) => createSampling(i, valueType, channels.length, samplingCounts, blockSize)),
         dataByteOffset: 0,
         totalByteSize: 0,
@@ -127,12 +136,35 @@ function copyLayer(ctx: Data.Context, sliceIndex: number) {
         const src = channels[channelIndex].slices.values;
         const target = blocks.values[channelIndex];
         for (let i = 0; i < size; i++) {
-            target[targetOffset + i] = src[srcOffset + i];
-        }
+            const v = src[srcOffset + i];
+            target[targetOffset + i] = v;
+        }   
     }
 
     blocks.slicesWritten++;
     blocks.isFull = blocks.slicesWritten === ctx.blockSize;
+}
+
+function updateValuesInfo(sampling: Data.Sampling) {
+    const { blocks, sampleCount } = sampling;
+    const size = blocks.slicesWritten * sampleCount[0] * sampleCount[1];
+
+    for (let channelIndex = 0; channelIndex < blocks.values.length; channelIndex++) {
+        const values = blocks.values[channelIndex];
+        const valuesInfo = sampling.valuesInfo[channelIndex];
+        let { sum, sqSum, max, min } = valuesInfo;
+        for (let i = 0; i < size; i++) {
+            const v = values[i];
+            sum += v;
+            sqSum += v * v;
+            if (v > max) max = v;
+            else if (v < min) min = v;
+        }   
+        valuesInfo.sum = sum;
+        valuesInfo.sqSum = sqSum;
+        valuesInfo.max = max;
+        valuesInfo.min = min;
+    }
 }
 
 export async function processData(ctx: Data.Context) {
@@ -142,7 +174,6 @@ export async function processData(ctx: Data.Context) {
         //console.log('layer', i);
         copyLayer(ctx, i);
         Downsampling.downsampleLayer(ctx);
-        if (i > 100000) DownsamplingX.downsample(ctx.sampling[0], ctx.sampling[1], ctx.blockSize);
 
         if (i === sliceCount - 1 && channel.slices.isFinished) {
             Downsampling.finalize(ctx);
@@ -150,9 +181,8 @@ export async function processData(ctx: Data.Context) {
 
         for (const s of ctx.sampling) {
             if (i === sliceCount - 1 && channel.slices.isFinished) s.blocks.isFull = true;
-
             if (s.blocks.isFull) {
-          //      console.log(' writing rate', s.rate, s.blocks.slicesWritten);
+                updateValuesInfo(s);
                 await Writer.writeBlockLayer(ctx, s);
             }
         }

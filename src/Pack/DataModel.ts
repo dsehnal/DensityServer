@@ -12,6 +12,13 @@ export interface Progress {
     max: number
 }
 
+export interface ValuesInfo {
+    sum: number,
+    sqSum: number,
+    min: number,
+    max: number
+}
+
 export interface BlockBuffer {
     values: DataFormat.ValueArray[],
     buffers: Buffer[],
@@ -20,10 +27,10 @@ export interface BlockBuffer {
 }
 
 export interface DownsamplingBuffer {
-    /** dimensions (sampleCount[1], sampleCount[0] / 2, 1) */
-    downsampleU: DataFormat.ValueArray,
-    /** dimensions (5, sampleCount[0] / 2, sampleCount[1] / 2) */
-    downsampleUV: DataFormat.ValueArray,
+    /** dimensions (sampleCount[1], sampleCount[0] / 2, 1), axis order (L, H, K) */
+    downsampleH: DataFormat.ValueArray,
+    /** dimensions (5, sampleCount[0] / 2, sampleCount[1] / 2), axis order (L, H, K) */
+    downsampleHK: DataFormat.ValueArray,
 
     slicesWritten: number,
     startSliceIndex: number
@@ -37,6 +44,7 @@ export interface Sampling {
 
     /** One per channel, same indexing */
     blocks: BlockBuffer,
+    valuesInfo: ValuesInfo[],
     downsampling?: DownsamplingBuffer[],
 
     /** Info about location in the output file, 0 offset is where the header ends */
@@ -56,7 +64,7 @@ export interface Kernel {
 export interface Context {
     file: number, 
 
-    /** Periodic are x-ray density files that cover the entire grid */
+    /** Periodic are x-ray density files that cover the entire grid and have [0,0,0] origin */
     isPeriodic: boolean,
     
     channels: CCP4.Data[],    
@@ -90,18 +98,22 @@ export function createHeader(ctx: Context): DataFormat.Header {
         origin: normalize(header.origin),
         dimensions: normalize(header.extent),
         spacegroup: { number: header.spacegroupNumber, size: header.cellSize, angles: header.cellAngles, isPeriodic: ctx.isPeriodic },
-        channels: ctx.channels.map(c => ({ 
-            name: c.header.name,
-            mean: c.header.mean,
-            sigma: c.header.sigma,
-            min: c.header.min,
-            max: c.header.max
-        })),
-        sampling: ctx.sampling.map(s => ({ 
-            byteOffset: s.byteOffset, 
-            rate: s.rate,
-            sampleCount: s.sampleCount 
-        }))
+        channels: ctx.channels.map(c => c.header.name),
+        sampling: ctx.sampling.map(s => { 
+            const N = s.sampleCount[0] * s.sampleCount[1] * s.sampleCount[2];
+            const valuesInfo = [];
+            for (const { sum, sqSum, min, max } of s.valuesInfo) {
+                const mean = sum / N;
+                const sigma = Math.sqrt(Math.max(0, sqSum / N - mean * mean));
+                valuesInfo.push({ mean, sigma, min, max });
+            }
+            return {
+                byteOffset: s.byteOffset, 
+                rate: s.rate,
+                valuesInfo,
+                sampleCount: s.sampleCount,
+            }
+        })
     };
 }
 

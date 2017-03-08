@@ -17,10 +17,6 @@ export interface Header {
     spacegroupNumber: number,
     cellSize: number[],
     cellAngles: number[],
-    mean: number,
-    sigma: number,
-    min: number,
-    max: number,
     littleEndian: boolean,
     dataOffset: number 
 }
@@ -122,10 +118,7 @@ async function readHeader(name: string, file: number) {
         spacegroupNumber: readInt(22),
         cellSize: getArray(readFloat, 10, 3),
         cellAngles: getArray(readFloat, 13, 3),
-        mean: readFloat(21),
-        sigma: 0.0,
-        min: Number.POSITIVE_INFINITY,
-        max: Number.NEGATIVE_INFINITY,
+        //mean: readFloat(21),
         littleEndian,
         dataOffset: headerSize + readInt(23) /* symBytes */
     };
@@ -140,37 +133,18 @@ export async function readSlices(data: Data) {
         return; 
     }
 
-    const { extent, mean } = header;
+    const { extent } = header;
     const sliceSize = extent[0] * extent[1];    
     const sliceByteOffset = slices.buffer.elementByteSize * sliceSize * slices.slicesRead;
     const sliceCount = Math.min(slices.sliceCapacity, extent[2] - slices.slicesRead);
     const sliceByteCount = sliceCount * sliceSize;
 
-    // are we in the top or bottom layer?    
-    function updateSigma() {
-        let sigma = header.sigma;
-        let min = header.min;
-        let max = header.max;
-        for (let i = 0; i < sliceByteCount; i++) {
-            const v = values[i];
-            const t = mean - v;
-            sigma += t * t;
-            if (v < min) min = v;
-            else if (v > max) max = v;
-        } 
-        header.sigma = sigma;
-        header.min = min;
-        header.max = max;
-    }
-
-    const values = await File.readTypedArray(slices.buffer, data.file, header.dataOffset + sliceByteOffset, sliceByteCount, 0, header.littleEndian);
-    updateSigma();
+    await File.readTypedArray(slices.buffer, data.file, header.dataOffset + sliceByteOffset, sliceByteCount, 0, header.littleEndian);
 
     slices.slicesRead += sliceCount;
     slices.sliceCount = sliceCount;
 
     if (slices.slicesRead >= extent[2]) {
-        header.sigma = Math.sqrt(header.sigma / (extent[0] * extent[1] * extent[2]));
         slices.isFinished = true;
     }
 }

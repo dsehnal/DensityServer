@@ -42,7 +42,6 @@ var CCP4 = require("./CCP4");
 var Data = require("./DataModel");
 var File = require("../Common/File");
 var Downsampling = require("./Downsampling");
-var DownsamplingX = require("./DownsamplingX");
 var Writer = require("./Writer");
 var DataFormat = require("../Common/DataFormat");
 function getSamplingCounts(baseSampleCount) {
@@ -85,8 +84,8 @@ function createDownsamplingBuffer(valueType, sourceSampleCount, targetSampleCoun
     var ret = [];
     for (var i = 0; i < numChannels; i++) {
         ret[ret.length] = {
-            downsampleU: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
-            downsampleUV: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
+            downsampleH: DataFormat.createValueArray(valueType, sourceSampleCount[1] * targetSampleCount[0]),
+            downsampleHK: DataFormat.createValueArray(valueType, 5 * targetSampleCount[0] * targetSampleCount[1]),
             slicesWritten: 0,
             startSliceIndex: 0
         };
@@ -95,10 +94,20 @@ function createDownsamplingBuffer(valueType, sourceSampleCount, targetSampleCoun
 }
 function createSampling(index, valueType, numChannels, sampleCounts, blockSize) {
     var sampleCount = sampleCounts[index];
+    var valuesInfo = [];
+    for (var i = 0; i < numChannels; i++) {
+        valuesInfo[valuesInfo.length] = {
+            sum: 0.0,
+            sqSum: 0.0,
+            max: Number.NEGATIVE_INFINITY,
+            min: Number.POSITIVE_INFINITY
+        };
+    }
     return {
         rate: 1 << index,
         sampleCount: sampleCount,
         blocks: createBlockBuffer(sampleCount, blockSize, valueType, numChannels),
+        valuesInfo: valuesInfo,
         downsampling: index < sampleCounts.length - 1 ? createDownsamplingBuffer(valueType, sampleCount, sampleCounts[index + 1], numChannels) : void 0,
         byteOffset: 0,
         byteSize: numChannels * sampleCount[0] * sampleCount[1] * sampleCount[2] * DataFormat.getValueByteSize(valueType),
@@ -133,7 +142,7 @@ function createContext(filename, channels, blockSize, isPeriodic) {
                         _a.blockSize = blockSize,
                         _a.cubeBuffer = cubeBuffer,
                         _a.litteEndianCubeBuffer = litteEndianCubeBuffer,
-                        _a.kernel = { size: 5, coefficients: [0, 3, 6, 3, 0], coefficientSum: 12 },
+                        _a.kernel = { size: 5, coefficients: [1, 4, 6, 4, 1], coefficientSum: 16 },
                         _a.sampling = samplingCounts.map(function (__, i) { return createSampling(i, valueType, channels.length, samplingCounts, blockSize); }),
                         _a.dataByteOffset = 0,
                         _a.totalByteSize = 0,
@@ -165,11 +174,34 @@ function copyLayer(ctx, sliceIndex) {
         var src = channels[channelIndex].slices.values;
         var target = blocks.values[channelIndex];
         for (var i = 0; i < size; i++) {
-            target[targetOffset + i] = src[srcOffset + i];
+            var v = src[srcOffset + i];
+            target[targetOffset + i] = v;
         }
     }
     blocks.slicesWritten++;
     blocks.isFull = blocks.slicesWritten === ctx.blockSize;
+}
+function updateValuesInfo(sampling) {
+    var blocks = sampling.blocks, sampleCount = sampling.sampleCount;
+    var size = blocks.slicesWritten * sampleCount[0] * sampleCount[1];
+    for (var channelIndex = 0; channelIndex < blocks.values.length; channelIndex++) {
+        var values = blocks.values[channelIndex];
+        var valuesInfo = sampling.valuesInfo[channelIndex];
+        var sum = valuesInfo.sum, sqSum = valuesInfo.sqSum, max = valuesInfo.max, min = valuesInfo.min;
+        for (var i = 0; i < size; i++) {
+            var v = values[i];
+            sum += v;
+            sqSum += v * v;
+            if (v > max)
+                max = v;
+            else if (v < min)
+                min = v;
+        }
+        valuesInfo.sum = sum;
+        valuesInfo.sqSum = sqSum;
+        valuesInfo.max = max;
+        valuesInfo.min = min;
+    }
 }
 function processData(ctx) {
     return __awaiter(this, void 0, void 0, function () {
@@ -186,8 +218,6 @@ function processData(ctx) {
                     //console.log('layer', i);
                     copyLayer(ctx, i);
                     Downsampling.downsampleLayer(ctx);
-                    if (i > 100000)
-                        DownsamplingX.downsample(ctx.sampling[0], ctx.sampling[1], ctx.blockSize);
                     if (i === sliceCount - 1 && channel.slices.isFinished) {
                         Downsampling.finalize(ctx);
                     }
@@ -199,10 +229,9 @@ function processData(ctx) {
                     if (i === sliceCount - 1 && channel.slices.isFinished)
                         s.blocks.isFull = true;
                     if (!s.blocks.isFull) return [3 /*break*/, 4];
-                    //      console.log(' writing rate', s.rate, s.blocks.slicesWritten);
+                    updateValuesInfo(s);
                     return [4 /*yield*/, Writer.writeBlockLayer(ctx, s)];
                 case 3:
-                    //      console.log(' writing rate', s.rate, s.blocks.slicesWritten);
                     _b.sent();
                     _b.label = 4;
                 case 4:

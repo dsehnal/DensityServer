@@ -20,18 +20,23 @@ function createHeader(ctx) {
         origin: normalize(header.origin),
         dimensions: normalize(header.extent),
         spacegroup: { number: header.spacegroupNumber, size: header.cellSize, angles: header.cellAngles, isPeriodic: ctx.isPeriodic },
-        channels: ctx.channels.map(function (c) { return ({
-            name: c.header.name,
-            mean: c.header.mean,
-            sigma: c.header.sigma,
-            min: c.header.min,
-            max: c.header.max
-        }); }),
-        sampling: ctx.sampling.map(function (s) { return ({
-            byteOffset: s.byteOffset,
-            rate: s.rate,
-            sampleCount: s.sampleCount
-        }); })
+        channels: ctx.channels.map(function (c) { return c.header.name; }),
+        sampling: ctx.sampling.map(function (s) {
+            var N = s.sampleCount[0] * s.sampleCount[1] * s.sampleCount[2];
+            var valuesInfo = [];
+            for (var _i = 0, _a = s.valuesInfo; _i < _a.length; _i++) {
+                var _b = _a[_i], sum = _b.sum, sqSum = _b.sqSum, min = _b.min, max = _b.max;
+                var mean = sum / N;
+                var sigma = Math.sqrt(Math.max(0, sqSum / N - mean * mean));
+                valuesInfo.push({ mean: mean, sigma: sigma, min: min, max: max });
+            }
+            return {
+                byteOffset: s.byteOffset,
+                rate: s.rate,
+                valuesInfo: valuesInfo,
+                sampleCount: s.sampleCount,
+            };
+        })
     };
 }
 exports.createHeader = createHeader;

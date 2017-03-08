@@ -39,7 +39,7 @@ interface _vd3d_Ctx {
 }
 
 const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
-    string<_vd3d_Ctx>('name', ctx => ctx.header.channels[ctx.channelIndex].name),
+    string<_vd3d_Ctx>('name', ctx => ctx.header.channels[ctx.channelIndex]),
         
     int32<_vd3d_Ctx>('axis_order[0]', ctx => ctx.header.axisOrder[0]),
     int32<_vd3d_Ctx>('axis_order[1]', ctx => ctx.header.axisOrder[1]),
@@ -68,10 +68,10 @@ const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
     float64<_vd3d_Ctx>('spacegroup_cell_angles[1]', ctx => ctx.header.spacegroup.angles[1], 1000),
     float64<_vd3d_Ctx>('spacegroup_cell_angles[2]', ctx => ctx.header.spacegroup.angles[2], 1000),
 
-    float64<_vd3d_Ctx>('global_mean', ctx => ctx.header.channels[ctx.channelIndex].mean),
-    float64<_vd3d_Ctx>('global_sigma', ctx => ctx.header.channels[ctx.channelIndex].sigma),
-    float64<_vd3d_Ctx>('global_min', ctx => ctx.header.channels[ctx.channelIndex].min),
-    float64<_vd3d_Ctx>('global_max', ctx => ctx.header.channels[ctx.channelIndex].max)
+    // float64<_vd3d_Ctx>('global_mean', ctx => ctx.header.channels[ctx.channelIndex].mean),
+    // float64<_vd3d_Ctx>('global_sigma', ctx => ctx.header.channels[ctx.channelIndex].sigma),
+    // float64<_vd3d_Ctx>('global_min', ctx => ctx.header.channels[ctx.channelIndex].min),
+    // float64<_vd3d_Ctx>('global_max', ctx => ctx.header.channels[ctx.channelIndex].max)
 ];
 
 function _volume_data_3d_info(result: ResultContext) {
@@ -177,7 +177,7 @@ function write(writer: Writer, query: Data.QueryContext) {
     if (!result.isEmpty && !result.error && result.values) {
         const header = query.data.header;
         for (let i = 0; i < header.channels.length; i++) {
-            writer.startDataBlock(header.channels[i].name);
+            writer.startDataBlock(header.channels[i]);
             const ctx: ResultContext[] = [{ query, channelIndex: i }];
 
             writer.writeCategory(_volume_data_3d_info, ctx);
