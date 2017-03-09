@@ -138,12 +138,15 @@ function getHeader(req, res) {
 }
 function queryBox(req, res, isCell) {
     return __awaiter(this, void 0, void 0, function () {
-        var a, b, isCartesian, box, asBinary, outputFilename, response, sourceFilename, params, ok, e_2;
+        var a, b, precision, isCartesian, box, asBinary, outputFilename, response, sourceFilename, params, ok, e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     a = [+req.params.a1, +req.params.a2, +req.params.a3];
                     b = [+req.params.b1, +req.params.b2, +req.params.b3];
+                    precision = (+req.query.precision) | 0;
+                    if (precision < 0)
+                        precision = 0;
                     isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
                     box = isCell
                         ? { kind: 'Cell' }
@@ -166,6 +169,7 @@ function queryBox(req, res, isCell) {
                         sourceId: req.params.source + "/" + req.params.id,
                         asBinary: asBinary,
                         box: box,
+                        precision: precision
                     };
                     return [4 /*yield*/, Api.queryBox(params, function () { return response; })];
                 case 2:

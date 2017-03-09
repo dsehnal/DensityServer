@@ -43,8 +43,9 @@ async function query(src: string, id: string, asBinary: boolean, box: Data.Query
         sourceFilename: `g:/test/mdb/${src}-${id}.mdb`,
         sourceId: `${src}/${id}`,
         asBinary,
-        box
-    }
+        box,
+        precision: 2
+    };
     const res = () => wrapResponse(`g:/test/${Api.getOutputFilename(src, id, params.asBinary, params.box)}`);
     await Api.queryBox(params, res)
 }

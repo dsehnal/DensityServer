@@ -88,15 +88,16 @@ function createQuerySampling(data: Data.DataContext, sampling: Data.Sampling, qu
     return ret;
 }
 
-function pickSampling(data: Data.DataContext, queryBox: Box.Fractional, forcedLevel: number): Data.QuerySamplingInfo {    
+function pickSampling(data: Data.DataContext, queryBox: Box.Fractional, forcedLevel: number, precision: number): Data.QuerySamplingInfo {    
     if (forcedLevel > 0) {
         return createQuerySampling(data, data.sampling[Math.min(data.sampling.length, forcedLevel) - 1], queryBox);
     }
     
+    const sizeLimit = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel[precision] || (2 * 1024 * 1024);
     for (const s of data.sampling) {
         const gridBox = Box.fractionalToGrid(queryBox, s.dataDomain);
-        const approxCompressedSize = Box.volume(gridBox) / 4;
-        if (approxCompressedSize <= ServerConfig.limits.maxDesiredOutputSizeInBytes) {
+        const approxSize = Box.volume(gridBox);
+        if (approxSize <= sizeLimit) {
             const sampling = createQuerySampling(data, s, queryBox);
             if (sampling.blocks.length <= ServerConfig.limits.maxRequestBlockCount) {
                 return sampling;
@@ -151,7 +152,7 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
         throw `The query box is too big.`;
     }
 
-    const samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0);
+    const samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.precision);
 
     if (samplingInfo.blocks.length === 0) return emptyQueryContext(data, params, guid, serialNumber);
 
@@ -235,8 +236,10 @@ export async function execute(params: Data.QueryParams, outputProvider: () => Da
 
     const guid = generateUUID();
     const serialNumber = State.querySerial++;
+
+    params.precision = Math.min(Math.max(0, params.precision), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
         
-    Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},${queryBoxToString(params.box)}`);
+    Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},precision=${params.precision},${queryBoxToString(params.box)}`);
     
     let sourceFile: number | undefined = void 0;
     try {

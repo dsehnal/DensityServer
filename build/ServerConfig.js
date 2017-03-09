@@ -11,9 +11,15 @@ var Config = {
          */
         maxFractionalBoxDimension: 3,
         /**
-         * What is the (approximate) maximum desired (gzipped) size of the response.
+         * What is the (approximate) maximum desired size in voxel count by precision level
+         * Rule of thumb: <response gzipped size> \in [<voxel count> / 8, <voxel count> / 4];
          */
-        maxDesiredOutputSizeInBytes: 1 * 1024 * 1024,
+        maxOutputSizeInVoxelCountByPrecisionLevel: [
+            0.5 * 1024 * 1024,
+            1 * 1024 * 1024,
+            2 * 1024 * 1024,
+            4 * 1024 * 1024
+        ]
     },
     /**
      * Specify the prefix of the API, i.e.

@@ -50,6 +50,7 @@ export interface QueryParams {
     sourceId: string,
     asBinary: boolean,
     box: QueryParamsBox,
+    precision: number,
     forcedSamplingLevel?: number
 }
 

@@ -119,15 +119,16 @@ function createQuerySampling(data, sampling, queryBox) {
     };
     return ret;
 }
-function pickSampling(data, queryBox, forcedLevel) {
+function pickSampling(data, queryBox, forcedLevel, precision) {
     if (forcedLevel > 0) {
         return createQuerySampling(data, data.sampling[Math.min(data.sampling.length, forcedLevel) - 1], queryBox);
     }
+    var sizeLimit = ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel[precision] || (2 * 1024 * 1024);
     for (var _i = 0, _a = data.sampling; _i < _a.length; _i++) {
         var s = _a[_i];
         var gridBox = Box.fractionalToGrid(queryBox, s.dataDomain);
-        var approxCompressedSize = Box.volume(gridBox) / 4;
-        if (approxCompressedSize <= ServerConfig_1.default.limits.maxDesiredOutputSizeInBytes) {
+        var approxSize = Box.volume(gridBox);
+        if (approxSize <= sizeLimit) {
             var sampling = createQuerySampling(data, s, queryBox);
             if (sampling.blocks.length <= ServerConfig_1.default.limits.maxRequestBlockCount) {
                 return sampling;
@@ -177,7 +178,7 @@ function createQueryContext(data, params, guid, serialNumber) {
     if (Box.dimensions(queryBox).some(function (d) { return isNaN(d) || d > ServerConfig_1.default.limits.maxFractionalBoxDimension; })) {
         throw "The query box is too big.";
     }
-    var samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0);
+    var samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.precision);
     if (samplingInfo.blocks.length === 0)
         return emptyQueryContext(data, params, guid, serialNumber);
     return {
@@ -275,7 +276,8 @@ function execute(params, outputProvider) {
                     State_1.State.pendingQueries++;
                     guid = generateUUID();
                     serialNumber = State_1.State.querySerial++;
-                    Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + "," + queryBoxToString(params.box));
+                    params.precision = Math.min(Math.max(0, params.precision), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+                    Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + ",precision=" + params.precision + "," + queryBoxToString(params.box));
                     sourceFile = void 0;
                     _a.label = 1;
                 case 1:

@@ -3,6 +3,9 @@
  */
 
 import VERSION from './Version'
+import ServerConfig from '../ServerConfig'
+
+const precisions = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.map((p, i) => `<span class='id'>${i}</span>: ${Math.round(p)} voxels`).join(', ');
 
 export default `
 <!DOCTYPE html>
@@ -57,7 +60,7 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
 </div>
 
 <div class="cs-docs-query-wrap">
-  <h2>Check Data Availability <span>/&lt;source&gt;/&lt;id&gt;</span><br> 
+  <h2>Data Header / Check Availability <span>/&lt;source&gt;/&lt;id&gt;</span><br> 
   <small>Returns a JSON response specifying if data is available and the maximum region that can be queried.</small></h2>
   <div id="coordserver-documentation-ambientResidues-body" style="margin: 24px 24px 0 24px">
     <h4>Example</h4>
@@ -78,9 +81,9 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
 </div>
 
 <div class="cs-docs-query-wrap">
-  <h2>Query Data <span>/&lt;source&gt;/&lt;id&gt;/box/&lt;a,b,c&gt;/&lt;u,v,w&gt;[?text=1][&space=cartesian]</span><br> 
+  <h2>Query Box <span>/&lt;source&gt;/&lt;id&gt;/box/&lt;a,b,c&gt;/&lt;u,v,w&gt;[?&lt;optional parameters&gt;]</span><br> 
   <small>Returns density data inside the specified box for the given entry. For X-ray data, returns 2Fo-Fc and Fo-Fc densities in a single response.</small></h2>
-  <div id="coordserver-documentation-ambientResidues-body" style="margin: 24px 24px 0 24px">    
+  <div style="margin: 24px 24px 0 24px">    
     <h4>Examples</h4>
     <a href="/DensityServer/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian" class="cs-docs-template-link" target="_blank" rel="nofollow">/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian</a><br>
     <a href="/DensityServer/x-ray/1cbs/box/0.1,0.1,0.1/0.23,0.31,0.18?space=fractional" class="cs-docs-template-link" target="_blank" rel="nofollow">/x-ray/1cbs/box/0.1,0.1,0.1/0.23,0.31,0.18?space=fractional</a>
@@ -110,30 +113,37 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
     <td class="cs-docs-param-name">space</td>
     <td>Determines the coordinate space the query is in. Can be <span class='id'>cartesian</span> or <span class='id'>fractional</span>. An optional argument, default values is <span class='id'>cartesian</span>.</td>
     </tr>
+    </tr>
+    <td class="cs-docs-param-name">precision</td>
+    <td>Determines the maximum number of voxels the query can return. Possible values are ${precisions}. Default value is <span class='id'>0</span>.</td>
+    </tr>
     </tbody></table>
-    <h4>Consuming the Data</h4>
-    <div>
-      The data can be consumed in any (modern) browser using the <a href='https://github.com/dsehnal/CIFTools.js'>CIFTools.js library</a>
-      (or any other piece of code that can read text or binary CIF).
-      <ul style='padding-left: 22px'>
-        <li>
-          Each data channel (e.g. 2Fo-Fc and Fo-Fc for x-ray data) is stored as a separate data block.
-        </li>
-        <li>
-          The order of raw values in the <span class='id'>_volume_data_3d.values</span> field is
-          the same as in the <a href='http://www.ccp4.ac.uk/html/maplib.html#description'>CCP4 format</a> with regards to
-          the <span class='id'>_volume_data_3d_info.axis_order</span> and <span class='id'>_volume_data_3d_info.sample_count</span> (equivalent to <span class='id'>extent</span> in CCP4 format).
-        </li>
-        <li>
-          The stored region is described in the fractional coordinates in the fields <span class='id'>_volume_data_3d_info.origin</span> and 
-          <span class='id'>_volume_data_3d_info.dimensions</span>.
-        </li>
-        <li>
-          Spacegroup parameters are given by the fields <span class='id'>_volume_data_3d_info.spacegroup_number</span>, 
-          <span class='id'>_volume_data_3d_info.spacegroup_cell_size</span>, and <span class='id'>_volume_data_3d_info.spacegroup_cell_angles</span>.
-        </li>
-      </ul>
-    </div>
+  </div>
+</div>
+
+<div class="cs-docs-query-wrap">
+  <h2>Consuming the Data</h2> 
+  <div style="margin: 24px 24px 0 24px">
+    The data can be consumed in any (modern) browser using the <a href='https://github.com/dsehnal/CIFTools.js'>CIFTools.js library</a>
+    (or any other piece of code that can read text or binary CIF).
+    <ul style='padding-left: 22px'>
+      <li>
+        Each data channel (e.g. 2Fo-Fc and Fo-Fc for x-ray data) is stored as a separate data block.
+      </li>
+      <li>
+        The order of raw values in the <span class='id'>_volume_data_3d.values</span> field is
+        the same as in the <a href='http://www.ccp4.ac.uk/html/maplib.html#description'>CCP4 format</a> with regards to
+        the <span class='id'>_volume_data_3d_info.axis_order</span> and <span class='id'>_volume_data_3d_info.sample_count</span> (equivalent to <span class='id'>extent</span> in CCP4 format).
+      </li>
+      <li>
+        The stored region is described in the fractional coordinates in the fields <span class='id'>_volume_data_3d_info.origin</span> and 
+        <span class='id'>_volume_data_3d_info.dimensions</span>.
+      </li>
+      <li>
+        Spacegroup parameters are given by the fields <span class='id'>_volume_data_3d_info.spacegroup_number</span>, 
+        <span class='id'>_volume_data_3d_info.spacegroup_cell_size</span>, and <span class='id'>_volume_data_3d_info.spacegroup_cell_angles</span>.
+      </li>
+    </ul>
   </div>
 </div>
 

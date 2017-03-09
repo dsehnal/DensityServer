@@ -81,7 +81,8 @@ function query(src, id, asBinary, box) {
                         sourceFilename: "g:/test/mdb/" + src + "-" + id + ".mdb",
                         sourceId: src + "/" + id,
                         asBinary: asBinary,
-                        box: box
+                        box: box,
+                        precision: 2
                     };
                     res = function () { return wrapResponse("g:/test/" + Api.getOutputFilename(src, id, params.asBinary, params.box)); };
                     return [4 /*yield*/, Api.queryBox(params, res)];

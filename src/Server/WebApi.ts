@@ -97,6 +97,8 @@ async function queryBox(req: express.Request, res: express.Response, isCell: boo
     const a = [+req.params.a1, +req.params.a2, +req.params.a3]; 
     const b = [+req.params.b1, +req.params.b2, +req.params.b3];
 
+    let precision = (+req.query.precision) | 0;
+    if (precision < 0) precision = 0;
     const isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
 
     const box: Data.QueryParamsBox = isCell
@@ -121,6 +123,7 @@ async function queryBox(req: express.Request, res: express.Response, isCell: boo
             sourceId: `${req.params.source}/${req.params.id}`,
             asBinary, 
             box, 
+            precision
         };    
         
         let ok = await Api.queryBox(params, () => response);
