@@ -56,6 +56,9 @@ function updateAllocationProgress(progress, progressDone) {
         process.stdout.write("\rAllocating...      " + $new + "%");
     }
 }
+/**
+ * Pre allocate the disk space to be able to do "random" writes into the entire file.
+ */
 function allocateFile(ctx) {
     return __awaiter(this, void 0, void 0, function () {
         var totalByteSize, file, buffer, progress, written;
@@ -86,37 +89,6 @@ function writeHeader(ctx) {
                 case 2:
                     _a.sent();
                     return [2 /*return*/];
-            }
-        });
-    });
-}
-function processData(ctx) {
-    return __awaiter(this, void 0, void 0, function () {
-        var channel, _i, _a, src;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    channel = ctx.channels[0];
-                    _b.label = 1;
-                case 1:
-                    if (!!channel.slices.isFinished) return [3 /*break*/, 7];
-                    _i = 0, _a = ctx.channels;
-                    _b.label = 2;
-                case 2:
-                    if (!(_i < _a.length)) return [3 /*break*/, 5];
-                    src = _a[_i];
-                    return [4 /*yield*/, CCP4.readSlices(src)];
-                case 3:
-                    _b.sent();
-                    _b.label = 4;
-                case 4:
-                    _i++;
-                    return [3 /*break*/, 2];
-                case 5: return [4 /*yield*/, Sampling.processData(ctx)];
-                case 6:
-                    _b.sent();
-                    return [3 /*break*/, 1];
-                case 7: return [2 /*return*/];
             }
         });
     });
@@ -176,7 +148,7 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
                     process.stdout.write('\rAllocating...      done.\n');
                     // Step 3: Process and write the data 
                     process.stdout.write('Writing data...    0%');
-                    return [4 /*yield*/, processData(context)];
+                    return [4 /*yield*/, Sampling.processData(context)];
                 case 8:
                     _f.sent();
                     process.stdout.write('\rWriting data...    done.\n');

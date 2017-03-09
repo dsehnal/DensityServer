@@ -19,7 +19,10 @@
  */
 export namespace Matrix4 {    
     export function empty(): number[] {
-        return [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0];
+        // force double backing type with the 0.1.
+        const ret = [0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        ret[0] = 0;
+        return ret;
     }
 
     export function ofRows(rows: number[][]): number[]{

@@ -84,15 +84,15 @@ export function domain<K>(kind: K, info: GridInfo): GridDomain<K> {
 }
 
 export function cartesian(x: number, y: number, z: number): Cartesian {
-    return { kind: Space.Cartesian, 0: x, 1: y, 2: z };
+    return { 0: x, 1: y, 2: z, kind: Space.Cartesian };
 }
 
 export function fractional(x: number, y: number, z: number): Fractional {
-    return { kind: Space.Fractional, 0: x, 1: y, 2: z };
+    return { 0: x, 1: y, 2: z, kind: Space.Fractional };
 }
 
 export function grid<K>(domain: GridDomain<K>, x: number, y: number, z: number): Grid<K> {
-    return { kind: Space.Grid, domain, 0: x, 1: y, 2: z };
+    return { 0: x, 1: y, 2: z, kind: Space.Grid, domain };
 }
 
 export function withCoord<C extends (Coord<Space> | Grid<any>)>(a: C, x: number, y: number, z: number): C {
@@ -111,9 +111,9 @@ export function clone<C extends (Coord<Space> | Grid<any>)>(a: C): C {
 // CONVERSIONS
 ///////////////////////////////////////////
 
-export function cartesianToFractional(a: Cartesian, spacegroup: Spacegroup, axisOrder: number[]): Fractional {
+export function cartesianToFractional(a: Cartesian, spacegroup: Spacegroup): Fractional {
     const coord = Helpers.transform(a, spacegroup.toFrac);
-    return fractional(coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]);
+    return fractional(coord[0], coord[1], coord[2]);
 }
 
 export function fractionalToGrid<K>(a: Fractional, domain: GridDomain<K>, snap: 'bottom' | 'top'): Grid<K> {

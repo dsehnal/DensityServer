@@ -18,10 +18,21 @@ export function formatTime(t: number) {
     return `${t.toFixed(0)}ms`;
 }
 
-export function log(msg: string, reqId?: number) {
-    console.log(`${reqId !== void 0 ? `[${reqId}] ` : ''}${msg}`);
+export function logPlain(tag: string, msg: string) {
+    console.log(`[${tag}] ${msg}`);
 }
 
-export function error(msg: string, reqId?: number) {
-    console.error(`${reqId !== void 0 ? `[${reqId}] ` : ''}${msg}`);
+export function log(guid: string, tag: string, msg: string) {
+    console.log(`[${guid}][${tag}] ${msg}`);
+}
+
+export function errorPlain(ctx: string, e: any) {
+    console.error(`[Error] (${ctx}) ${e}`);
+    if (e.stack) console.error(e.stack);
+}
+
+
+export function error(guid: string, e: any) {
+    console.error(`[${guid}][Error] ${e}`);
+    if (e.stack) console.error(e.stack);
 }

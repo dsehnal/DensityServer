@@ -38,26 +38,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var File = require("../Common/File");
-var Query = require("./Query/Execute");
+var Api = require("./Api");
 var Coords = require("./Algebra/Coordinate");
 var Documentation_1 = require("./Documentation");
 var ServerConfig_1 = require("../ServerConfig");
 var Logger = require("./Utils/Logger");
-var DataFormat = require("../Common/DataFormat");
 var State_1 = require("./State");
-function makePath(p) {
-    return ServerConfig_1.default.apiPrefix + '/' + p;
-}
 function mapFile(type, id) {
     return ServerConfig_1.default.mapFile(type || '', id || '');
-}
-function getOutputFilename(source, id, isBinary, _a) {
-    var a = _a.a, b = _a.b;
-    function n(s) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase(); }
-    function r(v) { return Math.round(10 * v) / 10; }
-    var box = r(a[0]) + "_" + r(a[1]) + "+" + r(a[2]) + "_" + r(b[0]) + "_" + r(b[1]) + "+" + r(b[2]);
-    return n(source) + "_" + n(id) + "-" + box + "." + (isBinary ? 'bcif' : 'cif');
 }
 function wrapResponse(fn, res) {
     var w = {
@@ -105,72 +93,37 @@ function queryDone() {
         process.exit(0);
     }
 }
-function readHeader(src, id) {
-    return __awaiter(this, void 0, void 0, function () {
-        var file, filename, header, e_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    file = void 0;
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 4, 5, 6]);
-                    filename = mapFile(src, id);
-                    if (!filename)
-                        return [2 /*return*/, void 0];
-                    return [4 /*yield*/, File.openRead(filename)];
-                case 2:
-                    file = _a.sent();
-                    return [4 /*yield*/, DataFormat.readHeader(file)];
-                case 3:
-                    header = _a.sent();
-                    return [2 /*return*/, header.header];
-                case 4:
-                    e_1 = _a.sent();
-                    Logger.log("[Info] [Error] " + src + "/" + id + ": " + e_1);
-                    return [2 /*return*/, void 0];
-                case 5:
-                    File.close(file);
-                    return [7 /*endfinally*/];
-                case 6: return [2 /*return*/];
-            }
-        });
-    });
+function getSourceInfo(req) {
+    return {
+        filename: mapFile(req.params.source, req.params.id),
+        id: req.params.source + "/" + req.params.id
+    };
 }
-function init(app) {
-    var _this = this;
-    // Header
-    app.get(makePath(':source/:id/?$'), function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-        var headerWritten, header, json, e_2;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+function getHeader(req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var headerWritten, _a, filename, id, header, e_1;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    Logger.log("[Info] " + req.params.source + "/" + req.params.id);
                     headerWritten = false;
-                    _a.label = 1;
+                    _b.label = 1;
                 case 1:
-                    _a.trys.push([1, 3, 4, 5]);
-                    return [4 /*yield*/, readHeader(req.params.source, req.params.id)];
+                    _b.trys.push([1, 3, 4, 5]);
+                    _a = getSourceInfo(req), filename = _a.filename, id = _a.id;
+                    return [4 /*yield*/, Api.getHeaderJson(filename, id)];
                 case 2:
-                    header = _a.sent();
-                    if (header) {
-                        json = JSON.stringify(header, null, 2);
-                        res.writeHead(200, {
-                            'Content-Type': 'application/json; charset=utf-8',
-                            'Access-Control-Allow-Origin': '*',
-                            'Access-Control-Allow-Headers': 'X-Requested-With'
-                        });
-                        headerWritten = true;
-                        res.write(json);
-                    }
-                    else {
-                        res.writeHead(404);
-                        headerWritten = true;
-                    }
+                    header = _b.sent();
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Headers': 'X-Requested-With'
+                    });
+                    headerWritten = true;
+                    res.write(header);
                     return [3 /*break*/, 5];
                 case 3:
-                    e_2 = _a.sent();
-                    Logger.log("[Info] [Error] " + req.params.source + "/" + req.params.id + ": " + e_2);
+                    e_1 = _b.sent();
+                    Logger.errorPlain("Header " + req.params.source + "/" + req.params.id, e_1);
                     if (!headerWritten) {
                         res.writeHead(404);
                     }
@@ -181,22 +134,24 @@ function init(app) {
                 case 5: return [2 /*return*/];
             }
         });
-    }); });
-    // Box /:src/:id/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
-    // Optional param
-    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-        var a, b, isCartesian, box, asBinary, outputFilename, response, sourceFilename, params, ok, e_3;
+    });
+}
+function queryBox(req, res, isCell) {
+    return __awaiter(this, void 0, void 0, function () {
+        var a, b, isCartesian, box, asBinary, outputFilename, response, sourceFilename, params, ok, e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     a = [+req.params.a1, +req.params.a2, +req.params.a3];
                     b = [+req.params.b1, +req.params.b2, +req.params.b3];
                     isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
-                    box = isCartesian
-                        ? { a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
-                        : { a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) };
+                    box = isCell
+                        ? { kind: 'Cell' }
+                        : (isCartesian
+                            ? { kind: 'Cartesian', a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
+                            : { kind: 'Fractional', a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) });
                     asBinary = req.query.text !== '1';
-                    outputFilename = getOutputFilename(req.params.source, req.params.id, asBinary, box);
+                    outputFilename = Api.getOutputFilename(req.params.source, req.params.id, asBinary, box);
                     response = wrapResponse(outputFilename, res);
                     _a.label = 1;
                 case 1:
@@ -212,7 +167,7 @@ function init(app) {
                         asBinary: asBinary,
                         box: box,
                     };
-                    return [4 /*yield*/, Query.execute(params, function () { return response; })];
+                    return [4 /*yield*/, Api.queryBox(params, function () { return response; })];
                 case 2:
                     ok = _a.sent();
                     if (!ok) {
@@ -221,8 +176,8 @@ function init(app) {
                     }
                     return [3 /*break*/, 5];
                 case 3:
-                    e_3 = _a.sent();
-                    Logger.log("[Error] " + e_3);
+                    e_2 = _a.sent();
+                    Logger.errorPlain("Query Box " + JSON.stringify(req.params || {}) + " | " + JSON.stringify(req.query || {}), e_2);
                     response.do404();
                     return [3 /*break*/, 5];
                 case 4:
@@ -232,7 +187,18 @@ function init(app) {
                 case 5: return [2 /*return*/];
             }
         });
-    }); });
+    });
+}
+function init(app) {
+    function makePath(p) {
+        return ServerConfig_1.default.apiPrefix + '/' + p;
+    }
+    // Header
+    app.get(makePath(':source/:id/?$'), function (req, res) { return getHeader(req, res); });
+    // Box /:src/:id/box/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
+    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), function (req, res) { return queryBox(req, res, false); });
+    // Cell /:src/:id/cell/?text=0|1&space=cartesian|fractional
+    app.get(makePath(':source/:id/cell/?'), function (req, res) { return queryBox(req, res, true); });
     app.get('*', function (req, res) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(Documentation_1.default);

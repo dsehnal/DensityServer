@@ -18,11 +18,23 @@ function formatTime(t) {
     return t.toFixed(0) + "ms";
 }
 exports.formatTime = formatTime;
-function log(msg, reqId) {
-    console.log("" + (reqId !== void 0 ? "[" + reqId + "] " : '') + msg);
+function logPlain(tag, msg) {
+    console.log("[" + tag + "] " + msg);
+}
+exports.logPlain = logPlain;
+function log(guid, tag, msg) {
+    console.log("[" + guid + "][" + tag + "] " + msg);
 }
 exports.log = log;
-function error(msg, reqId) {
-    console.error("" + (reqId !== void 0 ? "[" + reqId + "] " : '') + msg);
+function errorPlain(ctx, e) {
+    console.error("[Error] (" + ctx + ") " + e);
+    if (e.stack)
+        console.error(e.stack);
+}
+exports.errorPlain = errorPlain;
+function error(guid, e) {
+    console.error("[" + guid + "][Error] " + e);
+    if (e.stack)
+        console.error(e.stack);
 }
 exports.error = error;

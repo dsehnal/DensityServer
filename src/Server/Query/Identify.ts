@@ -27,7 +27,7 @@ function overlapMultiplierRange(a: number, b: number, u: number, v: number): num
  * shift(box, offset) has non-empty interaction with the region 
  * described in the give domain.
  */
-function findDataOverlapTranslationList(box: Box.Fractional, domain: Coords.GridDomain<any>): Translations {
+function findDataOverlapTranslationList(box: Box.Fractional, domain: Coords.GridDomain<'Data'>): Translations {
     const ranges = [];
     const translations: Translations = [];
     const { origin, dimensions } = domain;
@@ -53,8 +53,7 @@ function findDataOverlapTranslationList(box: Box.Fractional, domain: Coords.Grid
     return translations;
 }
 
-export type UniqueBlock = { coord: Coords.Grid<'Block'>, offsets: Coords.Fractional[] }
-type UniqueBlocks = FastMap<number, UniqueBlock>
+type UniqueBlocks = FastMap<number, Data.QueryBlock>
 
 function addUniqueBlock(blocks: UniqueBlocks, coord: Coords.Grid<'Block'>, offset: Coords.Fractional) {
     const hash = Coords.linearGridIndex(coord);
@@ -66,14 +65,14 @@ function addUniqueBlock(blocks: UniqueBlocks, coord: Coords.Grid<'Block'>, offse
     }
 }
 
-function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractional, blocks: UniqueBlocks) {
-    const shifted = Box.shift(query.fractionalBox, offset);
-    const intersection = Box.intersect(shifted, query.data.dataBox);
+function findUniqueBlocksOffset(data: Data.DataContext, sampling: Data.Sampling, queryBox: Box.Fractional, offset: Coords.Fractional, blocks: UniqueBlocks) {
+    const shifted = Box.shift(queryBox, offset);
+    const intersection = Box.intersect(shifted, data.dataBox);
 
     // Intersection can be empty in the case of "aperiodic spacegroups"
     if (!intersection) return;
 
-    const blockDomain = query.sampling.blockDomain;
+    const blockDomain = sampling.blockDomain;
 
     // this gets the "3d range" of block indices that contain data that overlaps 
     // with the query region.
@@ -81,11 +80,6 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
     // Clamping the data makes sure we avoid silly rounding errors (hopefully :))
     const { a: min, b: max } 
         = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain));
-
-    //console.log({offset, intersection})
-    // console.log({offset, frac: Box.fractionalToGrid(intersection, blockDomain)})
-    // console.log({ frac: blockDomain })
-    // console.log({ min, max });
 
     for (let i = min[0]; i < max[0]; i++) {
         for (let j = min[1]; j < max[1]; j++) {
@@ -97,24 +91,19 @@ function findUniqueBlocksOffset(query: Data.QueryContext, offset: Coords.Fractio
 }
 
 /** Find a list of unique blocks+offsets that overlap with the query region. */
-export default function findUniqueBlocks(query: Data.QueryContext) {
-    const translations = query.data.header.spacegroup.isPeriodic
+export default function findUniqueBlocks(data: Data.DataContext, sampling: Data.Sampling, queryBox: Box.Fractional) {
+    const translations = data.header.spacegroup.isPeriodic
         // find all query box translations that overlap with the unit cell.
-        ? findDataOverlapTranslationList(query.fractionalBox, query.sampling.dataDomain) 
+        ? findDataOverlapTranslationList(queryBox, sampling.dataDomain) 
         // no translations
         : [Coords.fractional(0, 0, 0)];
 
-    const blocks: UniqueBlocks = FastMap.create<number, UniqueBlock>();
-
-    //console.log({translations});
-
+    const blocks: UniqueBlocks = FastMap.create<number, Data.QueryBlock>();
     for (const t of translations) {
-        findUniqueBlocksOffset(query, t, blocks);
+        findUniqueBlocksOffset(data, sampling, queryBox, t, blocks);
     }
     
-    const blockList = blocks.forEach((b, _, ctx) => { ctx!.push(b) }, [] as UniqueBlock[]);
-
-    //console.log('list', blockList);
+    const blockList = blocks.forEach((b, _, ctx) => { ctx!.push(b) }, [] as Data.QueryBlock[]);
 
     // sort the data so that the first coodinate changes the fastest 
     // this is because that's how the data is laid out in the underlaying 

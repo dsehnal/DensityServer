@@ -4,19 +4,18 @@
 
 import * as DataFormat from '../../Common/DataFormat'
 import * as Data from './DataModel'
-import * as Identify from './Identify'
 import * as Box from '../Algebra/Box'
 import * as Coords from '../Algebra/Coordinate'
 import * as File from '../../Common/File'
 
 export async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Block'>, blockBox: Box.Fractional): Promise<Data.BlockData> {
     const numChannels = query.data.header.channels.length;
-    const blockSampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.sampling.dataDomain));
+    const blockSampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.samplingInfo.sampling.dataDomain));
     const size = numChannels * blockSampleCount[0] * blockSampleCount[1] * blockSampleCount[2];
     const { valueType, blockSize } = query.data.header;
-    const dataSampleCount = query.data.header.sampling[query.sampling.index].sampleCount;
+    const dataSampleCount = query.data.header.sampling[query.samplingInfo.sampling.index].sampleCount;
     const buffer = File.createTypedArrayBufferContext(size, valueType);
-    const byteOffset = query.sampling.byteOffset 
+    const byteOffset = query.samplingInfo.sampling.byteOffset 
         + DataFormat.getValueByteSize(valueType) * numChannels * blockSize 
           * (blockSampleCount[1] * blockSampleCount[2] * coord[0]
            + dataSampleCount[0] * blockSampleCount[2] * coord[1]
@@ -32,7 +31,7 @@ export async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Bl
 function fillData(query: Data.QueryContext, blockData: Data.BlockData, blockGridBox: Box.Grid<'BlockGrid'>, queryGridBox: Box.Grid<'Query'>) {
     const source = blockData.values;
 
-    const { sizeX: tSizeH, sizeXY: tSizeHK } = Coords.gridMetrics(query.gridDomain.sampleCount);
+    const { sizeX: tSizeH, sizeXY: tSizeHK } = Coords.gridMetrics(query.samplingInfo.gridDomain.sampleCount);
     const { sizeX: sSizeH, sizeXY: sSizeHK } = Coords.gridMetrics(blockData.sampleCount);
 
     const offsetTarget = queryGridBox.a[0] + queryGridBox.a[1] * tSizeH + queryGridBox.a[2] * tSizeHK;
@@ -64,33 +63,40 @@ function createBlockGridDomain(block: Coords.Grid<'Block'>, grid: Coords.GridDom
 }
 
 /** Read the block data and fill all the overlaps with the query region. */
-async function fillBlock(query: Data.QueryContext, block: Identify.UniqueBlock) {
+async function fillBlock(query: Data.QueryContext, block: Data.QueryBlock) {
     const baseBox = Box.fractionalFromBlock(block.coord);
-    const blockGridDomain = createBlockGridDomain(block.coord, query.sampling.dataDomain);
-
-    //console.log({ baseBox });
-
-    //console.log({ blockGridDomain });
+    const blockGridDomain = createBlockGridDomain(block.coord, query.samplingInfo.sampling.dataDomain);
 
     const blockData: Data.BlockData = await readBlock(query, block.coord, baseBox);
         
     for (const offset of block.offsets) {
         const offsetBlockBox = Box.shift(baseBox, offset);
-        const dataBox = Box.intersect(offsetBlockBox, query.fractionalBox);
+        const dataBox = Box.intersect(offsetBlockBox, query.samplingInfo.fractionalBox);
 
         if (!dataBox) continue;
         const blockGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, blockGridDomain));
-        const queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.gridDomain));
-
-
-        //console.log({ blockOrig: Box.fractionalToGrid(dataBox, blockGridDomain), blockGridBox, queryGridBox })
+        const queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.samplingInfo.gridDomain));
 
         fillData(query, blockData, blockGridBox, queryGridBox);
     }
 }
 
-export default async function compose(query: Data.QueryContext, blocks: Identify.UniqueBlock[]) {
-    for (const block of blocks) {
+/** To roughly preserve "relative iso-level" the values are stored relative to mean and sigma */
+function dataChannelToRelativeValues(query: Data.QueryContext, channelIndex: number) {
+    const { mean, sigma } = query.data.header.sampling[query.samplingInfo.sampling.index].valuesInfo[channelIndex];
+    const values = query.result.values![channelIndex];
+    for (let i = 0, _ii = values.length; i < _ii; i++) {
+        values[i] = (values[i] - mean) / sigma;
+    }
+}
+
+export default async function compose(query: Data.QueryContext) {
+    for (const block of query.samplingInfo.blocks) {
         await fillBlock(query, block);
+    }
+    if (query.samplingInfo.sampling.rate > 1) {
+        for (let channelIndex = 0; channelIndex < query.result.values!.length; channelIndex++) {
+            dataChannelToRelativeValues(query, channelIndex);
+        }
     }
 }

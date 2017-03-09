@@ -22,14 +22,13 @@ export interface ValuesInfo {
 export interface BlockBuffer {
     values: DataFormat.ValueArray[],
     buffers: Buffer[],
-    slicesWritten: number,
-    isFull: boolean
+    slicesWritten: number
 }
 
 export interface DownsamplingBuffer {
-    /** dimensions (sampleCount[1], sampleCount[0] / 2, 1), axis order (L, H, K) */
+    /** dimensions (sampleCount[1], sampleCount[0] / 2, 1), axis order (K, H, L) */
     downsampleH: DataFormat.ValueArray,
-    /** dimensions (5, sampleCount[0] / 2, sampleCount[1] / 2), axis order (L, H, K) */
+    /** "Cyclic" (in the 1st dimensions) buffer with dimensions (5, sampleCount[0] / 2, sampleCount[1] / 2), axis order (L, H, K),  */
     downsampleHK: DataFormat.ValueArray,
 
     slicesWritten: number,
@@ -51,17 +50,21 @@ export interface Sampling {
     byteOffset: number,
     byteSize: number,
     /** where to write the next block relative to the byteoffset */
-    writeByteOffset: number,  
-
+    writeByteOffset: number
 }
 
+/** Kernel used for downsampling */
 export interface Kernel {
+    /** The kernel size is curently fixed at 5 */
     size: 5,
+    /** Compute new sample as c[0] * data[i - 2] + ... + c[4] * data[i + 2] */
     coefficients: number[],
+    /** Precomputed coefficients.sum() */
     coefficientSum: number
 }
 
 export interface Context {
+    /** Output file handle  */
     file: number, 
 
     /** Periodic are x-ray density files that cover the entire grid and have [0,0,0] origin */
@@ -72,6 +75,7 @@ export interface Context {
     blockSize: number,    
     /** Able to store channels.length * blockSize^3 values. */
     cubeBuffer: Buffer, 
+    /** All values are stored in little endian format which might not be the native endian of the system  */
     litteEndianCubeBuffer: Buffer,   
 
     kernel: Kernel,

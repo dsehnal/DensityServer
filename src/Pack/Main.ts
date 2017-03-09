@@ -23,6 +23,9 @@ function updateAllocationProgress(progress: Data.Progress, progressDone: number)
     }
 }
 
+/**
+ * Pre allocate the disk space to be able to do "random" writes into the entire file. 
+ */
 async function allocateFile(ctx: Data.Context) {
     const { totalByteSize, file } = ctx;
     const buffer = new Buffer(Math.min(totalByteSize, 8 * 1024 * 1024));
@@ -40,16 +43,6 @@ async function writeHeader(ctx: Data.Context) {
     await File.writeBuffer(ctx.file, 4, header);
 }
 
-async function processData(ctx: Data.Context) {    
-    const channel = ctx.channels[0];
-    while (!channel.slices.isFinished) {
-        for (const src of ctx.channels) {
-            await CCP4.readSlices(src);
-        }
-        await Sampling.processData(ctx);
-    }
-}
- 
 async function create(filename: string, sourceDensities: { name: string, filename: string }[], blockSize: number, isPeriodic: boolean) {
     const startedTime = getTime();
 
@@ -87,7 +80,7 @@ async function create(filename: string, sourceDensities: { name: string, filenam
 
         // Step 3: Process and write the data 
         process.stdout.write('Writing data...    0%');
-        await processData(context);
+        await Sampling.processData(context);
         process.stdout.write('\rWriting data...    done.\n');
 
         // Step 4: Write the header at the start of the file.

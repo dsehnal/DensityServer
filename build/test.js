@@ -38,9 +38,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-//import * as Box from './Server/Algebra/Box'
+var Api = require("./Server/Api");
 var Coordinate = require("./Server/Algebra/Coordinate");
-var Query = require("./Server/Query/Execute");
 var fs = require("fs");
 function wrapResponse(fn) {
     var w = {
@@ -72,21 +71,57 @@ function wrapResponse(fn) {
     };
     return w;
 }
-function run() {
+function query(src, id, asBinary, box) {
     return __awaiter(this, void 0, void 0, function () {
-        var params1;
+        var params, res;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    params1 = {
-                        sourceFilename: 'g:/test/mdb/emd-8116.mdb',
-                        sourceId: 'emd/zika',
-                        asBinary: true,
-                        //box: { a: Coordinate.fractional(0.1,0.1,0.1), b: Coordinate.fractional(0.3,0.3,0.3) },
-                        box: { a: Coordinate.fractional(-0.5, -0.5, -0.5), b: Coordinate.fractional(0.5, 0.5, 0.5) },
+                    params = {
+                        sourceFilename: "g:/test/mdb/" + src + "-" + id + ".mdb",
+                        sourceId: src + "/" + id,
+                        asBinary: asBinary,
+                        box: box
                     };
-                    return [4 /*yield*/, Query.execute(params1, function () { return wrapResponse('g:/test/zika_4.bcif'); })];
+                    res = function () { return wrapResponse("g:/test/" + Api.getOutputFilename(src, id, params.asBinary, params.box)); };
+                    return [4 /*yield*/, Api.queryBox(params, res)];
                 case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function run() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, query('xray', '1cbs', false, {
+                        kind: 'Cartesian',
+                        a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
+                        b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793)
+                    })];
+                case 1:
+                    _a.sent();
+                    return [4 /*yield*/, query('xray', '1cbs', true, {
+                            kind: 'Cartesian',
+                            a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
+                            b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793)
+                        })];
+                case 2:
+                    _a.sent();
+                    return [4 /*yield*/, query('emd', '8116', false, { kind: 'Cell' })];
+                case 3:
+                    _a.sent();
+                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' })];
+                case 4:
+                    _a.sent();
+                    return [4 /*yield*/, query('xray', '1cbs', false, {
+                            kind: 'Fractional',
+                            a: Coordinate.fractional(0, 0, 0),
+                            b: Coordinate.fractional(6, 6, 6)
+                        })];
+                case 5:
                     _a.sent();
                     return [2 /*return*/];
             }

@@ -49,12 +49,12 @@ function readBlock(query, coord, blockBox) {
             switch (_b.label) {
                 case 0:
                     numChannels = query.data.header.channels.length;
-                    blockSampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.sampling.dataDomain));
+                    blockSampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.samplingInfo.sampling.dataDomain));
                     size = numChannels * blockSampleCount[0] * blockSampleCount[1] * blockSampleCount[2];
                     _a = query.data.header, valueType = _a.valueType, blockSize = _a.blockSize;
-                    dataSampleCount = query.data.header.sampling[query.sampling.index].sampleCount;
+                    dataSampleCount = query.data.header.sampling[query.samplingInfo.sampling.index].sampleCount;
                     buffer = File.createTypedArrayBufferContext(size, valueType);
-                    byteOffset = query.sampling.byteOffset
+                    byteOffset = query.samplingInfo.sampling.byteOffset
                         + DataFormat.getValueByteSize(valueType) * numChannels * blockSize
                             * (blockSampleCount[1] * blockSampleCount[2] * coord[0]
                                 + dataSampleCount[0] * blockSampleCount[2] * coord[1]
@@ -73,7 +73,7 @@ function readBlock(query, coord, blockBox) {
 exports.readBlock = readBlock;
 function fillData(query, blockData, blockGridBox, queryGridBox) {
     var source = blockData.values;
-    var _a = Coords.gridMetrics(query.gridDomain.sampleCount), tSizeH = _a.sizeX, tSizeHK = _a.sizeXY;
+    var _a = Coords.gridMetrics(query.samplingInfo.gridDomain.sampleCount), tSizeH = _a.sizeX, tSizeHK = _a.sizeXY;
     var _b = Coords.gridMetrics(blockData.sampleCount), sSizeH = _b.sizeX, sSizeHK = _b.sizeXY;
     var offsetTarget = queryGridBox.a[0] + queryGridBox.a[1] * tSizeH + queryGridBox.a[2] * tSizeHK;
     var _c = Box.dimensions(blockGridBox), maxH = _c[0], maxK = _c[1], maxL = _c[2];
@@ -106,19 +106,18 @@ function fillBlock(query, block) {
             switch (_b.label) {
                 case 0:
                     baseBox = Box.fractionalFromBlock(block.coord);
-                    blockGridDomain = createBlockGridDomain(block.coord, query.sampling.dataDomain);
+                    blockGridDomain = createBlockGridDomain(block.coord, query.samplingInfo.sampling.dataDomain);
                     return [4 /*yield*/, readBlock(query, block.coord, baseBox)];
                 case 1:
                     blockData = _b.sent();
                     for (_i = 0, _a = block.offsets; _i < _a.length; _i++) {
                         offset = _a[_i];
                         offsetBlockBox = Box.shift(baseBox, offset);
-                        dataBox = Box.intersect(offsetBlockBox, query.fractionalBox);
+                        dataBox = Box.intersect(offsetBlockBox, query.samplingInfo.fractionalBox);
                         if (!dataBox)
                             continue;
                         blockGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, blockGridDomain));
-                        queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.gridDomain));
-                        //console.log({ blockOrig: Box.fractionalToGrid(dataBox, blockGridDomain), blockGridBox, queryGridBox })
+                        queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.samplingInfo.gridDomain));
                         fillData(query, blockData, blockGridBox, queryGridBox);
                     }
                     return [2 /*return*/];
@@ -126,25 +125,39 @@ function fillBlock(query, block) {
         });
     });
 }
-function compose(query, blocks) {
+/** To roughly preserve "relative iso-level" the values are stored relative to mean and sigma */
+function dataChannelToRelativeValues(query, channelIndex) {
+    var _a = query.data.header.sampling[query.samplingInfo.sampling.index].valuesInfo[channelIndex], mean = _a.mean, sigma = _a.sigma;
+    var values = query.result.values[channelIndex];
+    for (var i = 0, _ii = values.length; i < _ii; i++) {
+        values[i] = (values[i] - mean) / sigma;
+    }
+}
+function compose(query) {
     return __awaiter(this, void 0, void 0, function () {
-        var _i, blocks_1, block;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var _i, _a, block, channelIndex;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    _i = 0, blocks_1 = blocks;
-                    _a.label = 1;
+                    _i = 0, _a = query.samplingInfo.blocks;
+                    _b.label = 1;
                 case 1:
-                    if (!(_i < blocks_1.length)) return [3 /*break*/, 4];
-                    block = blocks_1[_i];
+                    if (!(_i < _a.length)) return [3 /*break*/, 4];
+                    block = _a[_i];
                     return [4 /*yield*/, fillBlock(query, block)];
                 case 2:
-                    _a.sent();
-                    _a.label = 3;
+                    _b.sent();
+                    _b.label = 3;
                 case 3:
                     _i++;
                     return [3 /*break*/, 1];
-                case 4: return [2 /*return*/];
+                case 4:
+                    if (query.samplingInfo.sampling.rate > 1) {
+                        for (channelIndex = 0; channelIndex < query.result.values.length; channelIndex++) {
+                            dataChannelToRelativeValues(query, channelIndex);
+                        }
+                    }
+                    return [2 /*return*/];
             }
         });
     });

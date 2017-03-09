@@ -10,6 +10,7 @@ import * as Box from '../Algebra/Box'
 import * as CIF from '../../lib/CIFTools'
 import * as Logger from '../Utils/Logger'
 import { State } from '../State'
+import ServerConfig from '../../ServerConfig'
 
 import identify from './Identify'
 import compose from './Compose'
@@ -46,9 +47,9 @@ function createSampling(header: DataFormat.Header, index: number, dataOffset: nu
         origin: Coords.fractional(header.origin[0], header.origin[1], header.origin[2]),
         dimensions: Coords.fractional(header.dimensions[0], header.dimensions[1], header.dimensions[2]),
         delta: Coords.fractional(
-            header.dimensions[0] / (sampling.sampleCount[0] ),
-            header.dimensions[1] / (sampling.sampleCount[1] ),
-            header.dimensions[2] / (sampling.sampleCount[2] )),
+            header.dimensions[0] / sampling.sampleCount[0],
+            header.dimensions[1] / sampling.sampleCount[1],
+            header.dimensions[2] / sampling.sampleCount[2]),
         sampleCount: sampling.sampleCount
     });
     return {
@@ -75,57 +76,97 @@ async function createDataContext(file: number): Promise<Data.DataContext> {
     }
 }
 
-function pickSampling(data: Data.DataContext, queryBox: Box.Fractional) {
-    return data.sampling[4];
+function createQuerySampling(data: Data.DataContext, sampling: Data.Sampling, queryBox: Box.Fractional): Data.QuerySamplingInfo {
+    const fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+    const blocks = identify(data, sampling, fractionalBox);
+    let ret = {
+        sampling,
+        fractionalBox,
+        gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta),
+        blocks
+    };
+    return ret;
+}
+
+function pickSampling(data: Data.DataContext, queryBox: Box.Fractional, forcedLevel: number): Data.QuerySamplingInfo {    
+    if (forcedLevel > 0) {
+        return createQuerySampling(data, data.sampling[Math.min(data.sampling.length, forcedLevel) - 1], queryBox);
+    }
+    
+    for (const s of data.sampling) {
+        const gridBox = Box.fractionalToGrid(queryBox, s.dataDomain);
+        const approxCompressedSize = Box.volume(gridBox) / 4;
+        if (approxCompressedSize <= ServerConfig.limits.maxDesiredOutputSizeInBytes) {
+            const sampling = createQuerySampling(data, s, queryBox);
+            if (sampling.blocks.length <= ServerConfig.limits.maxRequestBlockCount) {
+                return sampling;
+            }
+        }
+    }
+
+    return createQuerySampling(data, data.sampling[data.sampling.length - 1], queryBox);
+}
+
+function emptyQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number): Data.QueryContext {
+    console.log('empty');
+    const zero = Coords.fractional(0,0,0);
+    const fractionalBox = { a: zero, b: zero };
+    const sampling = data.sampling[data.sampling.length - 1];
+    return {
+        guid,
+        serialNumber,
+        data,
+        params,
+        samplingInfo: { 
+            sampling, 
+            fractionalBox,
+            gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta),
+            blocks: []
+        },
+        result: { error: void 0, isEmpty: true } as any
+    }
+}
+
+function getQueryBox(data: Data.DataContext, queryBox: Data.QueryParamsBox) {
+    switch (queryBox.kind) {
+        case 'Cartesian': return Box.fractionalBoxReorderAxes(Box.cartesianToFractional(queryBox, data.spacegroup), data.header.axisOrder);
+        case 'Fractional': return Box.fractionalBoxReorderAxes(queryBox, data.header.axisOrder);            
+        default: return data.dataBox;
+    }
 }
 
 function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number): Data.QueryContext {
-    const inputQueryBox = params.box.a.kind === Coords.Space.Fractional 
-        // the input is in "X,Y,Z" axis order so we need to reorder it
-        ? Box.fractionalBoxReorderAxes(params.box as Box.Fractional, data.header.axisOrder)
-        : Box.cartesianToFractional(params.box as Box.Cartesian, data.spacegroup, data.header.axisOrder);
-
+    const inputQueryBox = getQueryBox(data, params.box);
     let queryBox;
     if (!data.header.spacegroup.isPeriodic) {
         if (!Box.areIntersecting(data.dataBox, inputQueryBox)) {
-            return {
-                guid,
-                serialNumber,
-                data,
-                params,
-                sampling: data.sampling[0],
-                fractionalBox: { a: Coords.fractional(0,0,0), b: Coords.fractional(0,0,0) },
-                gridDomain: Box.fractionalToDomain<'Query'>({ a: Coords.fractional(0,0,0), b: Coords.fractional(0,0,0) }, 'Query', data.sampling[0].dataDomain.delta),
-                result: { error: void 0, isEmpty: true } as any
-            }
+            return emptyQueryContext(data, params, guid, serialNumber);
         }
         queryBox = Box.intersect(data.dataBox, inputQueryBox)!;
     } else {
         queryBox = inputQueryBox;
     }
 
-    const sampling = pickSampling(data, queryBox);
-    // snap the query box to the sampling grid:
-    const fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+    if (Box.dimensions(queryBox).some(d => isNaN(d) || d > ServerConfig.limits.maxFractionalBoxDimension)) {
+        throw `The query box is too big.`;
+    }
+
+    const samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0);
+
+    if (samplingInfo.blocks.length === 0) return emptyQueryContext(data, params, guid, serialNumber);
 
     return {
         guid,
         serialNumber,
         data,
         params,
-        sampling,
-        fractionalBox,
-        gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta),
+        samplingInfo,
         result: { isEmpty: false }
     }
 }
 
-function validateQueryContext(query: Data.QueryContext) {
-    // TODO
-}
-
 function allocateResult(query: Data.QueryContext) {
-    const size = query.gridDomain.sampleVolume;
+    const size = query.samplingInfo.gridDomain.sampleVolume;
     const numChannels = query.data.header.channels.length;
     query.result.values = [];
     for (let i = 0; i < numChannels; i++) {
@@ -136,29 +177,19 @@ function allocateResult(query: Data.QueryContext) {
 async function _execute(file: number, params: Data.QueryParams, guid: string, serialNumber: number, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
     // Step 1a: Create data context
     const data = await createDataContext(file);
-    // Step 1b: Create query context
-    const query = createQueryContext(data, params, guid, serialNumber);
 
     let output: any = void 0;
+    let query;
 
     try {
+        // Step 1b: Create query context
+        query = createQueryContext(data, params, guid, serialNumber);
+
         if (!query.result.isEmpty) {
-            // Step 2a: Validate query context
-            validateQueryContext(query);
-
-            // Step 2b: Identify blocks that overlap with the query data.
-            const blocks = identify(query);
-
-            if (blocks.length === 0) {
-                query.result.isEmpty = true;
-            } else {
-                query.result.isEmpty = false;
-
-                // Step 3a: Allocate space for result data
-                allocateResult(query);
-                // Step 3b: Compose the result data
-                await compose(query, blocks);
-            }
+            // Step 3a: Allocate space for result data
+            allocateResult(query);
+            // Step 3b: Compose the result data
+            await compose(query);
         }
         
         // Step 4: Encode the result
@@ -166,6 +197,7 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, se
         encode(query, output);
         output.end();
     } catch (e) {
+        if (!query) query = emptyQueryContext(data, params, guid, serialNumber);
         query.result.error = `${e}`;
         query.result.isEmpty = true;
         query.result.values = void 0;
@@ -181,31 +213,42 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, se
     }
 }
 
-export async function execute(params: Data.QueryParams, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
+function roundCoord(c: number) {
+    return Math.round(100000 * c) / 100000;
+}
+
+function queryBoxToString(queryBox: Data.QueryParamsBox) {
+    switch (queryBox.kind) {
+        case 'Cartesian':
+        case 'Fractional':
+            const { a, b } = queryBox;
+            const r = roundCoord;
+            return `box-type=${queryBox.kind},box-a=(${r(a[0])},${r(a[1])},${r(a[2])}),box-b=(${r(b[0])},${r(b[1])},${r(b[2])})`;
+        default:
+            return queryBox.kind;
+    }
+}
+
+export async function execute(params: Data.QueryParams, outputProvider: () => Data.QueryOutputStream) {
     const start = getTime();
     State.pendingQueries++;
 
     const guid = generateUUID();
     const serialNumber = State.querySerial++;
         
-    const { a, b } = params.box;
-    Logger.log(`[GUID] ${guid}`, serialNumber);
-    Logger.log(`[Id] ${params.sourceId}`, serialNumber);
-    Logger.log(`[Box] ${a.kind === Coords.Space.Cartesian ? 'cart' : 'frac'} [${a[0]},${a[1]},${a[2]}] [${b[0]},${b[1]},${b[2]}]`, serialNumber);
-    Logger.log(`[Encoding] ${params.asBinary ? 'bcif' : 'cif'}`, serialNumber);
+    Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},${queryBoxToString(params.box)}`);
     
     let sourceFile: number | undefined = void 0;
     try {
         sourceFile = await File.openRead(params.sourceFilename);
         await _execute(sourceFile, params, guid, serialNumber, outputProvider);     
-        Logger.log(`[OK]`, serialNumber); 
         return true;
     } catch (e) {
-        Logger.log(`[Error] ${e}`, serialNumber); 
+        Logger.error(guid, e);
         return false;
     } finally {
         File.close(sourceFile);
-        Logger.log(`[Time] ${Math.round(getTime() - start)}ms`, serialNumber);
+        Logger.log(guid, 'Time', `${Math.round(getTime() - start)}ms`);
         State.pendingQueries--;
     }
 }

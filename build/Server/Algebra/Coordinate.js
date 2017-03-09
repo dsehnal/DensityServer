@@ -43,15 +43,15 @@ function domain(kind, info) {
 }
 exports.domain = domain;
 function cartesian(x, y, z) {
-    return { kind: 0 /* Cartesian */, 0: x, 1: y, 2: z };
+    return { 0: x, 1: y, 2: z, kind: 0 /* Cartesian */ };
 }
 exports.cartesian = cartesian;
 function fractional(x, y, z) {
-    return { kind: 1 /* Fractional */, 0: x, 1: y, 2: z };
+    return { 0: x, 1: y, 2: z, kind: 1 /* Fractional */ };
 }
 exports.fractional = fractional;
 function grid(domain, x, y, z) {
-    return { kind: 2 /* Grid */, domain: domain, 0: x, 1: y, 2: z };
+    return { 0: x, 1: y, 2: z, kind: 2 /* Grid */, domain: domain };
 }
 exports.grid = grid;
 function withCoord(a, x, y, z) {
@@ -69,9 +69,9 @@ exports.clone = clone;
 ///////////////////////////////////////////
 // CONVERSIONS
 ///////////////////////////////////////////
-function cartesianToFractional(a, spacegroup, axisOrder) {
+function cartesianToFractional(a, spacegroup) {
     var coord = Helpers.transform(a, spacegroup.toFrac);
-    return fractional(coord[axisOrder[0]], coord[axisOrder[1]], coord[axisOrder[2]]);
+    return fractional(coord[0], coord[1], coord[2]);
 }
 exports.cartesianToFractional = cartesianToFractional;
 function fractionalToGrid(a, domain, snap) {

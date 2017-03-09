@@ -54,12 +54,14 @@ function fillCubeBuffer(ctx, sampling, u, v) {
         var src = buffers_1[_i];
         for (var l = 0; l < maxL; l++) {
             for (var k = offsetK; k < maxK; k++) {
+                // copying the bytes direct is faster than using buffer.write* functions.
                 var start = (l * sizeHK + k * sizeH + offsetH) * elementSize;
                 src.copy(cubeBuffer, writeOffset, start, start + copyH);
                 writeOffset += copyH;
             }
         }
     }
+    // flip the byte order if needed.
     File.ensureLittleEndian(ctx.cubeBuffer, ctx.litteEndianCubeBuffer, writeOffset, elementSize, 0);
     return writeOffset;
 }
@@ -103,7 +105,6 @@ function writeBlockLayer(ctx, sampling) {
                     v++;
                     return [3 /*break*/, 1];
                 case 6:
-                    sampling.blocks.isFull = false;
                     sampling.blocks.slicesWritten = 0;
                     return [2 /*return*/];
             }

@@ -22,9 +22,11 @@ function conv(w: number, c: number[], src: DataFormat.ValueArray, b: number, i0:
 
 /**
  * Map from L-th slice in src to an array of dimensions (srcDims[1], (srcDims[0] / 2), 1),
- * flipping the 1st and 2nd axis in the process to optimize cache coherency for _downsampleUV call.
+ * flipping the 1st and 2nd axis in the process to optimize cache coherency for downsampleUV call
+ * (i.e. use (K, H, L) axis order).
  */
-function downsampleH(kernel: Data.Kernel, srcDims: number[], src: DataFormat.ValueArray, srcLOffset: number, target: DataFormat.ValueArray) {
+function downsampleH(kernel: Data.Kernel, srcDims: number[], src: DataFormat.ValueArray, srcLOffset: number, buffer: Data.DownsamplingBuffer) {
+    const target = buffer.downsampleH;
     const sizeH = srcDims[0], sizeK = srcDims[1], srcBaseOffset = srcLOffset * sizeH * sizeK;
     const targetH = Math.floor((sizeH + 1) / 2);
     const isEven = sizeH % 2 === 0;
@@ -36,15 +38,22 @@ function downsampleH(kernel: Data.Kernel, srcDims: number[], src: DataFormat.Val
         let targetOffset = k;
         target[targetOffset] = conv(w, c, src, srcOffset, 0, 0, 0, 1, 2);        
         for (let h = 1; h < targetH - 1; h++) {
-            srcOffset += 2; targetOffset += sizeK;
+            srcOffset += 2; 
+            targetOffset += sizeK;
             target[targetOffset] = conv(w, c, src, srcOffset, -2, -1, 0, 1, 2);
         }        
-        srcOffset += 2; targetOffset += sizeK;
+        srcOffset += 2; 
+        targetOffset += sizeK;
         if (isEven) target[targetOffset] = conv(w, c, src, srcOffset, -2, -1, 0, 1, 1);
         else target[targetOffset] = conv(w, c, src, srcOffset, -2, -1, 0, 0, 0);
     }
 }
 
+/** 
+ * Downsample first axis in the slice present in buffer.downsampleH 
+ * The result is written into the "cyclical" downsampleHk buffer 
+ * in the (L, H, K) axis order.
+ */
 function downsampleHK(kernel: Data.Kernel, dimsX: number[], buffer: Data.DownsamplingBuffer) {
     const { downsampleH: src, downsampleHK: target, slicesWritten } = buffer;
 
@@ -72,33 +81,38 @@ function downsampleHK(kernel: Data.Kernel, dimsX: number[], buffer: Data.Downsam
     buffer.slicesWritten++;
 }
 
+/** Calls downsampleH and downsampleHk for each input channel separately. */
 function downsampleSlice(ctx: Data.Context, sampling: Data.Sampling) {
     const dimsU = [sampling.sampleCount[1], Math.floor((sampling.sampleCount[0] + 1) / 2)]
     for (let i = 0, _ii = sampling.blocks.values.length; i < _ii; i++) {
-        downsampleH(ctx.kernel, sampling.sampleCount, sampling.blocks.values[i], sampling.blocks.slicesWritten - 1, sampling.downsampling![i].downsampleH);
+        downsampleH(ctx.kernel, sampling.sampleCount, sampling.blocks.values[i], sampling.blocks.slicesWritten - 1, sampling.downsampling![i]);
         downsampleHK(ctx.kernel, dimsU, sampling.downsampling![i]);
     }    
 }
 
-function canCollapseBuffer(source: Data.Sampling, finishing: boolean): boolean {
+/** Determine if a buffer has enough data to be downsampled */
+function canDownsampleBuffer(source: Data.Sampling, finishing: boolean): boolean {
     const buffer = source.downsampling![0];
     const delta = buffer.slicesWritten - buffer.startSliceIndex;
     return (finishing && delta > 0) || (delta > 2 && (delta - 3) % 2 === 0);
 }
 
-function collapseBuffer(kernel: Data.Kernel, source: Data.Sampling, target: Data.Sampling, blockSize: number) {
+/** Downsample data in the buffer */
+function downsampleBuffer(kernel: Data.Kernel, source: Data.Sampling, target: Data.Sampling, blockSize: number) {
     const downsampling = source.downsampling!;
     const { slicesWritten, startSliceIndex } = downsampling[0];
     const sizeH = target.sampleCount[0], sizeK = target.sampleCount[1], sizeHK = sizeH * sizeK;
     
     const kernelSize = kernel.size;
-    const x02 = Math.max(0, startSliceIndex - 2) % kernelSize;
-    const x01 = Math.max(0, startSliceIndex - 1) % kernelSize;
-    const x0 = startSliceIndex % kernelSize;
-    const x1 = Math.min(slicesWritten, startSliceIndex + 1) % kernelSize;
-    const x2 = Math.min(slicesWritten, startSliceIndex + 2) % kernelSize;
     const w = 1.0 / kernel.coefficientSum;
     const c = kernel.coefficients;
+
+    // Indices to the 1st dimeninsion in the cyclic buffer.
+    const i0 = Math.max(0, startSliceIndex - 2) % kernelSize;
+    const i1 = Math.max(0, startSliceIndex - 1) % kernelSize;
+    const i2 = startSliceIndex % kernelSize;
+    const i3 = Math.min(slicesWritten, startSliceIndex + 1) % kernelSize;
+    const i4 = Math.min(slicesWritten, startSliceIndex + 2) % kernelSize;
     
     const channelCount = downsampling.length;
     const valuesBaseOffset = target.blocks.slicesWritten * sizeHK;
@@ -111,35 +125,46 @@ function collapseBuffer(kernel: Data.Kernel, source: Data.Sampling, target: Data
             const valuesOffset = valuesBaseOffset + k * sizeH;
             for (let h = 0; h < sizeH; h++) {
                 const sO = kernelSize * h + kernelSize * k * sizeH;
-                const s = conv(w, c, src, sO, x02, x01, x0, x1, x2);
+                const s = conv(w, c, src, sO, i0, i1, i2, i3, i4);
                 values[valuesOffset + h] = s;
             }
         }
+        // we have "consume" two layers of the buffer.
         downsampling[channelIndex].startSliceIndex += 2;
     }
 
     target.blocks.slicesWritten++;
-    target.blocks.isFull = target.blocks.slicesWritten === blockSize;
+    //target.blocks.isFull = target.blocks.slicesWritten === blockSize;
 }
 
+/** 
+ * Downsamples each slice of input data and checks if there is enough data to perform 
+ * higher rate downsampling.
+ */
 export function downsampleLayer(ctx: Data.Context) {
     for (let i = 0, _ii = ctx.sampling.length - 1; i < _ii; i++) {
         const s = ctx.sampling[i];
         downsampleSlice(ctx, s);
-        if (canCollapseBuffer(s, false)) {
-            collapseBuffer(ctx.kernel, s, ctx.sampling[i + 1], ctx.blockSize);
+        if (canDownsampleBuffer(s, false)) {
+            downsampleBuffer(ctx.kernel, s, ctx.sampling[i + 1], ctx.blockSize);
         } else {
             break;
         }
     }
 }
 
+/** 
+ * When the "native" (rate = 1) sampling is finished, there might still 
+ * be some data left to be processed for the higher rate samplings.
+ */
 export function finalize(ctx: Data.Context) {
     for (let i = 0, _ii = ctx.sampling.length - 1; i < _ii; i++) {
         const s = ctx.sampling[i];
+        // skip downsampling the 1st slice because that is guaranteed to be done in "downsampleLayer"
         if (i > 0) downsampleSlice(ctx, s);
-        if (canCollapseBuffer(s, true)) {
-            collapseBuffer(ctx.kernel, s, ctx.sampling[i + 1], ctx.blockSize);
+        // this is different from downsample layer in that it does not need 2 extra slices but just 1 is enough.
+        if (canDownsampleBuffer(s, true)) {
+            downsampleBuffer(ctx.kernel, s, ctx.sampling[i + 1], ctx.blockSize);
         } else {
             break;
         }

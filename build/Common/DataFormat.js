@@ -50,8 +50,6 @@ var _schema;
     var array = Schema.array, obj = Schema.obj, int = Schema.int, bool = Schema.bool, float = Schema.float, str = Schema.str;
     _schema.schema = obj([
         ['formatVersion', str],
-        ['valueType', str],
-        ['blockSize', int],
         ['axisOrder', array(int)],
         ['origin', array(float)],
         ['dimensions', array(float)],
@@ -62,6 +60,8 @@ var _schema;
                 ['isPeriodic', bool],
             ])],
         ['channels', array(str)],
+        ['valueType', str],
+        ['blockSize', int],
         ['sampling', array(obj([
                 ['byteOffset', float],
                 ['rate', int],

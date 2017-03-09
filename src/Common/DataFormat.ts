@@ -44,12 +44,6 @@ export interface Header {
     /** Format version number  */
     formatVersion: string,
 
-    /** Determines the data type of the values */
-    valueType: ValueType,
-
-    /** The value are stored in blockSize^3 cubes */
-    blockSize: number,
-
     /** Axis order from the slowest to fastest moving, same as in CCP4 */
     axisOrder: number[],
 
@@ -61,6 +55,12 @@ export interface Header {
 
     spacegroup: Spacegroup,
     channels: string[],    
+
+    /** Determines the data type of the values */
+    valueType: ValueType,
+
+    /** The value are stored in blockSize^3 cubes */
+    blockSize: number,
     sampling: Sampling[]
 }
 
@@ -69,8 +69,6 @@ module _schema {
 
     export const schema = obj<Header>([
         ['formatVersion', str],
-        ['valueType', str],
-        ['blockSize', int],
         ['axisOrder', array(int)],
         ['origin', array(float)],
         ['dimensions', array(float)],
@@ -81,6 +79,8 @@ module _schema {
             ['isPeriodic', bool],
         ])],
         ['channels', array(str)],
+        ['valueType', str],
+        ['blockSize', int],
         ['sampling', array(obj<Sampling>([
             ['byteOffset', float],
             ['rate', int],

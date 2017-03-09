@@ -20,7 +20,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Matrix4;
 (function (Matrix4) {
     function empty() {
-        return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        // force double backing type with the 0.1.
+        var ret = [0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        ret[0] = 0;
+        return ret;
     }
     Matrix4.empty = empty;
     function ofRows(rows) {

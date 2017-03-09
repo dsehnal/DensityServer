@@ -12,7 +12,7 @@ var Logger = require("./Server/Utils/Logger");
 var State_1 = require("./Server/State");
 function setupShutdown() {
     if (ServerConfig_1.default.shutdownParams.timeoutVarianceMinutes > ServerConfig_1.default.shutdownParams.timeoutMinutes) {
-        Logger.log('Server shutdown timeout variance is greater than the timer itself, ignoring.');
+        Logger.logPlain('Server', 'Shutdown timeout variance is greater than the timer itself, ignoring.');
     }
     else {
         var tVar = 0;
@@ -30,7 +30,7 @@ function setupShutdown() {
                 State_1.State.shutdownOnZeroPending = true;
             }
             else {
-                Logger.log("Shut down due to timeout.");
+                Logger.logPlain('Server', "Shut down due to timeout.");
                 process.exit(0);
             }
         }, tMs);

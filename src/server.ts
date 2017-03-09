@@ -13,7 +13,7 @@ import { State } from './Server/State'
 
 function setupShutdown() {
     if (ServerConfig.shutdownParams.timeoutVarianceMinutes > ServerConfig.shutdownParams.timeoutMinutes) {
-        Logger.log('Server shutdown timeout variance is greater than the timer itself, ignoring.');
+        Logger.logPlain('Server', 'Shutdown timeout variance is greater than the timer itself, ignoring.');
     } else {
         let tVar = 0;
         if (ServerConfig.shutdownParams.timeoutVarianceMinutes > 0) {
@@ -31,7 +31,7 @@ function setupShutdown() {
             if (State.pendingQueries > 0) {
                 State.shutdownOnZeroPending = true;
             } else {
-                Logger.log(`Shut down due to timeout.`);
+                Logger.logPlain('Server', `Shut down due to timeout.`);
                 process.exit(0);
             }
         }, tMs);

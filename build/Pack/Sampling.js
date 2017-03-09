@@ -44,13 +44,11 @@ var File = require("../Common/File");
 var Downsampling = require("./Downsampling");
 var Writer = require("./Writer");
 var DataFormat = require("../Common/DataFormat");
-function getSamplingCounts(baseSampleCount) {
-    // return [
-    //     baseSampleCount//,
-    //     //[Math.floor((baseSampleCount[0] + 1) / 2), baseSampleCount[1], baseSampleCount[2]]
-    // ];
+/** Determine the suitable sampling rates for the input data */
+function getSamplingCounts(baseSampleCount, blockSize) {
     var ret = [baseSampleCount];
     var prev = baseSampleCount;
+    var hasSingleBoxSampling = false;
     while (true) {
         var next = [0, 0, 0];
         var max = 0;
@@ -62,11 +60,14 @@ function getSamplingCounts(baseSampleCount) {
                 max = s;
             next[i] = s;
         }
-        if (max < 32)
-            return ret;
+        // no point in downsampling below the block size.
+        if (max < blockSize) {
+            if (hasSingleBoxSampling)
+                return ret;
+            hasSingleBoxSampling = true;
+        }
         ret.push(next);
         prev = next;
-        //return ret;
     }
 }
 function createBlockBuffer(sampleCount, blockSize, valueType, numChannels) {
@@ -76,8 +77,7 @@ function createBlockBuffer(sampleCount, blockSize, valueType, numChannels) {
     return {
         values: values,
         buffers: values.map(function (xs) { return new Buffer(xs.buffer); }),
-        slicesWritten: 0,
-        isFull: false
+        slicesWritten: 0
     };
 }
 function createDownsamplingBuffer(valueType, sourceSampleCount, targetSampleCount, numChannels) {
@@ -121,8 +121,7 @@ function createContext(filename, channels, blockSize, isPeriodic) {
             switch (_c.label) {
                 case 0:
                     header = channels[0].header;
-                    samplingCounts = getSamplingCounts(channels[0].header.extent);
-                    console.log(samplingCounts);
+                    samplingCounts = getSamplingCounts(channels[0].header.extent, blockSize);
                     valueType = CCP4.getValueType(header);
                     cubeBuffer = new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
                     litteEndianCubeBuffer = File.IsNativeEndianLittle
@@ -179,7 +178,6 @@ function copyLayer(ctx, sliceIndex) {
         }
     }
     blocks.slicesWritten++;
-    blocks.isFull = blocks.slicesWritten === ctx.blockSize;
 }
 function updateValuesInfo(sampling) {
     var blocks = sampling.blocks, sampleCount = sampling.sampleCount;
@@ -203,9 +201,14 @@ function updateValuesInfo(sampling) {
         valuesInfo.min = min;
     }
 }
-function processData(ctx) {
+function shouldSamplingBeWritten(sampling, blockSize, isDataFinished) {
+    if (isDataFinished)
+        return sampling.blocks.slicesWritten > 0;
+    return sampling.blocks.slicesWritten >= blockSize;
+}
+function processSlices(ctx) {
     return __awaiter(this, void 0, void 0, function () {
-        var channel, sliceCount, i, _i, _a, s;
+        var channel, sliceCount, i, isDataFinished, _i, _a, s;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -215,10 +218,10 @@ function processData(ctx) {
                     _b.label = 1;
                 case 1:
                     if (!(i < sliceCount)) return [3 /*break*/, 6];
-                    //console.log('layer', i);
                     copyLayer(ctx, i);
                     Downsampling.downsampleLayer(ctx);
-                    if (i === sliceCount - 1 && channel.slices.isFinished) {
+                    isDataFinished = i === sliceCount - 1 && channel.slices.isFinished;
+                    if (isDataFinished) {
                         Downsampling.finalize(ctx);
                     }
                     _i = 0, _a = ctx.sampling;
@@ -226,9 +229,7 @@ function processData(ctx) {
                 case 2:
                     if (!(_i < _a.length)) return [3 /*break*/, 5];
                     s = _a[_i];
-                    if (i === sliceCount - 1 && channel.slices.isFinished)
-                        s.blocks.isFull = true;
-                    if (!s.blocks.isFull) return [3 /*break*/, 4];
+                    if (!shouldSamplingBeWritten(s, ctx.blockSize, isDataFinished)) return [3 /*break*/, 4];
                     updateValuesInfo(s);
                     return [4 /*yield*/, Writer.writeBlockLayer(ctx, s)];
                 case 3:
@@ -241,6 +242,37 @@ function processData(ctx) {
                     i++;
                     return [3 /*break*/, 1];
                 case 6: return [2 /*return*/];
+            }
+        });
+    });
+}
+function processData(ctx) {
+    return __awaiter(this, void 0, void 0, function () {
+        var channel, _i, _a, src;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    channel = ctx.channels[0];
+                    _b.label = 1;
+                case 1:
+                    if (!!channel.slices.isFinished) return [3 /*break*/, 7];
+                    _i = 0, _a = ctx.channels;
+                    _b.label = 2;
+                case 2:
+                    if (!(_i < _a.length)) return [3 /*break*/, 5];
+                    src = _a[_i];
+                    return [4 /*yield*/, CCP4.readSlices(src)];
+                case 3:
+                    _b.sent();
+                    _b.label = 4;
+                case 4:
+                    _i++;
+                    return [3 /*break*/, 2];
+                case 5: return [4 /*yield*/, processSlices(ctx)];
+                case 6:
+                    _b.sent();
+                    return [3 /*break*/, 1];
+                case 7: return [2 /*return*/];
             }
         });
     });

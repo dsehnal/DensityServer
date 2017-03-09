@@ -23,12 +23,14 @@ function fillCubeBuffer(ctx: Data.Context, sampling: Data.Sampling, u: number, v
     for (const src of buffers) {
         for (let l = 0; l < maxL; l++) {
             for (let k = offsetK; k < maxK; k++) {
+                // copying the bytes direct is faster than using buffer.write* functions.
                 const start = (l * sizeHK + k * sizeH + offsetH) * elementSize;
                 src.copy(cubeBuffer, writeOffset, start, start + copyH);
                 writeOffset += copyH;
             }
         }
     }
+    // flip the byte order if needed.
     File.ensureLittleEndian(ctx.cubeBuffer, ctx.litteEndianCubeBuffer, writeOffset, elementSize, 0);
     return writeOffset;
 }
@@ -56,6 +58,5 @@ export async function writeBlockLayer(ctx: Data.Context, sampling: Data.Sampling
             updateProgress(ctx.progress, 1);
         }
     }
-    sampling.blocks.isFull = false;
     sampling.blocks.slicesWritten = 0;
 }

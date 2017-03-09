@@ -4,19 +4,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var CIF = require("../../lib/CIFTools");
-var Coords = require("../Algebra/Coordinate");
 var Version_1 = require("../Version");
 var DataFormat = require("../../Common/DataFormat");
 var E = CIF.Binary.Encoder;
-function string(name, v) {
-    return { name: name, string: v };
+function string(name, string, isSpecified) {
+    if (isSpecified) {
+        return { name: name, string: string, presence: function (data, i) { return isSpecified(data, i) ? 0 /* Present */ : 1 /* NotSpecified */; } };
+    }
+    return { name: name, string: string };
 }
-function int32(name, v) {
-    return { name: name, string: function (data, i) { return '' + v(data, i); }, number: v, typedArray: Int32Array, encoder: E.by(E.byteArray) };
+function int32(name, number) {
+    return { name: name, string: function (data, i) { return '' + number(data, i); }, number: number, typedArray: Int32Array, encoder: E.by(E.byteArray) };
 }
-function float64(name, v, precision) {
+function float64(name, number, precision) {
     if (precision === void 0) { precision = 1000000; }
-    return { name: name, string: function (data, i) { return '' + Math.round(precision * v(data, i)) / precision; }, number: v, typedArray: Float64Array, encoder: E.by(E.byteArray) };
+    return { name: name, string: function (data, i) { return '' + Math.round(precision * number(data, i)) / precision; }, number: number, typedArray: Float64Array, encoder: E.by(E.byteArray) };
 }
 var _volume_data_3d_info_fields = [
     string('name', function (ctx) { return ctx.header.channels[ctx.channelIndex]; }),
@@ -29,6 +31,7 @@ var _volume_data_3d_info_fields = [
     int32('dimensions[0]', function (ctx) { return ctx.grid.dimensions[0]; }),
     int32('dimensions[1]', function (ctx) { return ctx.grid.dimensions[1]; }),
     int32('dimensions[2]', function (ctx) { return ctx.grid.dimensions[2]; }),
+    string('value_type', function (ctx) { return ctx.sampleRate <= 1 ? 'absolute' : 'relative'; }),
     int32('sample_rate', function (ctx) { return ctx.sampleRate; }),
     int32('sample_count[0]', function (ctx) { return ctx.grid.sampleCount[0]; }),
     int32('sample_count[1]', function (ctx) { return ctx.grid.sampleCount[1]; }),
@@ -40,13 +43,23 @@ var _volume_data_3d_info_fields = [
     float64('spacegroup_cell_angles[0]', function (ctx) { return ctx.header.spacegroup.angles[0]; }, 1000),
     float64('spacegroup_cell_angles[1]', function (ctx) { return ctx.header.spacegroup.angles[1]; }, 1000),
     float64('spacegroup_cell_angles[2]', function (ctx) { return ctx.header.spacegroup.angles[2]; }, 1000),
+    float64('mean_source', function (ctx) { return ctx.globalValuesInfo.mean; }),
+    float64('sigma_source', function (ctx) { return ctx.globalValuesInfo.sigma; }),
+    float64('min_source', function (ctx) { return ctx.globalValuesInfo.min; }),
+    float64('max_source', function (ctx) { return ctx.globalValuesInfo.max; }),
+    float64('mean_sampled', function (ctx) { return ctx.sampledValuesInfo.mean; }),
+    float64('sigma_sampled', function (ctx) { return ctx.sampledValuesInfo.sigma; }),
+    float64('min_sampled', function (ctx) { return ctx.sampledValuesInfo.min; }),
+    float64('max_sampled', function (ctx) { return ctx.sampledValuesInfo.max; }),
 ];
 function _volume_data_3d_info(result) {
     var ctx = {
         header: result.query.data.header,
         channelIndex: result.channelIndex,
-        grid: result.query.gridDomain,
-        sampleRate: result.query.sampling.rate
+        grid: result.query.samplingInfo.gridDomain,
+        sampleRate: result.query.samplingInfo.sampling.rate,
+        globalValuesInfo: result.query.data.header.sampling[0].valuesInfo[result.channelIndex],
+        sampledValuesInfo: result.query.data.header.sampling[result.query.samplingInfo.sampling.index].valuesInfo[result.channelIndex]
     };
     return {
         data: ctx,
@@ -102,6 +115,18 @@ function _volume_data_3d(ctx) {
         }
     };
 }
+function pickQueryBoxDimension(ctx, e, d) {
+    var box = ctx.params.box;
+    switch (box.kind) {
+        case 'Cartesian':
+        case 'Fractional':
+            return "" + Math.round(1000000 * box[e][d]) / 1000000;
+        default: return '';
+    }
+}
+function queryBoxDimension(e, d) {
+    return string("query_box_" + e + "[" + d + "]", function (ctx) { return pickQueryBoxDimension(ctx, e, d); }, function (ctx) { return ctx.params.box.kind !== 'Cell'; });
+}
 var _density_server_result_fields = [
     string('server_version', function (ctx) { return Version_1.default; }),
     string('datetime_utc', function (ctx) { return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); }),
@@ -110,13 +135,14 @@ var _density_server_result_fields = [
     string('has_error', function (ctx) { return ctx.result.error ? 'yes' : 'no'; }),
     string('error', function (ctx) { return ctx.result.error; }),
     string('query_source_id', function (ctx) { return ctx.params.sourceId; }),
-    string('query_region_type', function (ctx) { return ctx.params.box.a.kind === 0 /* Cartesian */ ? 'cartesian' : 'fractional'; }),
-    float64('query_region_a[0]', function (ctx) { return ctx.params.box.a[0]; }),
-    float64('query_region_a[1]', function (ctx) { return ctx.params.box.a[1]; }),
-    float64('query_region_a[2]', function (ctx) { return ctx.params.box.a[2]; }),
-    float64('query_region_b[0]', function (ctx) { return ctx.params.box.b[0]; }),
-    float64('query_region_b[1]', function (ctx) { return ctx.params.box.b[1]; }),
-    float64('query_region_b[2]', function (ctx) { return ctx.params.box.b[2]; })
+    string('query_type', function (ctx) { return 'box'; }),
+    string('query_box_type', function (ctx) { return ctx.params.box.kind.toLowerCase(); }),
+    queryBoxDimension('a', 0),
+    queryBoxDimension('a', 1),
+    queryBoxDimension('a', 2),
+    queryBoxDimension('b', 0),
+    queryBoxDimension('b', 1),
+    queryBoxDimension('b', 2)
 ];
 function _density_server_result(ctx) {
     return {

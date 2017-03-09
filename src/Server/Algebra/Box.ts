@@ -14,7 +14,7 @@ export interface Grid<K> extends Box<Coords.Grid<K>> { }
 // CONVERSIONS
 ///////////////////////////////////////////
 
-export function cartesianToFractional(box: Cartesian, spacegroup: Coords.Spacegroup, axisOrder: number[]): Fractional {
+export function cartesianToFractional(box: Cartesian, spacegroup: Coords.Spacegroup): Fractional {
     const { a: l, b: r } = box;
     const corners = [
         [l[0], l[1], l[2]],
@@ -25,7 +25,7 @@ export function cartesianToFractional(box: Cartesian, spacegroup: Coords.Spacegr
         [r[0], l[1], r[2]],
         [l[0], r[1], r[2]],
         [r[0], r[1], r[2]],
-    ].map(c => Coords.cartesianToFractional(Coords.cartesian(c[0], c[1], c[2]), spacegroup, axisOrder));
+    ].map(c => Coords.cartesianToFractional(Coords.cartesian(c[0], c[1], c[2]), spacegroup));
     return bounding(corners);
 }
 
@@ -115,4 +115,8 @@ export function intersect<C extends Coords.Coord<S>, S extends Coords.Space>(box
 
 export function dimensions<C extends Coords.Coord<S>, S extends Coords.Space>(box: Box<C>): number[] {
     return [box.b[0] - box.a[0], box.b[1] - box.a[1], box.b[2] - box.a[2]];
+}
+
+export function volume<C extends Coords.Coord<S>, S extends Coords.Space>(box: Box<C>) {
+    return (box.b[0] - box.a[0]) * (box.b[1] - box.a[1]) * (box.b[2] - box.a[2]);
 }

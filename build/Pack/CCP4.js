@@ -46,7 +46,7 @@ function getValueType(header) {
     return DataFormat.ValueType.Int8;
 }
 exports.getValueType = getValueType;
-function createDataSlices(header, blockSize) {
+function createSliceBuffer(header, blockSize) {
     var extent = header.extent;
     var sliceSize = extent[0] * extent[1] * (header.mode === 2 /* Float32 */ ? 4 : 1);
     var sliceCapacity = Math.max(1, Math.floor(Math.min(64 * 1024 * 1024, sliceSize * extent[2]) / sliceSize));
@@ -175,7 +175,7 @@ function open(name, filename, blockSize) {
                     return [2 /*return*/, {
                             header: header,
                             file: file,
-                            slices: createDataSlices(header, blockSize)
+                            slices: createSliceBuffer(header, blockSize)
                         }];
             }
         });

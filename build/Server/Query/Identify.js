@@ -56,22 +56,18 @@ function addUniqueBlock(blocks, coord, offset) {
         blocks.set(hash, { coord: coord, offsets: [offset] });
     }
 }
-function findUniqueBlocksOffset(query, offset, blocks) {
-    var shifted = Box.shift(query.fractionalBox, offset);
-    var intersection = Box.intersect(shifted, query.data.dataBox);
+function findUniqueBlocksOffset(data, sampling, queryBox, offset, blocks) {
+    var shifted = Box.shift(queryBox, offset);
+    var intersection = Box.intersect(shifted, data.dataBox);
     // Intersection can be empty in the case of "aperiodic spacegroups"
     if (!intersection)
         return;
-    var blockDomain = query.sampling.blockDomain;
+    var blockDomain = sampling.blockDomain;
     // this gets the "3d range" of block indices that contain data that overlaps 
     // with the query region.
     //
     // Clamping the data makes sure we avoid silly rounding errors (hopefully :))
     var _a = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain)), min = _a.a, max = _a.b;
-    //console.log({offset, intersection})
-    // console.log({offset, frac: Box.fractionalToGrid(intersection, blockDomain)})
-    // console.log({ frac: blockDomain })
-    // console.log({ min, max });
     for (var i = min[0]; i < max[0]; i++) {
         for (var j = min[1]; j < max[1]; j++) {
             for (var k = min[2]; k < max[2]; k++) {
@@ -81,18 +77,16 @@ function findUniqueBlocksOffset(query, offset, blocks) {
     }
 }
 /** Find a list of unique blocks+offsets that overlap with the query region. */
-function findUniqueBlocks(query) {
-    var translations = query.data.header.spacegroup.isPeriodic
-        ? findDataOverlapTranslationList(query.fractionalBox, query.sampling.dataDomain)
+function findUniqueBlocks(data, sampling, queryBox) {
+    var translations = data.header.spacegroup.isPeriodic
+        ? findDataOverlapTranslationList(queryBox, sampling.dataDomain)
         : [Coords.fractional(0, 0, 0)];
     var blocks = Collections_1.FastMap.create();
-    //console.log({translations});
     for (var _i = 0, translations_1 = translations; _i < translations_1.length; _i++) {
         var t = translations_1[_i];
-        findUniqueBlocksOffset(query, t, blocks);
+        findUniqueBlocksOffset(data, sampling, queryBox, t, blocks);
     }
     var blockList = blocks.forEach(function (b, _, ctx) { ctx.push(b); }, []);
-    //console.log('list', blockList);
     // sort the data so that the first coodinate changes the fastest 
     // this is because that's how the data is laid out in the underlaying 
     // data format and reading the data 'in order' makes it faster.

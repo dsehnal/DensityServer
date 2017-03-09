@@ -19,23 +19,27 @@ type CategoryInstance<T> = CIF.CategoryInstance<T>
 
 import E = CIF.Binary.Encoder
 
-function string<T>(name: string, v: (data: T, i: number) => string): FieldDesc<T> {
-    return { name, string: v };
+function string<T>(name: string, string: (data: T, i: number) => string, isSpecified?: (data: T, i: number) => boolean): FieldDesc<T> {
+    if (isSpecified) {
+        return { name, string, presence: (data, i) => isSpecified(data, i) ? CIF.ValuePresence.Present : CIF.ValuePresence.NotSpecified };
+    } return  { name, string }
 }
 
-function int32<T>(name: string, v: (data: T, i: number) => number): FieldDesc<T> {
-    return { name, string: (data, i) => '' + v(data, i), number: v, typedArray: Int32Array, encoder: E.by(E.byteArray) };
+function int32<T>(name: string, number: (data: T, i: number) => number): FieldDesc<T> {
+    return { name, string: (data, i) => '' + number(data, i), number: number, typedArray: Int32Array, encoder: E.by(E.byteArray) };
 }
 
-function float64<T>(name: string, v: (data: T, i: number) => number, precision = 1000000): FieldDesc<T> {
-    return { name, string: (data, i) => '' + Math.round(precision * v(data, i)) / precision, number: v, typedArray: Float64Array, encoder: E.by(E.byteArray) };
+function float64<T>(name: string, number: (data: T, i: number) => number, precision = 1000000): FieldDesc<T> {
+    return { name, string: (data, i) => '' + Math.round(precision * number(data, i)) / precision, number, typedArray: Float64Array, encoder: E.by(E.byteArray) };
 }
 
 interface _vd3d_Ctx {
     header: DataFormat.Header,
     channelIndex: number,
     grid: Coords.GridDomain<'Query'>,
-    sampleRate: number
+    sampleRate: number,
+    globalValuesInfo: DataFormat.ValuesInfo,
+    sampledValuesInfo: DataFormat.ValuesInfo,
 }
 
 const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
@@ -53,6 +57,7 @@ const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
     int32<_vd3d_Ctx>('dimensions[1]', ctx => ctx.grid.dimensions[1]),
     int32<_vd3d_Ctx>('dimensions[2]', ctx => ctx.grid.dimensions[2]),
 
+    string<_vd3d_Ctx>('value_type', ctx => ctx.sampleRate <= 1 ? 'absolute' : 'relative'),
     int32<_vd3d_Ctx>('sample_rate', ctx => ctx.sampleRate),
     int32<_vd3d_Ctx>('sample_count[0]', ctx => ctx.grid.sampleCount[0]),
     int32<_vd3d_Ctx>('sample_count[1]', ctx => ctx.grid.sampleCount[1]),
@@ -68,19 +73,26 @@ const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
     float64<_vd3d_Ctx>('spacegroup_cell_angles[1]', ctx => ctx.header.spacegroup.angles[1], 1000),
     float64<_vd3d_Ctx>('spacegroup_cell_angles[2]', ctx => ctx.header.spacegroup.angles[2], 1000),
 
-    // float64<_vd3d_Ctx>('global_mean', ctx => ctx.header.channels[ctx.channelIndex].mean),
-    // float64<_vd3d_Ctx>('global_sigma', ctx => ctx.header.channels[ctx.channelIndex].sigma),
-    // float64<_vd3d_Ctx>('global_min', ctx => ctx.header.channels[ctx.channelIndex].min),
-    // float64<_vd3d_Ctx>('global_max', ctx => ctx.header.channels[ctx.channelIndex].max)
+    float64<_vd3d_Ctx>('mean_source', ctx => ctx.globalValuesInfo.mean),
+    float64<_vd3d_Ctx>('sigma_source', ctx => ctx.globalValuesInfo.sigma),
+    float64<_vd3d_Ctx>('min_source', ctx => ctx.globalValuesInfo.min),
+    float64<_vd3d_Ctx>('max_source', ctx => ctx.globalValuesInfo.max),
+
+    float64<_vd3d_Ctx>('mean_sampled', ctx => ctx.sampledValuesInfo.mean),
+    float64<_vd3d_Ctx>('sigma_sampled', ctx => ctx.sampledValuesInfo.sigma),
+    float64<_vd3d_Ctx>('min_sampled', ctx => ctx.sampledValuesInfo.min),
+    float64<_vd3d_Ctx>('max_sampled', ctx => ctx.sampledValuesInfo.max),
 ];
 
 function _volume_data_3d_info(result: ResultContext) {
     const ctx: _vd3d_Ctx = {
         header: result.query.data.header,
         channelIndex: result.channelIndex,
-        grid: result.query.gridDomain,
-        sampleRate: result.query.sampling.rate
-    }
+        grid: result.query.samplingInfo.gridDomain,
+        sampleRate: result.query.samplingInfo.sampling.rate,
+        globalValuesInfo: result.query.data.header.sampling[0].valuesInfo[result.channelIndex],
+        sampledValuesInfo: result.query.data.header.sampling[result.query.samplingInfo.sampling.index].valuesInfo[result.channelIndex]   
+    };
 
     return <CategoryInstance<typeof ctx>>{
         data: ctx,
@@ -141,6 +153,20 @@ function _volume_data_3d(ctx: ResultContext) {
     };
 }
 
+function pickQueryBoxDimension(ctx: Data.QueryContext, e: 'a' | 'b', d: number) {
+    const box = ctx.params.box;
+    switch (box.kind) {
+        case 'Cartesian':
+        case 'Fractional':
+            return `${Math.round(1000000 * box[e][d]) / 1000000}`;
+        default: return '';
+    }
+}
+
+function queryBoxDimension(e: 'a' | 'b', d: number) {
+    return string<Data.QueryContext>(`query_box_${e}[${d}]`, ctx => pickQueryBoxDimension(ctx, e, d), ctx => ctx.params.box.kind !== 'Cell');
+}
+
 const _density_server_result_fields: FieldDesc<Data.QueryContext>[] = [
     string<Data.QueryContext>('server_version', ctx => VERSION),        
     string<Data.QueryContext>('datetime_utc', ctx => new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')),
@@ -149,13 +175,14 @@ const _density_server_result_fields: FieldDesc<Data.QueryContext>[] = [
     string<Data.QueryContext>('has_error', ctx => ctx.result.error ? 'yes' : 'no'),
     string<Data.QueryContext>('error', ctx => ctx.result.error!),
     string<Data.QueryContext>('query_source_id', ctx => ctx.params.sourceId),
-    string<Data.QueryContext>('query_region_type', ctx => ctx.params.box.a.kind === Coords.Space.Cartesian ? 'cartesian' : 'fractional'),
-    float64<Data.QueryContext>('query_region_a[0]', ctx => ctx.params.box.a[0]),
-    float64<Data.QueryContext>('query_region_a[1]', ctx => ctx.params.box.a[1]),
-    float64<Data.QueryContext>('query_region_a[2]', ctx => ctx.params.box.a[2]),     
-    float64<Data.QueryContext>('query_region_b[0]', ctx => ctx.params.box.b[0]),
-    float64<Data.QueryContext>('query_region_b[1]', ctx => ctx.params.box.b[1]),
-    float64<Data.QueryContext>('query_region_b[2]', ctx => ctx.params.box.b[2])
+    string<Data.QueryContext>('query_type', ctx => 'box'),
+    string<Data.QueryContext>('query_box_type', ctx => ctx.params.box.kind.toLowerCase()),
+    queryBoxDimension('a', 0),
+    queryBoxDimension('a', 1),
+    queryBoxDimension('a', 2),
+    queryBoxDimension('b', 0),
+    queryBoxDimension('b', 1),
+    queryBoxDimension('b', 2)
 ]
 
 function _density_server_result(ctx: Data.QueryContext) {

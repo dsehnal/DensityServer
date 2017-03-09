@@ -4,31 +4,18 @@
 
 import * as express from 'express'
 
-import * as File from '../Common/File'
-import * as Query from './Query/Execute'
+import * as Api from './Api'
+
 import * as Data from './Query/DataModel'
-import * as Box from './Algebra/Box'
 import * as Coords from './Algebra/Coordinate'
 import Docs from './Documentation'
 import * as CIFTools from '../lib/CIFTools'
 import ServerConfig from '../ServerConfig'
 import * as Logger from './Utils/Logger'
-import * as DataFormat from '../Common/DataFormat'
 import { State } from './State'
-
-function makePath(p: string) {
-    return ServerConfig.apiPrefix + '/' + p;
-}
 
 function mapFile(type: string, id: string) {
     return ServerConfig.mapFile(type || '', id || '');
-}
-
-function getOutputFilename(source: string, id: string, isBinary: boolean, { a, b }: Box.Fractional | Box.Cartesian) {
-    function n(s: string) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase() }
-    function r(v: number) { return Math.round(10 * v) / 10; }
-    const box = `${r(a[0])}_${r(a[1])}+${r(a[2])}_${r(b[0])}_${r(b[1])}+${r(b[2])}`;
-    return `${n(source)}_${n(id)}-${box}.${isBinary ? 'bcif' : 'cif'}`;
 }
 
 function wrapResponse(fn: string, res: express.Response) {
@@ -76,96 +63,91 @@ function queryDone() {
     }
 }
 
-async function readHeader(src: string, id: string) {
-    let file: number | undefined = void 0;
+function getSourceInfo(req: express.Request) {
+    return {
+        filename: mapFile(req.params.source, req.params.id),
+        id: `${req.params.source}/${req.params.id}`
+    };
+}
+
+async function getHeader(req: express.Request, res: express.Response) {
+    let headerWritten = false;
+
     try {
-        const filename = mapFile(src, id);
-        if (!filename) return void 0;
-        file = await File.openRead(filename);
-        const header = await DataFormat.readHeader(file);
-        return header.header;
+        const { filename, id } = getSourceInfo(req);
+        const header = await Api.getHeaderJson(filename, id);
+        res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'X-Requested-With'
+        });
+        headerWritten = true;
+        res.write(header);        
     } catch (e) {
-        Logger.log(`[Info] [Error] ${src}/${id}: ${e}`);
-        return void 0;
+        Logger.errorPlain(`Header ${req.params.source}/${req.params.id}`, e);
+        if (!headerWritten) {
+            res.writeHead(404);
+        }
     } finally {
-        File.close(file);
+        res.end();
+    }
+}
+
+async function queryBox(req: express.Request, res: express.Response, isCell: boolean) {
+    const a = [+req.params.a1, +req.params.a2, +req.params.a3]; 
+    const b = [+req.params.b1, +req.params.b2, +req.params.b3];
+
+    const isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
+
+    const box: Data.QueryParamsBox = isCell
+        ? { kind: 'Cell' }
+        : ( isCartesian
+            ? { kind: 'Cartesian', a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
+            : { kind: 'Fractional', a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) });
+
+    const asBinary = req.query.text !== '1';
+    const outputFilename = Api.getOutputFilename(req.params.source, req.params.id, asBinary, box);
+    const response = wrapResponse(outputFilename, res);
+    
+    try {
+        const sourceFilename = mapFile(req.params.source, req.params.id);
+        if (!sourceFilename) {
+            response.do404();
+            return;
+        }
+
+        let params: Data.QueryParams = { 
+            sourceFilename,
+            sourceId: `${req.params.source}/${req.params.id}`,
+            asBinary, 
+            box, 
+        };    
+        
+        let ok = await Api.queryBox(params, () => response);
+        if (!ok) {
+            response.do404();
+            return;
+        }
+    } catch (e) {
+        Logger.errorPlain(`Query Box ${JSON.stringify(req.params || {})} | ${JSON.stringify(req.query || {})}`, e);
+        response.do404();           
+    } finally {
+        response.end();
+        queryDone();
     }
 }
 
 export function init(app: express.Express) {
+    function makePath(p: string) {
+        return ServerConfig.apiPrefix + '/' + p;
+    }
+
     // Header
-    app.get(makePath(':source/:id/?$'), async (req, res) => {
-        Logger.log(`[Info] ${req.params.source}/${req.params.id}`);
-        let headerWritten = false;
-
-        try {
-            const header = await readHeader(req.params.source, req.params.id);
-            if (header) {
-                let json = JSON.stringify(header, null, 2);
-                res.writeHead(200, {
-                    'Content-Type': 'application/json; charset=utf-8',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'X-Requested-With'
-                });
-                headerWritten = true;
-                res.write(json);
-            } else {
-                res.writeHead(404);
-                headerWritten = true;
-            }
-        } catch (e) {
-            Logger.log(`[Info] [Error] ${req.params.source}/${req.params.id}: ${e}`);
-            if (!headerWritten) {
-                res.writeHead(404);
-            }
-        } finally {
-            res.end();
-        }
-    });
-
-    // Box /:src/:id/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
-    // Optional param
-    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), async (req, res) => {
-
-        const a = [+req.params.a1, +req.params.a2, +req.params.a3]; 
-        const b = [+req.params.b1, +req.params.b2, +req.params.b3];
-
-        const isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
-
-        const box: Box.Fractional | Box.Cartesian = isCartesian
-            ? { a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
-            : { a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) }
-        const asBinary = req.query.text !== '1';
-        const outputFilename = getOutputFilename(req.params.source, req.params.id, asBinary, box);
-        const response = wrapResponse(outputFilename, res);
-        
-        try {
-            const sourceFilename = mapFile(req.params.source, req.params.id);
-            if (!sourceFilename) {
-                response.do404();
-                return;
-            }
-
-            let params: Data.QueryParams = { 
-                sourceFilename,
-                sourceId: `${req.params.source}/${req.params.id}`,
-                asBinary, 
-                box, 
-            };    
-            
-            let ok = await Query.execute(params, () => response);
-            if (!ok) {
-                response.do404();
-                return;
-            }
-        } catch (e) {
-            Logger.log(`[Error] ${e}`);
-            response.do404();           
-        } finally {
-            response.end();
-            queryDone();
-        }
-    });
+    app.get(makePath(':source/:id/?$'), (req, res) => getHeader(req, res));
+    // Box /:src/:id/box/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
+    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), (req, res) => queryBox(req, res, false));
+    // Cell /:src/:id/cell/?text=0|1&space=cartesian|fractional
+    app.get(makePath(':source/:id/cell/?'), (req, res) => queryBox(req, res, true));
 
     app.get('*', (req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });

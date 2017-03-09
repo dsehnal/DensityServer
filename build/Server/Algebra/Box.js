@@ -7,7 +7,7 @@ var Coords = require("./Coordinate");
 ///////////////////////////////////////////
 // CONVERSIONS
 ///////////////////////////////////////////
-function cartesianToFractional(box, spacegroup, axisOrder) {
+function cartesianToFractional(box, spacegroup) {
     var l = box.a, r = box.b;
     var corners = [
         [l[0], l[1], l[2]],
@@ -18,7 +18,7 @@ function cartesianToFractional(box, spacegroup, axisOrder) {
         [r[0], l[1], r[2]],
         [l[0], r[1], r[2]],
         [r[0], r[1], r[2]],
-    ].map(function (c) { return Coords.cartesianToFractional(Coords.cartesian(c[0], c[1], c[2]), spacegroup, axisOrder); });
+    ].map(function (c) { return Coords.cartesianToFractional(Coords.cartesian(c[0], c[1], c[2]), spacegroup); });
     return bounding(corners);
 }
 exports.cartesianToFractional = cartesianToFractional;
@@ -110,3 +110,7 @@ function dimensions(box) {
     return [box.b[0] - box.a[0], box.b[1] - box.a[1], box.b[2] - box.a[2]];
 }
 exports.dimensions = dimensions;
+function volume(box) {
+    return (box.b[0] - box.a[0]) * (box.b[1] - box.a[1]) * (box.b[2] - box.a[2]);
+}
+exports.volume = volume;

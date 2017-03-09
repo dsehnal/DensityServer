@@ -44,6 +44,7 @@ var Coords = require("../Algebra/Coordinate");
 var Box = require("../Algebra/Box");
 var Logger = require("../Utils/Logger");
 var State_1 = require("../State");
+var ServerConfig_1 = require("../../ServerConfig");
 var Identify_1 = require("./Identify");
 var Compose_1 = require("./Compose");
 var Encode_1 = require("./Encode");
@@ -75,7 +76,7 @@ function createSampling(header, index, dataOffset) {
     var dataDomain = Coords.domain('Data', {
         origin: Coords.fractional(header.origin[0], header.origin[1], header.origin[2]),
         dimensions: Coords.fractional(header.dimensions[0], header.dimensions[1], header.dimensions[2]),
-        delta: Coords.fractional(header.dimensions[0] / (sampling.sampleCount[0]), header.dimensions[1] / (sampling.sampleCount[1]), header.dimensions[2] / (sampling.sampleCount[2])),
+        delta: Coords.fractional(header.dimensions[0] / sampling.sampleCount[0], header.dimensions[1] / sampling.sampleCount[1], header.dimensions[2] / sampling.sampleCount[2]),
         sampleCount: sampling.sampleCount
     });
     return {
@@ -107,51 +108,89 @@ function createDataContext(file) {
         });
     });
 }
-function pickSampling(data, queryBox) {
-    return data.sampling[4];
+function createQuerySampling(data, sampling, queryBox) {
+    var fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+    var blocks = Identify_1.default(data, sampling, fractionalBox);
+    var ret = {
+        sampling: sampling,
+        fractionalBox: fractionalBox,
+        gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta),
+        blocks: blocks
+    };
+    return ret;
+}
+function pickSampling(data, queryBox, forcedLevel) {
+    if (forcedLevel > 0) {
+        return createQuerySampling(data, data.sampling[Math.min(data.sampling.length, forcedLevel) - 1], queryBox);
+    }
+    for (var _i = 0, _a = data.sampling; _i < _a.length; _i++) {
+        var s = _a[_i];
+        var gridBox = Box.fractionalToGrid(queryBox, s.dataDomain);
+        var approxCompressedSize = Box.volume(gridBox) / 4;
+        if (approxCompressedSize <= ServerConfig_1.default.limits.maxDesiredOutputSizeInBytes) {
+            var sampling = createQuerySampling(data, s, queryBox);
+            if (sampling.blocks.length <= ServerConfig_1.default.limits.maxRequestBlockCount) {
+                return sampling;
+            }
+        }
+    }
+    return createQuerySampling(data, data.sampling[data.sampling.length - 1], queryBox);
+}
+function emptyQueryContext(data, params, guid, serialNumber) {
+    console.log('empty');
+    var zero = Coords.fractional(0, 0, 0);
+    var fractionalBox = { a: zero, b: zero };
+    var sampling = data.sampling[data.sampling.length - 1];
+    return {
+        guid: guid,
+        serialNumber: serialNumber,
+        data: data,
+        params: params,
+        samplingInfo: {
+            sampling: sampling,
+            fractionalBox: fractionalBox,
+            gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta),
+            blocks: []
+        },
+        result: { error: void 0, isEmpty: true }
+    };
+}
+function getQueryBox(data, queryBox) {
+    switch (queryBox.kind) {
+        case 'Cartesian': return Box.fractionalBoxReorderAxes(Box.cartesianToFractional(queryBox, data.spacegroup), data.header.axisOrder);
+        case 'Fractional': return Box.fractionalBoxReorderAxes(queryBox, data.header.axisOrder);
+        default: return data.dataBox;
+    }
 }
 function createQueryContext(data, params, guid, serialNumber) {
-    var inputQueryBox = params.box.a.kind === 1 /* Fractional */
-        ? Box.fractionalBoxReorderAxes(params.box, data.header.axisOrder)
-        : Box.cartesianToFractional(params.box, data.spacegroup, data.header.axisOrder);
+    var inputQueryBox = getQueryBox(data, params.box);
     var queryBox;
     if (!data.header.spacegroup.isPeriodic) {
         if (!Box.areIntersecting(data.dataBox, inputQueryBox)) {
-            return {
-                guid: guid,
-                serialNumber: serialNumber,
-                data: data,
-                params: params,
-                sampling: data.sampling[0],
-                fractionalBox: { a: Coords.fractional(0, 0, 0), b: Coords.fractional(0, 0, 0) },
-                gridDomain: Box.fractionalToDomain({ a: Coords.fractional(0, 0, 0), b: Coords.fractional(0, 0, 0) }, 'Query', data.sampling[0].dataDomain.delta),
-                result: { error: void 0, isEmpty: true }
-            };
+            return emptyQueryContext(data, params, guid, serialNumber);
         }
         queryBox = Box.intersect(data.dataBox, inputQueryBox);
     }
     else {
         queryBox = inputQueryBox;
     }
-    var sampling = pickSampling(data, queryBox);
-    // snap the query box to the sampling grid:
-    var fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+    if (Box.dimensions(queryBox).some(function (d) { return isNaN(d) || d > ServerConfig_1.default.limits.maxFractionalBoxDimension; })) {
+        throw "The query box is too big.";
+    }
+    var samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0);
+    if (samplingInfo.blocks.length === 0)
+        return emptyQueryContext(data, params, guid, serialNumber);
     return {
         guid: guid,
         serialNumber: serialNumber,
         data: data,
         params: params,
-        sampling: sampling,
-        fractionalBox: fractionalBox,
-        gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta),
+        samplingInfo: samplingInfo,
         result: { isEmpty: false }
     };
 }
-function validateQueryContext(query) {
-    // TODO
-}
 function allocateResult(query) {
-    var size = query.gridDomain.sampleVolume;
+    var size = query.samplingInfo.gridDomain.sampleVolume;
     var numChannels = query.data.header.channels.length;
     query.result.values = [];
     for (var i = 0; i < numChannels; i++) {
@@ -160,42 +199,37 @@ function allocateResult(query) {
 }
 function _execute(file, params, guid, serialNumber, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
-        var data, query, output, blocks, e_1;
+        var data, output, query, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, createDataContext(file)];
                 case 1:
                     data = _a.sent();
-                    query = createQueryContext(data, params, guid, serialNumber);
                     output = void 0;
                     _a.label = 2;
                 case 2:
-                    _a.trys.push([2, 6, 7, 8]);
-                    if (!!query.result.isEmpty) return [3 /*break*/, 5];
-                    // Step 2a: Validate query context
-                    validateQueryContext(query);
-                    blocks = Identify_1.default(query);
-                    if (!(blocks.length === 0)) return [3 /*break*/, 3];
-                    query.result.isEmpty = true;
-                    return [3 /*break*/, 5];
-                case 3:
-                    query.result.isEmpty = false;
+                    _a.trys.push([2, 5, 6, 7]);
+                    // Step 1b: Create query context
+                    query = createQueryContext(data, params, guid, serialNumber);
+                    if (!!query.result.isEmpty) return [3 /*break*/, 4];
                     // Step 3a: Allocate space for result data
                     allocateResult(query);
                     // Step 3b: Compose the result data
-                    return [4 /*yield*/, Compose_1.default(query, blocks)];
-                case 4:
+                    return [4 /*yield*/, Compose_1.default(query)];
+                case 3:
                     // Step 3b: Compose the result data
                     _a.sent();
-                    _a.label = 5;
-                case 5:
+                    _a.label = 4;
+                case 4:
                     // Step 4: Encode the result
                     output = outputProvider();
                     Encode_1.default(query, output);
                     output.end();
-                    return [3 /*break*/, 8];
-                case 6:
+                    return [3 /*break*/, 7];
+                case 5:
                     e_1 = _a.sent();
+                    if (!query)
+                        query = emptyQueryContext(data, params, guid, serialNumber);
                     query.result.error = "" + e_1;
                     query.result.isEmpty = true;
                     query.result.values = void 0;
@@ -208,49 +242,58 @@ function _execute(file, params, guid, serialNumber, outputProvider) {
                         throw f;
                     }
                     throw e_1;
-                case 7:
+                case 6:
                     if (output)
                         output.end();
                     return [7 /*endfinally*/];
-                case 8: return [2 /*return*/];
+                case 7: return [2 /*return*/];
             }
         });
     });
 }
+function roundCoord(c) {
+    return Math.round(100000 * c) / 100000;
+}
+function queryBoxToString(queryBox) {
+    switch (queryBox.kind) {
+        case 'Cartesian':
+        case 'Fractional':
+            var a = queryBox.a, b = queryBox.b;
+            var r = roundCoord;
+            return "box-type=" + queryBox.kind + ",box-a=(" + r(a[0]) + "," + r(a[1]) + "," + r(a[2]) + "),box-b=(" + r(b[0]) + "," + r(b[1]) + "," + r(b[2]) + ")";
+        default:
+            return queryBox.kind;
+    }
+}
 function execute(params, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
-        var start, guid, serialNumber, _a, a, b, sourceFile, e_2;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var start, guid, serialNumber, sourceFile, e_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
                     start = getTime();
                     State_1.State.pendingQueries++;
                     guid = generateUUID();
                     serialNumber = State_1.State.querySerial++;
-                    _a = params.box, a = _a.a, b = _a.b;
-                    Logger.log("[GUID] " + guid, serialNumber);
-                    Logger.log("[Id] " + params.sourceId, serialNumber);
-                    Logger.log("[Box] " + (a.kind === 0 /* Cartesian */ ? 'cart' : 'frac') + " [" + a[0] + "," + a[1] + "," + a[2] + "] [" + b[0] + "," + b[1] + "," + b[2] + "]", serialNumber);
-                    Logger.log("[Encoding] " + (params.asBinary ? 'bcif' : 'cif'), serialNumber);
+                    Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + "," + queryBoxToString(params.box));
                     sourceFile = void 0;
-                    _b.label = 1;
+                    _a.label = 1;
                 case 1:
-                    _b.trys.push([1, 4, 5, 6]);
+                    _a.trys.push([1, 4, 5, 6]);
                     return [4 /*yield*/, File.openRead(params.sourceFilename)];
                 case 2:
-                    sourceFile = _b.sent();
+                    sourceFile = _a.sent();
                     return [4 /*yield*/, _execute(sourceFile, params, guid, serialNumber, outputProvider)];
                 case 3:
-                    _b.sent();
-                    Logger.log("[OK]", serialNumber);
+                    _a.sent();
                     return [2 /*return*/, true];
                 case 4:
-                    e_2 = _b.sent();
-                    Logger.log("[Error] " + e_2, serialNumber);
+                    e_2 = _a.sent();
+                    Logger.error(guid, e_2);
                     return [2 /*return*/, false];
                 case 5:
                     File.close(sourceFile);
-                    Logger.log("[Time] " + Math.round(getTime() - start) + "ms", serialNumber);
+                    Logger.log(guid, 'Time', Math.round(getTime() - start) + "ms");
                     State_1.State.pendingQueries--;
                     return [7 /*endfinally*/];
                 case 6: return [2 /*return*/];

@@ -1,12 +1,21 @@
 
 const Config = {
-    /**
-     * Maximum number of cells along a single axis.
-     * 
-     * A good value is 2 x BLOCKSIZE of the input data.
-     * Default BLOCKSIZE = 96 ==> max dim = 192
-     */
-    maxRequestDimension: 192,
+    limits: {
+        /**
+         * Maximum number of blocks that could be read in 1 query.
+         */
+        maxRequestBlockCount: 32,
+
+        /**
+         * The maximum fractional dimension of the query box.
+         */
+        maxFractionalBoxDimension: 3,
+
+        /**
+         * What is the (approximate) maximum desired (gzipped) size of the response.
+         */
+        maxDesiredOutputSizeInBytes: 1 * 1024 * 1024,
+    },
 
     /**
      * Specify the prefix of the API, i.e.

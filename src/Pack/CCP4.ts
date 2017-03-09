@@ -22,7 +22,7 @@ export interface Header {
 }
 
 /** Represents a circular buffer for 2 * blockSize layers */
-export interface DataSlices {   
+export interface SliceBuffer {   
     buffer: File.TypedArrayBufferContext,
     sliceCapacity: number,
     slicesRead: number,
@@ -37,7 +37,7 @@ export interface DataSlices {
 export interface Data {
     header: Header,
     file: number,
-    slices: DataSlices
+    slices: SliceBuffer
 }
 
 export function getValueType(header: Header) {
@@ -45,7 +45,7 @@ export function getValueType(header: Header) {
     return DataFormat.ValueType.Int8;
 }
 
-function createDataSlices(header: Header, blockSize: number): DataSlices {
+function createSliceBuffer(header: Header, blockSize: number): SliceBuffer {
     const { extent } = header;
     const sliceSize = extent[0] * extent[1] * (header.mode === Mode.Float32 ? 4 : 1);
     const sliceCapacity = Math.max(1, Math.floor(Math.min(64 * 1024 * 1024, sliceSize * extent[2]) / sliceSize));
@@ -155,7 +155,7 @@ export async function open(name: string, filename: string, blockSize: number): P
     return { 
         header, 
         file, 
-        slices: createDataSlices(header, blockSize)
+        slices: createSliceBuffer(header, blockSize)
     };
 }
 
