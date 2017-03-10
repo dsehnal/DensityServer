@@ -44,13 +44,13 @@ var _volume_data_3d_info_fields = [
     float64('spacegroup_cell_angles[1]', function (ctx) { return ctx.header.spacegroup.angles[1]; }, 1000),
     float64('spacegroup_cell_angles[2]', function (ctx) { return ctx.header.spacegroup.angles[2]; }, 1000),
     float64('mean_source', function (ctx) { return ctx.globalValuesInfo.mean; }),
-    float64('sigma_source', function (ctx) { return ctx.globalValuesInfo.sigma; }),
-    float64('min_source', function (ctx) { return ctx.globalValuesInfo.min; }),
-    float64('max_source', function (ctx) { return ctx.globalValuesInfo.max; }),
     float64('mean_sampled', function (ctx) { return ctx.sampledValuesInfo.mean; }),
+    float64('sigma_source', function (ctx) { return ctx.globalValuesInfo.sigma; }),
     float64('sigma_sampled', function (ctx) { return ctx.sampledValuesInfo.sigma; }),
+    float64('min_source', function (ctx) { return ctx.globalValuesInfo.min; }),
     float64('min_sampled', function (ctx) { return ctx.sampledValuesInfo.min; }),
-    float64('max_sampled', function (ctx) { return ctx.sampledValuesInfo.max; }),
+    float64('max_source', function (ctx) { return ctx.globalValuesInfo.max; }),
+    float64('max_sampled', function (ctx) { return ctx.sampledValuesInfo.max; })
 ];
 function _volume_data_3d_info(result) {
     var ctx = {

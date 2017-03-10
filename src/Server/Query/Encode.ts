@@ -74,14 +74,13 @@ const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
     float64<_vd3d_Ctx>('spacegroup_cell_angles[2]', ctx => ctx.header.spacegroup.angles[2], 1000),
 
     float64<_vd3d_Ctx>('mean_source', ctx => ctx.globalValuesInfo.mean),
+    float64<_vd3d_Ctx>('mean_sampled', ctx => ctx.sampledValuesInfo.mean),    
     float64<_vd3d_Ctx>('sigma_source', ctx => ctx.globalValuesInfo.sigma),
-    float64<_vd3d_Ctx>('min_source', ctx => ctx.globalValuesInfo.min),
-    float64<_vd3d_Ctx>('max_source', ctx => ctx.globalValuesInfo.max),
-
-    float64<_vd3d_Ctx>('mean_sampled', ctx => ctx.sampledValuesInfo.mean),
     float64<_vd3d_Ctx>('sigma_sampled', ctx => ctx.sampledValuesInfo.sigma),
+    float64<_vd3d_Ctx>('min_source', ctx => ctx.globalValuesInfo.min),    
     float64<_vd3d_Ctx>('min_sampled', ctx => ctx.sampledValuesInfo.min),
-    float64<_vd3d_Ctx>('max_sampled', ctx => ctx.sampledValuesInfo.max),
+    float64<_vd3d_Ctx>('max_source', ctx => ctx.globalValuesInfo.max),
+    float64<_vd3d_Ctx>('max_sampled', ctx => ctx.sampledValuesInfo.max)
 ];
 
 function _volume_data_3d_info(result: ResultContext) {

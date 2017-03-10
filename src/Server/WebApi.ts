@@ -57,12 +57,6 @@ function wrapResponse(fn: string, res: express.Response) {
     return <(typeof w) & CIFTools.OutputStream>w;
 }
 
-function queryDone() {
-    if (State.shutdownOnZeroPending) {
-        process.exit(0);
-    }
-}
-
 function getSourceInfo(req: express.Request) {
     return {
         filename: mapFile(req.params.source, req.params.id),
@@ -93,12 +87,11 @@ async function getHeader(req: express.Request, res: express.Response) {
     }
 }
 
-async function queryBox(req: express.Request, res: express.Response, isCell: boolean) {
+function getQueryParams(req: express.Request, isCell: boolean): Data.QueryParams {
     const a = [+req.params.a1, +req.params.a2, +req.params.a3]; 
     const b = [+req.params.b1, +req.params.b2, +req.params.b3];
 
-    let precision = (+req.query.precision) | 0;
-    if (precision < 0) precision = 0;
+    const precision = Math.min(Math.max(0, (+req.query.precision) | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1)
     const isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
 
     const box: Data.QueryParamsBox = isCell
@@ -107,24 +100,27 @@ async function queryBox(req: express.Request, res: express.Response, isCell: boo
             ? { kind: 'Cartesian', a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
             : { kind: 'Fractional', a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) });
 
-    const asBinary = req.query.text !== '1';
-    const outputFilename = Api.getOutputFilename(req.params.source, req.params.id, asBinary, box);
+    const asBinary = (req.query.encoding || '').toLowerCase() !== 'cif';
+    const sourceFilename = mapFile(req.params.source, req.params.id)!;
+
+    return { 
+        sourceFilename,
+        sourceId: `${req.params.source}/${req.params.id}`,
+        asBinary, 
+        box, 
+        precision
+    };    
+}
+
+async function queryBox(req: express.Request, res: express.Response, params: Data.QueryParams) {   
+    const outputFilename = Api.getOutputFilename(req.params.source, req.params.id, params);
     const response = wrapResponse(outputFilename, res);
     
     try {
-        const sourceFilename = mapFile(req.params.source, req.params.id);
-        if (!sourceFilename) {
+        if (!params.sourceFilename) {
             response.do404();
             return;
         }
-
-        let params: Data.QueryParams = { 
-            sourceFilename,
-            sourceId: `${req.params.source}/${req.params.id}`,
-            asBinary, 
-            box, 
-            precision
-        };    
         
         let ok = await Api.queryBox(params, () => response);
         if (!ok) {
@@ -140,6 +136,12 @@ async function queryBox(req: express.Request, res: express.Response, isCell: boo
     }
 }
 
+function queryDone() {
+    if (State.shutdownOnZeroPending) {
+        process.exit(0);
+    }
+}
+
 export function init(app: express.Express) {
     function makePath(p: string) {
         return ServerConfig.apiPrefix + '/' + p;
@@ -148,9 +150,9 @@ export function init(app: express.Express) {
     // Header
     app.get(makePath(':source/:id/?$'), (req, res) => getHeader(req, res));
     // Box /:src/:id/box/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
-    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), (req, res) => queryBox(req, res, false));
+    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), (req, res) => queryBox(req, res, getQueryParams(req, false)));
     // Cell /:src/:id/cell/?text=0|1&space=cartesian|fractional
-    app.get(makePath(':source/:id/cell/?'), (req, res) => queryBox(req, res, true));
+    app.get(makePath(':source/:id/cell/?'), (req, res) => queryBox(req, res, getQueryParams(req, true)));
 
     app.get('*', (req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });

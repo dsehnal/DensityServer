@@ -88,11 +88,6 @@ function wrapResponse(fn, res) {
     };
     return w;
 }
-function queryDone() {
-    if (State_1.State.shutdownOnZeroPending) {
-        process.exit(0);
-    }
-}
 function getSourceInfo(req) {
     return {
         filename: mapFile(req.params.source, req.params.id),
@@ -136,41 +131,41 @@ function getHeader(req, res) {
         });
     });
 }
-function queryBox(req, res, isCell) {
+function getQueryParams(req, isCell) {
+    var a = [+req.params.a1, +req.params.a2, +req.params.a3];
+    var b = [+req.params.b1, +req.params.b2, +req.params.b3];
+    var precision = Math.min(Math.max(0, (+req.query.precision) | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+    var isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
+    var box = isCell
+        ? { kind: 'Cell' }
+        : (isCartesian
+            ? { kind: 'Cartesian', a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
+            : { kind: 'Fractional', a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) });
+    var asBinary = (req.query.encoding || '').toLowerCase() !== 'cif';
+    var sourceFilename = mapFile(req.params.source, req.params.id);
+    return {
+        sourceFilename: sourceFilename,
+        sourceId: req.params.source + "/" + req.params.id,
+        asBinary: asBinary,
+        box: box,
+        precision: precision
+    };
+}
+function queryBox(req, res, params) {
     return __awaiter(this, void 0, void 0, function () {
-        var a, b, precision, isCartesian, box, asBinary, outputFilename, response, sourceFilename, params, ok, e_2;
+        var outputFilename, response, ok, e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    a = [+req.params.a1, +req.params.a2, +req.params.a3];
-                    b = [+req.params.b1, +req.params.b2, +req.params.b3];
-                    precision = (+req.query.precision) | 0;
-                    if (precision < 0)
-                        precision = 0;
-                    isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
-                    box = isCell
-                        ? { kind: 'Cell' }
-                        : (isCartesian
-                            ? { kind: 'Cartesian', a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
-                            : { kind: 'Fractional', a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) });
-                    asBinary = req.query.text !== '1';
-                    outputFilename = Api.getOutputFilename(req.params.source, req.params.id, asBinary, box);
+                    outputFilename = Api.getOutputFilename(req.params.source, req.params.id, params);
                     response = wrapResponse(outputFilename, res);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, 4, 5]);
-                    sourceFilename = mapFile(req.params.source, req.params.id);
-                    if (!sourceFilename) {
+                    if (!params.sourceFilename) {
                         response.do404();
                         return [2 /*return*/];
                     }
-                    params = {
-                        sourceFilename: sourceFilename,
-                        sourceId: req.params.source + "/" + req.params.id,
-                        asBinary: asBinary,
-                        box: box,
-                        precision: precision
-                    };
                     return [4 /*yield*/, Api.queryBox(params, function () { return response; })];
                 case 2:
                     ok = _a.sent();
@@ -193,6 +188,11 @@ function queryBox(req, res, isCell) {
         });
     });
 }
+function queryDone() {
+    if (State_1.State.shutdownOnZeroPending) {
+        process.exit(0);
+    }
+}
 function init(app) {
     function makePath(p) {
         return ServerConfig_1.default.apiPrefix + '/' + p;
@@ -200,9 +200,9 @@ function init(app) {
     // Header
     app.get(makePath(':source/:id/?$'), function (req, res) { return getHeader(req, res); });
     // Box /:src/:id/box/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
-    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), function (req, res) { return queryBox(req, res, false); });
+    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), function (req, res) { return queryBox(req, res, getQueryParams(req, false)); });
     // Cell /:src/:id/cell/?text=0|1&space=cartesian|fractional
-    app.get(makePath(':source/:id/cell/?'), function (req, res) { return queryBox(req, res, true); });
+    app.get(makePath(':source/:id/cell/?'), function (req, res) { return queryBox(req, res, getQueryParams(req, true)); });
     app.get('*', function (req, res) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(Documentation_1.default);

@@ -46,7 +46,7 @@ async function query(src: string, id: string, asBinary: boolean, box: Data.Query
         box,
         precision: 2
     };
-    const res = () => wrapResponse(`g:/test/${Api.getOutputFilename(src, id, params.asBinary, params.box)}`);
+    const res = () => wrapResponse(`g:/test/${Api.getOutputFilename(src, id, params)}`);
     await Api.queryBox(params, res)
 }
 

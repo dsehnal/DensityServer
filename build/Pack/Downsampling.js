@@ -122,7 +122,6 @@ function downsampleBuffer(kernel, source, target, blockSize) {
         downsampling[channelIndex].startSliceIndex += 2;
     }
     target.blocks.slicesWritten++;
-    //target.blocks.isFull = target.blocks.slicesWritten === blockSize;
 }
 /**
  * Downsamples each slice of input data and checks if there is enough data to perform

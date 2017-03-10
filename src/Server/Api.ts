@@ -7,14 +7,16 @@ import * as Query from './Query/Execute'
 import * as Data from './Query/DataModel'
 import * as Logger from './Utils/Logger'
 import * as DataFormat from '../Common/DataFormat'
+import ServerConfig from '../ServerConfig'
 
-export function getOutputFilename(source: string, id: string, isBinary: boolean, box: Data.QueryParamsBox) {
+export function getOutputFilename(source: string, id: string, { asBinary, box, precision }: Data.QueryParams) {
     function n(s: string) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase() }
     function r(v: number) { return Math.round(10 * v) / 10; }
+    const prec = Math.min(Math.max(0, precision | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     const boxInfo = box.kind === 'Cell' 
         ? 'cell'
-        : `${box.kind === 'Cartesian' ? 'cartn' : 'frac'}-${r(box.a[0])}_${r(box.a[1])}_${r(box.a[2])}_${r(box.b[0])}_${r(box.b[1])}_${r(box.b[2])}`;
-    return `${n(source)}_${n(id)}-${boxInfo}.${isBinary ? 'bcif' : 'cif'}`;
+        : `${box.kind === 'Cartesian' ? 'cartn' : 'frac'}_${r(box.a[0])}_${r(box.a[1])}_${r(box.a[2])}_${r(box.b[0])}_${r(box.b[1])}_${r(box.b[2])}`;
+    return `${n(source)}_${n(id)}-${boxInfo}.${asBinary ? 'bcif' : 'cif'}_p${prec}`;
 }
 
 async function readHeader(filename: string | undefined, sourceId: string) {
@@ -32,14 +34,16 @@ async function readHeader(filename: string | undefined, sourceId: string) {
     }
 }
 
+/** Reads the header and includes information about available detail levels */
 export async function getHeaderJson(filename: string | undefined, sourceId: string) {
     Logger.logPlain('Header', sourceId);
     try {
-        const header = await readHeader(filename, sourceId);
-        return JSON.stringify(header, null, 2);        
+        const header: any = await readHeader(filename, sourceId);
+        header.availablePrecisions = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.map((maxVoxels, precision) => ({ precision, maxVoxels }));
+        return JSON.stringify(header, null, 2);
     } catch (e) {
         Logger.errorPlain(`Header ${sourceId}`, e);
-        return JSON.stringify({ isAvailable: false })
+        return void 0;
     } 
 }
 

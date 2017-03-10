@@ -13,7 +13,7 @@ var config = {
 };
 function printHelp() {
     var help = [
-        "DensityServer Packer " + Version_1.default + ", (c) 2016 David Sehnal",
+        "DensityServer Packer " + Version_1.default + ", (c) 2016 - now, David Sehnal",
         "",
         "The input data must be CCP4/MAP mode 2 (32-bit floats) files.",
         "",

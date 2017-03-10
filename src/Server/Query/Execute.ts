@@ -108,14 +108,13 @@ function pickSampling(data: Data.DataContext, queryBox: Box.Fractional, forcedLe
     return createQuerySampling(data, data.sampling[data.sampling.length - 1], queryBox);
 }
 
-function emptyQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number): Data.QueryContext {
+function emptyQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string): Data.QueryContext {
     console.log('empty');
     const zero = Coords.fractional(0,0,0);
     const fractionalBox = { a: zero, b: zero };
     const sampling = data.sampling[data.sampling.length - 1];
     return {
         guid,
-        serialNumber,
         data,
         params,
         samplingInfo: { 
@@ -136,12 +135,12 @@ function getQueryBox(data: Data.DataContext, queryBox: Data.QueryParamsBox) {
     }
 }
 
-function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string, serialNumber: number): Data.QueryContext {
+function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string): Data.QueryContext {
     const inputQueryBox = getQueryBox(data, params.box);
     let queryBox;
     if (!data.header.spacegroup.isPeriodic) {
         if (!Box.areIntersecting(data.dataBox, inputQueryBox)) {
-            return emptyQueryContext(data, params, guid, serialNumber);
+            return emptyQueryContext(data, params, guid);
         }
         queryBox = Box.intersect(data.dataBox, inputQueryBox)!;
     } else {
@@ -154,11 +153,10 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
 
     const samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.precision);
 
-    if (samplingInfo.blocks.length === 0) return emptyQueryContext(data, params, guid, serialNumber);
+    if (samplingInfo.blocks.length === 0) return emptyQueryContext(data, params, guid);
 
     return {
         guid,
-        serialNumber,
         data,
         params,
         samplingInfo,
@@ -175,7 +173,7 @@ function allocateResult(query: Data.QueryContext) {
     }
 }
 
-async function _execute(file: number, params: Data.QueryParams, guid: string, serialNumber: number, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
+async function _execute(file: number, params: Data.QueryParams, guid: string, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
     // Step 1a: Create data context
     const data = await createDataContext(file);
 
@@ -184,7 +182,7 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, se
 
     try {
         // Step 1b: Create query context
-        query = createQueryContext(data, params, guid, serialNumber);
+        query = createQueryContext(data, params, guid);
 
         if (!query.result.isEmpty) {
             // Step 3a: Allocate space for result data
@@ -198,7 +196,7 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, se
         encode(query, output);
         output.end();
     } catch (e) {
-        if (!query) query = emptyQueryContext(data, params, guid, serialNumber);
+        if (!query) query = emptyQueryContext(data, params, guid);
         query.result.error = `${e}`;
         query.result.isEmpty = true;
         query.result.values = void 0;
@@ -235,16 +233,13 @@ export async function execute(params: Data.QueryParams, outputProvider: () => Da
     State.pendingQueries++;
 
     const guid = generateUUID();
-    const serialNumber = State.querySerial++;
-
-    params.precision = Math.min(Math.max(0, params.precision), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
-        
+    params.precision = Math.min(Math.max(0, params.precision | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);        
     Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},precision=${params.precision},${queryBoxToString(params.box)}`);
     
     let sourceFile: number | undefined = void 0;
     try {
         sourceFile = await File.openRead(params.sourceFilename);
-        await _execute(sourceFile, params, guid, serialNumber, outputProvider);     
+        await _execute(sourceFile, params, guid, outputProvider);     
         return true;
     } catch (e) {
         Logger.error(guid, e);

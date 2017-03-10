@@ -4,6 +4,9 @@ var Config = {
     limits: {
         /**
          * Maximum number of blocks that could be read in 1 query.
+         * This is somewhat tied to the maxOutputSizeInVoxelCountByPrecisionLevel
+         * in that the <maximum number of voxel> = maxRequestBlockCount * <block size>^3.
+         * The default block size is 96 which corresponds to 28,311,552 voxels with 32 max blocks.
          */
         maxRequestBlockCount: 32,
         /**
@@ -13,13 +16,21 @@ var Config = {
         /**
          * What is the (approximate) maximum desired size in voxel count by precision level
          * Rule of thumb: <response gzipped size> \in [<voxel count> / 8, <voxel count> / 4];
+         *
+         * The maximum number of voxels is tied to maxRequestBlockCount.
          */
         maxOutputSizeInVoxelCountByPrecisionLevel: [
             0.5 * 1024 * 1024,
             1 * 1024 * 1024,
             2 * 1024 * 1024,
-            4 * 1024 * 1024
-        ]
+            4 * 1024 * 1024,
+            8 * 1024 * 1024,
+            16 * 1024 * 1024 // ~ 256*256*256
+        ],
+        /**
+         * The maximum number of concurrent queries before the server returns 503 Service Unavailable.
+         */
+        maxQueueLength: 32
     },
     /**
      * Specify the prefix of the API, i.e.
@@ -27,7 +38,7 @@ var Config = {
      */
     apiPrefix: '/DensityServer',
     /**
-     * If not specify otherwise by the 'port' environment variable, use this port.
+     * If not specified otherwise by the 'port' environment variable, use this port.
      */
     defaultPort: 1337,
     /**

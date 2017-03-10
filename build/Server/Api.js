@@ -42,13 +42,16 @@ var File = require("../Common/File");
 var Query = require("./Query/Execute");
 var Logger = require("./Utils/Logger");
 var DataFormat = require("../Common/DataFormat");
-function getOutputFilename(source, id, isBinary, box) {
+var ServerConfig_1 = require("../ServerConfig");
+function getOutputFilename(source, id, _a) {
+    var asBinary = _a.asBinary, box = _a.box, precision = _a.precision;
     function n(s) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase(); }
     function r(v) { return Math.round(10 * v) / 10; }
+    var prec = Math.min(Math.max(0, precision | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     var boxInfo = box.kind === 'Cell'
         ? 'cell'
-        : (box.kind === 'Cartesian' ? 'cartn' : 'frac') + "-" + r(box.a[0]) + "_" + r(box.a[1]) + "_" + r(box.a[2]) + "_" + r(box.b[0]) + "_" + r(box.b[1]) + "_" + r(box.b[2]);
-    return n(source) + "_" + n(id) + "-" + boxInfo + "." + (isBinary ? 'bcif' : 'cif');
+        : (box.kind === 'Cartesian' ? 'cartn' : 'frac') + "_" + r(box.a[0]) + "_" + r(box.a[1]) + "_" + r(box.a[2]) + "_" + r(box.b[0]) + "_" + r(box.b[1]) + "_" + r(box.b[2]);
+    return n(source) + "_" + n(id) + "-" + boxInfo + "." + (asBinary ? 'bcif' : 'cif') + "_p" + prec;
 }
 exports.getOutputFilename = getOutputFilename;
 function readHeader(filename, sourceId) {
@@ -82,6 +85,7 @@ function readHeader(filename, sourceId) {
         });
     });
 }
+/** Reads the header and includes information about available detail levels */
 function getHeaderJson(filename, sourceId) {
     return __awaiter(this, void 0, void 0, function () {
         var header, e_2;
@@ -95,11 +99,12 @@ function getHeaderJson(filename, sourceId) {
                     return [4 /*yield*/, readHeader(filename, sourceId)];
                 case 2:
                     header = _a.sent();
+                    header.availablePrecisions = ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.map(function (maxVoxels, precision) { return ({ precision: precision, maxVoxels: maxVoxels }); });
                     return [2 /*return*/, JSON.stringify(header, null, 2)];
                 case 3:
                     e_2 = _a.sent();
                     Logger.errorPlain("Header " + sourceId, e_2);
-                    return [2 /*return*/, JSON.stringify({ isAvailable: false })];
+                    return [2 /*return*/, void 0];
                 case 4: return [2 /*return*/];
             }
         });

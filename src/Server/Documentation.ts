@@ -5,7 +5,10 @@
 import VERSION from './Version'
 import ServerConfig from '../ServerConfig'
 
-const precisions = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.map((p, i) => `<span class='id'>${i}</span>: ${Math.round(p)} voxels`).join(', ');
+function precision(i: number) {
+     return `<span class='id'>${i}</span><small> (${Math.round(100 * ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel[i] / 1000 / 1000) / 100 }M voxels)</small>`;
+}
+const precMax = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1;
 
 export default `
 <!DOCTYPE html>
@@ -81,11 +84,11 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
 </div>
 
 <div class="cs-docs-query-wrap">
-  <h2>Query Box <span>/&lt;source&gt;/&lt;id&gt;/box/&lt;a,b,c&gt;/&lt;u,v,w&gt;[?&lt;optional parameters&gt;]</span><br> 
-  <small>Returns density data inside the specified box for the given entry. For X-ray data, returns 2Fo-Fc and Fo-Fc densities in a single response.</small></h2>
+  <h2>Box <span>/&lt;source&gt;/&lt;id&gt;/box/&lt;a,b,c&gt;/&lt;u,v,w&gt;?&lt;optional parameters&gt;</span><br> 
+  <small>Returns density data inside the specified box for the given entry. For X-ray data, returns 2Fo-Fc and Fo-Fc volumes in a single response.</small></h2>
   <div style="margin: 24px 24px 0 24px">    
     <h4>Examples</h4>
-    <a href="/DensityServer/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian" class="cs-docs-template-link" target="_blank" rel="nofollow">/emd/8003/box/-2,7,10/4,10,15.5?text=1&space=cartesian</a><br>
+    <a href="/DensityServer/emd/8003/box/-2,7,10/4,10,15.5?encoding=cif&space=cartesian" class="cs-docs-template-link" target="_blank" rel="nofollow">/emd/8003/box/-2,7,10/4,10,15.5?excoding=cif&space=cartesian</a><br>
     <a href="/DensityServer/x-ray/1cbs/box/0.1,0.1,0.1/0.23,0.31,0.18?space=fractional" class="cs-docs-template-link" target="_blank" rel="nofollow">/x-ray/1cbs/box/0.1,0.1,0.1/0.23,0.31,0.18?space=fractional</a>
     <h4>Parameters</h4>
     <table cellpadding="0" cellspacing="0" style='width: 100%'>
@@ -107,45 +110,56 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
     <td>Top right corner of the query region in Cartesian coordinates.</td>
     </tr>
     <tr>
-    <td class="cs-docs-param-name">text</td>
-    <td>If 1, the data is returned in text based CIF rather than binary. Useful for debugging and being able to 'read' the data. An optional argument, default is BinaryCIF encoding.</td>
+    <td class="cs-docs-param-name">encoding</td>
+    <td>Determines if text based <span class='id'>CIF</span> or binary <span class='id'>BinaryCIF</span> encoding is used. An optional argument, default is <span class='id'>BinaryCIF</span> encoding.</td>
     </tr>
+    <tr>
     <td class="cs-docs-param-name">space</td>
     <td>Determines the coordinate space the query is in. Can be <span class='id'>cartesian</span> or <span class='id'>fractional</span>. An optional argument, default values is <span class='id'>cartesian</span>.</td>
     </tr>
-    </tr>
-    <td class="cs-docs-param-name">precision</td>
-    <td>Determines the maximum number of voxels the query can return. Possible values are ${precisions}. Default value is <span class='id'>0</span>.</td>
+    <tr>
+      <td class="cs-docs-param-name">precision</td>
+      <td>
+        Determines the maximum number of voxels the query can return. Possible values are in the range from ${precision(0)} to ${precision(precMax)}. 
+        Default value is <span class='id'>0</span>.
+      </td>
     </tr>
     </tbody></table>
   </div>
 </div>
 
 <div class="cs-docs-query-wrap">
-  <h2>Consuming the Data</h2> 
-  <div style="margin: 24px 24px 0 24px">
-    The data can be consumed in any (modern) browser using the <a href='https://github.com/dsehnal/CIFTools.js'>CIFTools.js library</a>
-    (or any other piece of code that can read text or binary CIF).
-    <ul style='padding-left: 22px'>
-      <li>
-        Each data channel (e.g. 2Fo-Fc and Fo-Fc for x-ray data) is stored as a separate data block.
-      </li>
-      <li>
-        The order of raw values in the <span class='id'>_volume_data_3d.values</span> field is
-        the same as in the <a href='http://www.ccp4.ac.uk/html/maplib.html#description'>CCP4 format</a> with regards to
-        the <span class='id'>_volume_data_3d_info.axis_order</span> and <span class='id'>_volume_data_3d_info.sample_count</span> (equivalent to <span class='id'>extent</span> in CCP4 format).
-      </li>
-      <li>
-        The stored region is described in the fractional coordinates in the fields <span class='id'>_volume_data_3d_info.origin</span> and 
-        <span class='id'>_volume_data_3d_info.dimensions</span>.
-      </li>
-      <li>
-        Spacegroup parameters are given by the fields <span class='id'>_volume_data_3d_info.spacegroup_number</span>, 
-        <span class='id'>_volume_data_3d_info.spacegroup_cell_size</span>, and <span class='id'>_volume_data_3d_info.spacegroup_cell_angles</span>.
-      </li>
-    </ul>
+  <h2>Cell <span>/&lt;source&gt;/&lt;id&gt;/cell?&lt;optional parameters&gt;</span><br> 
+  <small>Returns (downsampled) volume data for the entire "data cell". For X-ray data, returns unit cell of 2Fo-Fc and Fo-Fc volumes, for EM data returns everything.</small></h2>
+  <div style="margin: 24px 24px 0 24px">    
+    <h4>Example</h4>
+    <a href="/DensityServer/emd/8116/cell?precision=1" class="cs-docs-template-link" target="_blank" rel="nofollow">/DensityServer/emd/8116/cell?precision=1</a><br>
+    <h4>Parameters</h4>
+    <table cellpadding="0" cellspacing="0" style='width: 100%'>
+    <tbody><tr><th style='width: 80px'>Name</th><th>Description</th></tr>
+    <tr>
+    <td class="cs-docs-param-name">source</td>
+    <td>Specifies the data source. Currently, <span class='id'>x-ray</span> and <span class='id'>emd</span> sources are supported.</td>
+    </tr>
+    <tr>
+    <td class="cs-docs-param-name">id</td>
+    <td>Id of the entry. For <span class='id'>x-ray</span>, use PDB ID and for <span class='id'>emd</span> use EMD data number.</td>
+    </tr>
+    <tr>
+    <td class="cs-docs-param-name">encoding</td>
+    <td>Determines if text based <span class='id'>CIF</span> or binary <span class='id'>BinaryCIF</span> encoding is used. An optional argument, default is <span class='id'>BinaryCIF</span> encoding.</td>
+    </tr>
+    <tr>
+      <td class="cs-docs-param-name">precision</td>
+      <td>
+        Determines the maximum number of voxels the query can return. Possible values are in the range from ${precision(0)} to ${precision(precMax)}. 
+        Default value is <span class='id'>0</span>.
+      </td>
+    </tr>
+    </tbody></table>
   </div>
 </div>
+
 
 <div style="color: #999;font-size:smaller;margin: 20px 0; text-align: right">&copy; 2016 &ndash; now, David Sehnal | Node ${process.version}</div>
 

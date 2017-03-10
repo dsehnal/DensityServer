@@ -137,14 +137,13 @@ function pickSampling(data, queryBox, forcedLevel, precision) {
     }
     return createQuerySampling(data, data.sampling[data.sampling.length - 1], queryBox);
 }
-function emptyQueryContext(data, params, guid, serialNumber) {
+function emptyQueryContext(data, params, guid) {
     console.log('empty');
     var zero = Coords.fractional(0, 0, 0);
     var fractionalBox = { a: zero, b: zero };
     var sampling = data.sampling[data.sampling.length - 1];
     return {
         guid: guid,
-        serialNumber: serialNumber,
         data: data,
         params: params,
         samplingInfo: {
@@ -163,12 +162,12 @@ function getQueryBox(data, queryBox) {
         default: return data.dataBox;
     }
 }
-function createQueryContext(data, params, guid, serialNumber) {
+function createQueryContext(data, params, guid) {
     var inputQueryBox = getQueryBox(data, params.box);
     var queryBox;
     if (!data.header.spacegroup.isPeriodic) {
         if (!Box.areIntersecting(data.dataBox, inputQueryBox)) {
-            return emptyQueryContext(data, params, guid, serialNumber);
+            return emptyQueryContext(data, params, guid);
         }
         queryBox = Box.intersect(data.dataBox, inputQueryBox);
     }
@@ -180,10 +179,9 @@ function createQueryContext(data, params, guid, serialNumber) {
     }
     var samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.precision);
     if (samplingInfo.blocks.length === 0)
-        return emptyQueryContext(data, params, guid, serialNumber);
+        return emptyQueryContext(data, params, guid);
     return {
         guid: guid,
-        serialNumber: serialNumber,
         data: data,
         params: params,
         samplingInfo: samplingInfo,
@@ -198,7 +196,7 @@ function allocateResult(query) {
         query.result.values.push(DataFormat.createValueArray(query.data.header.valueType, size));
     }
 }
-function _execute(file, params, guid, serialNumber, outputProvider) {
+function _execute(file, params, guid, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
         var data, output, query, e_1;
         return __generator(this, function (_a) {
@@ -211,7 +209,7 @@ function _execute(file, params, guid, serialNumber, outputProvider) {
                 case 2:
                     _a.trys.push([2, 5, 6, 7]);
                     // Step 1b: Create query context
-                    query = createQueryContext(data, params, guid, serialNumber);
+                    query = createQueryContext(data, params, guid);
                     if (!!query.result.isEmpty) return [3 /*break*/, 4];
                     // Step 3a: Allocate space for result data
                     allocateResult(query);
@@ -230,7 +228,7 @@ function _execute(file, params, guid, serialNumber, outputProvider) {
                 case 5:
                     e_1 = _a.sent();
                     if (!query)
-                        query = emptyQueryContext(data, params, guid, serialNumber);
+                        query = emptyQueryContext(data, params, guid);
                     query.result.error = "" + e_1;
                     query.result.isEmpty = true;
                     query.result.values = void 0;
@@ -268,15 +266,14 @@ function queryBoxToString(queryBox) {
 }
 function execute(params, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
-        var start, guid, serialNumber, sourceFile, e_2;
+        var start, guid, sourceFile, e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     start = getTime();
                     State_1.State.pendingQueries++;
                     guid = generateUUID();
-                    serialNumber = State_1.State.querySerial++;
-                    params.precision = Math.min(Math.max(0, params.precision), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+                    params.precision = Math.min(Math.max(0, params.precision | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
                     Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + ",precision=" + params.precision + "," + queryBoxToString(params.box));
                     sourceFile = void 0;
                     _a.label = 1;
@@ -285,7 +282,7 @@ function execute(params, outputProvider) {
                     return [4 /*yield*/, File.openRead(params.sourceFilename)];
                 case 2:
                     sourceFile = _a.sent();
-                    return [4 /*yield*/, _execute(sourceFile, params, guid, serialNumber, outputProvider)];
+                    return [4 /*yield*/, _execute(sourceFile, params, guid, outputProvider)];
                 case 3:
                     _a.sent();
                     return [2 /*return*/, true];

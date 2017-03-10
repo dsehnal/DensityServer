@@ -84,7 +84,7 @@ function query(src, id, asBinary, box) {
                         box: box,
                         precision: 2
                     };
-                    res = function () { return wrapResponse("g:/test/" + Api.getOutputFilename(src, id, params.asBinary, params.box)); };
+                    res = function () { return wrapResponse("g:/test/" + Api.getOutputFilename(src, id, params)); };
                     return [4 /*yield*/, Api.queryBox(params, res)];
                 case 1:
                     _a.sent();

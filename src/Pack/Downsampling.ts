@@ -134,7 +134,6 @@ function downsampleBuffer(kernel: Data.Kernel, source: Data.Sampling, target: Da
     }
 
     target.blocks.slicesWritten++;
-    //target.blocks.isFull = target.blocks.slicesWritten === blockSize;
 }
 
 /** 

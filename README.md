@@ -91,10 +91,7 @@ Consuming the Data
 
 The data can be consumed in any (modern) browser using the [CIFTools.js library](https://github.com/dsehnal/CIFTools.js) (or any other piece of code that can read text or binary CIF).
 
-- Each data channel (e.g. 2Fo-Fc and Fo-Fc for x-ray data) is stored as a separate data block.
-- The order of raw values in the ``_volume_data_3d.values`` field is the same as in the  [CCP4 format](http://www.ccp4.ac.uk/html/maplib.html#description) with regards to the ``_volume_data_3d_info.axis_order`` and ``_volume_data_3d_info.sample_count`` (equivalent to extent in CCP4 format).
-- The stored region is described in the fractional coordinates in the fields ``_volume_data_3d_info.origin`` and ``_volume_data_3d_info.dimensions``.
-- Spacegroup parameters are given by the fields ``_volume_data_3d_info.spacegroup_number``, ``_volume_data_3d_info.spacegroup_cell_size``, and ``_volume_data_3d_info.spacegroup_cell_angles``.
+The [Data Format](docs/DataFormat.md) document gives a detailed description of the server response format.
 
 As a reference/example of the server usage, please see the implementation in [LiteMol](https://github.com/dsehnal/LiteMol) ([CIF.ts + Data.ts](https://github.com/dsehnal/LiteMol/tree/master/src/lib/Core/Formats/Density), [UI](https://github.com/dsehnal/LiteMol/tree/master/src/Viewer/Extensions/DensityStreaming)).
 

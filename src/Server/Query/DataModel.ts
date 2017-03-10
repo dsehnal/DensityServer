@@ -65,7 +65,6 @@ export interface QuerySamplingInfo {
 
 export interface QueryContext {
     guid: string,
-    serialNumber: number,
     data: DataContext,
     params: QueryParams,    
     samplingInfo: QuerySamplingInfo,

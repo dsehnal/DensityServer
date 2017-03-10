@@ -14,7 +14,7 @@ let config = {
 
 function printHelp() {
     let help = [
-        `DensityServer Packer ${VERSION}, (c) 2016 David Sehnal`,
+        `DensityServer Packer ${VERSION}, (c) 2016 - now, David Sehnal`,
         ``,
         `The input data must be CCP4/MAP mode 2 (32-bit floats) files.`,
         ``,
