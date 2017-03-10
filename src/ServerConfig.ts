@@ -27,12 +27,7 @@ const Config = {
             4 * 1024 * 1024,
             8 * 1024 * 1024,
             16 * 1024 * 1024 // ~ 256*256*256
-        ],
-
-        /** 
-         * The maximum number of concurrent queries before the server returns 503 Service Unavailable.
-         */
-        maxQueueLength: 32
+        ]
     },
 
     /**
