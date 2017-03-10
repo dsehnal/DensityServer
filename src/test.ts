@@ -68,8 +68,8 @@ async function run() {
     await query('emd', '8116', true, { kind: 'Cell' }, 2);
     await query('emd', '8116', true, { kind: 'Cell' }, 3);
     await query('emd', '8116', true, { kind: 'Cell' }, 4);
-    await query('emd', '8116', true, { kind: 'Cell' }, 5);
-    await query('emd', '8116', true, { kind: 'Cell' }, 6);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 5);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 6);
 
     await query('xray', '1cbs', false, { 
         kind: 'Fractional',

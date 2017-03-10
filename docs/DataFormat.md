@@ -65,18 +65,6 @@ _volume_data_3d_info.dimensions[1]                1
 _volume_data_3d_info.dimensions[2]                1 
 ```
 
-### Value type
-
-Determines if the values in  ``_volume_data_3d.values`` are ``absolute`` or ``relative``. The conversion 
-is defined as ``absolute = mean_sampled + sigma_sampled * relative``.
-
-The reason for providing ``relative`` values is that downsampling changes the absolute range of values while 
-the relative ratio is somewhat preserved.
-
-```
-_volume_data_3d_info.value_type                   relative 
-```
-
 ### Sample rate
 
 Determines how many values of the original input data were collapsed in to 1 value.
@@ -109,7 +97,7 @@ _volume_data_3d_info.spacegroup_cell_angles[2]    90
 
 ### Values info
 
-Contains mean, standard deviation, min, and max values for the 
+Contains mean, standard deviation, min, and max values for the _entire_ (i.e. not just the slice present in response)
 original and the downsampled data. Both types of values are present 
 so that relative iso-levels can be estimated when sampling changes between queries.
 
@@ -127,9 +115,6 @@ _volume_data_3d_info.max_sampled                  3.533172
 ### Values
 
 The values are stored in the ``_volume_data_3d.values`` loop containg ``sample_count[0] * sample_count[1] * sample_count[2]`` values. ``axis_order[0]`` is the axis that changes the fastest, ``axis_order[2]`` is the axis that changes the slowest, same as in the [CCP4 format](http://www.ccp4.ac.uk/html/maplib.html#description)).
-
-The values are either ``absolute`` or ``relative`` depending on the value of ``_volume_data_3d_info.value_type``. The conversion 
-is defined as ``absolute = _volume_data_3d_info.mean_sampled + _volume_data_3d_info.sigma_sampled * relative``.
 
 ```
 loop_

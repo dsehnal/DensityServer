@@ -58,15 +58,14 @@ const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
     int32<_vd3d_Ctx>('axis_order[1]', ctx => ctx.header.axisOrder[1]),
     int32<_vd3d_Ctx>('axis_order[2]', ctx => ctx.header.axisOrder[2]),
 
-    int32<_vd3d_Ctx>('origin[0]', ctx => ctx.grid.origin[0]),
-    int32<_vd3d_Ctx>('origin[1]', ctx => ctx.grid.origin[1]),
-    int32<_vd3d_Ctx>('origin[2]', ctx => ctx.grid.origin[2]),
+    float64<_vd3d_Ctx>('origin[0]', ctx => ctx.grid.origin[0]),
+    float64<_vd3d_Ctx>('origin[1]', ctx => ctx.grid.origin[1]),
+    float64<_vd3d_Ctx>('origin[2]', ctx => ctx.grid.origin[2]),
 
-    int32<_vd3d_Ctx>('dimensions[0]', ctx => ctx.grid.dimensions[0]),
-    int32<_vd3d_Ctx>('dimensions[1]', ctx => ctx.grid.dimensions[1]),
-    int32<_vd3d_Ctx>('dimensions[2]', ctx => ctx.grid.dimensions[2]),
+    float64<_vd3d_Ctx>('dimensions[0]', ctx => ctx.grid.dimensions[0]),
+    float64<_vd3d_Ctx>('dimensions[1]', ctx => ctx.grid.dimensions[1]),
+    float64<_vd3d_Ctx>('dimensions[2]', ctx => ctx.grid.dimensions[2]),
 
-    string<_vd3d_Ctx>('value_type', ctx => ctx.sampleRate <= 1 ? 'absolute' : 'relative'),
     int32<_vd3d_Ctx>('sample_rate', ctx => ctx.sampleRate),
     int32<_vd3d_Ctx>('sample_count[0]', ctx => ctx.grid.sampleCount[0]),
     int32<_vd3d_Ctx>('sample_count[1]', ctx => ctx.grid.sampleCount[1]),

@@ -44,7 +44,7 @@ var Coords = require("../Algebra/Coordinate");
 var File = require("../../Common/File");
 function compose(query) {
     return __awaiter(this, void 0, void 0, function () {
-        var _i, _a, block, channelIndex;
+        var _i, _a, block;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -60,13 +60,7 @@ function compose(query) {
                 case 3:
                     _i++;
                     return [3 /*break*/, 1];
-                case 4:
-                    if (query.samplingInfo.sampling.rate > 1) {
-                        for (channelIndex = 0; channelIndex < query.values.length; channelIndex++) {
-                            dataChannelToRelativeValues(query, channelIndex);
-                        }
-                    }
-                    return [2 /*return*/];
+                case 4: return [2 /*return*/];
             }
         });
     });
@@ -153,12 +147,4 @@ function fillBlock(query, block) {
             }
         });
     });
-}
-/** To roughly preserve "relative iso-level" the values are stored relative to mean and sigma */
-function dataChannelToRelativeValues(query, channelIndex) {
-    var _a = query.data.header.sampling[query.samplingInfo.sampling.index].valuesInfo[channelIndex], mean = _a.mean, sigma = _a.sigma;
-    var values = query.values[channelIndex];
-    for (var i = 0, _ii = values.length; i < _ii; i++) {
-        values[i] = (values[i] - mean) / sigma;
-    }
 }

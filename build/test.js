@@ -130,18 +130,16 @@ function run() {
                     return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 4)];
                 case 8:
                     _a.sent();
-                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 5)];
-                case 9:
-                    _a.sent();
-                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 6)];
-                case 10:
-                    _a.sent();
+                    // await query('emd', '8116', true, { kind: 'Cell' }, 5);
+                    // await query('emd', '8116', true, { kind: 'Cell' }, 6);
                     return [4 /*yield*/, query('xray', '1cbs', false, {
                             kind: 'Fractional',
                             a: Coordinate.fractional(0, 0, 0),
                             b: Coordinate.fractional(6, 6, 6)
                         })];
-                case 11:
+                case 9:
+                    // await query('emd', '8116', true, { kind: 'Cell' }, 5);
+                    // await query('emd', '8116', true, { kind: 'Cell' }, 6);
                     _a.sent();
                     return [2 /*return*/];
             }

@@ -12,11 +12,6 @@ export default async function compose(query: Data.QueryContext.Data) {
     for (const block of query.samplingInfo.blocks) {
         await fillBlock(query, block);
     }
-    if (query.samplingInfo.sampling.rate > 1) {
-        for (let channelIndex = 0; channelIndex < query.values.length; channelIndex++) {
-            dataChannelToRelativeValues(query, channelIndex);
-        }
-    }
 }
 
 async function readBlock(query: Data.QueryContext.Data, coord: Coords.Grid<'Block'>, blockBox: Box.Fractional): Promise<Data.BlockData> {
@@ -89,14 +84,5 @@ async function fillBlock(query: Data.QueryContext.Data, block: Data.QueryBlock) 
         const queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.samplingInfo.gridDomain));
 
         fillData(query, blockData, blockGridBox, queryGridBox);
-    }
-}
-
-/** To roughly preserve "relative iso-level" the values are stored relative to mean and sigma */
-function dataChannelToRelativeValues(query: Data.QueryContext.Data, channelIndex: number) {
-    const { mean, sigma } = query.data.header.sampling[query.samplingInfo.sampling.index].valuesInfo[channelIndex];
-    const values = query.values[channelIndex];
-    for (let i = 0, _ii = values.length; i < _ii; i++) {
-        values[i] = (values[i] - mean) / sigma;
     }
 }
