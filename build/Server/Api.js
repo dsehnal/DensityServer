@@ -44,14 +44,14 @@ var Logger = require("./Utils/Logger");
 var DataFormat = require("../Common/DataFormat");
 var ServerConfig_1 = require("../ServerConfig");
 function getOutputFilename(source, id, _a) {
-    var asBinary = _a.asBinary, box = _a.box, precision = _a.precision;
+    var asBinary = _a.asBinary, box = _a.box, detail = _a.detail;
     function n(s) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase(); }
     function r(v) { return Math.round(10 * v) / 10; }
-    var prec = Math.min(Math.max(0, precision | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+    var det = Math.min(Math.max(0, detail | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     var boxInfo = box.kind === 'Cell'
         ? 'cell'
         : (box.kind === 'Cartesian' ? 'cartn' : 'frac') + "_" + r(box.a[0]) + "_" + r(box.a[1]) + "_" + r(box.a[2]) + "_" + r(box.b[0]) + "_" + r(box.b[1]) + "_" + r(box.b[2]);
-    return n(source) + "_" + n(id) + "-" + boxInfo + "." + (asBinary ? 'bcif' : 'cif') + "_p" + prec;
+    return n(source) + "_" + n(id) + "-" + boxInfo + "_d" + det + "." + (asBinary ? 'bcif' : 'cif');
 }
 exports.getOutputFilename = getOutputFilename;
 /** Reads the header and includes information about available detail levels */

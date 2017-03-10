@@ -18,7 +18,7 @@ export default function encode(query: Data.QueryContext, output: CIF.OutputStrea
 }
 
 interface ResultContext {
-    query: Data.QueryContext,
+    query: Data.QueryContext.Data,
     channelIndex: number
 }
 
@@ -121,7 +121,7 @@ function _volume_data_3d_number(ctx: DataFormat.ValueArray, i: number): number {
 }
 
 function _volume_data_3d(ctx: ResultContext) {
-    let data = ctx.query.result.values![ctx.channelIndex];
+    let data = ctx.query.values[ctx.channelIndex];
 
     let encoder: E;
     let typedArray: any;
@@ -179,9 +179,9 @@ const _density_server_result_fields: FieldDesc<Data.QueryContext>[] = [
     string<Data.QueryContext>('server_version', ctx => VERSION),        
     string<Data.QueryContext>('datetime_utc', ctx => new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')),
     string<Data.QueryContext>('guid', ctx => ctx.guid),
-    string<Data.QueryContext>('is_empty', ctx => ctx.result.isEmpty ? 'yes' : 'no'),
-    string<Data.QueryContext>('has_error', ctx => ctx.result.error ? 'yes' : 'no'),
-    string<Data.QueryContext>('error', ctx => ctx.result.error!),
+    string<Data.QueryContext>('is_empty', ctx => ctx.kind === 'Empty' || ctx.kind === 'Error' ? 'yes' : 'no'),
+    string<Data.QueryContext>('has_error', ctx => ctx.kind === 'Error' ? 'yes' : 'no'),
+    string<Data.QueryContext>('error', ctx => ctx.kind === 'Error' ? ctx.message : '', (ctx) => ctx.kind === 'Error'),
     string<Data.QueryContext>('query_source_id', ctx => ctx.params.sourceId),
     string<Data.QueryContext>('query_type', ctx => 'box'),
     string<Data.QueryContext>('query_box_type', ctx => ctx.params.box.kind.toLowerCase()),
@@ -208,8 +208,11 @@ function write(writer: Writer, query: Data.QueryContext) {
     writer.startDataBlock('SERVER');
     writer.writeCategory(_density_server_result, [query]);
 
-    const result = query.result;
-    if (!result.isEmpty && !result.error && result.values) {
+    switch (query.kind) {
+        case 'Data': 
+    }
+
+    if (query.kind === 'Data') {
         const header = query.data.header;
         for (let i = 0; i < header.channels.length; i++) {
             writer.startDataBlock(header.channels[i]);

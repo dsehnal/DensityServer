@@ -82,7 +82,21 @@ function getSourceInfo(req: express.Request) {
     };
 }
 
+function validateSourndAndId(req: express.Request, res: express.Response) {
+    if (!req.params.source || req.params.source.length > 32 || !req.params.id || req.params.source.id > 32) {
+        res.writeHead(404);
+        res.end();
+        Logger.errorPlain(`Query Box`, 'Invalid source and/or id');
+        return true;
+    }
+    return false;
+}
+
 async function getHeader(req: express.Request, res: express.Response) {
+    if (validateSourndAndId(req, res)) {
+        return;
+    }
+
     let headerWritten = false;
 
     try {
@@ -109,7 +123,7 @@ function getQueryParams(req: express.Request, isCell: boolean): Data.QueryParams
     const a = [+req.params.a1, +req.params.a2, +req.params.a3]; 
     const b = [+req.params.b1, +req.params.b2, +req.params.b3];
 
-    const precision = Math.min(Math.max(0, (+req.query.precision) | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1)
+    const detail = Math.min(Math.max(0, (+req.query.detail) | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1)
     const isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
 
     const box: Data.QueryParamsBox = isCell
@@ -126,11 +140,15 @@ function getQueryParams(req: express.Request, isCell: boolean): Data.QueryParams
         sourceId: `${req.params.source}/${req.params.id}`,
         asBinary, 
         box, 
-        precision
+        detail
     };    
 }
 
 async function queryBox(req: express.Request, res: express.Response, params: Data.QueryParams) {   
+    if (validateSourndAndId(req, res)) {
+        return;
+    }
+
     const outputFilename = Api.getOutputFilename(req.params.source, req.params.id, params);
     const response = wrapResponse(outputFilename, res);
     

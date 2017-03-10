@@ -57,8 +57,8 @@ function execute(params, outputProvider) {
                     start = getTime();
                     State_1.State.pendingQueries++;
                     guid = generateUUID();
-                    params.precision = Math.min(Math.max(0, params.precision | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
-                    Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + ",precision=" + params.precision + "," + queryBoxToString(params.box));
+                    params.detail = Math.min(Math.max(0, params.detail | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+                    Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + ",detail=" + params.detail + "," + queryBoxToString(params.box));
                     sourceFile = void 0;
                     _a.label = 1;
                 case 1:
@@ -174,22 +174,7 @@ function pickSampling(data, queryBox, forcedLevel, precision) {
     return createQuerySampling(data, data.sampling[data.sampling.length - 1], queryBox);
 }
 function emptyQueryContext(data, params, guid) {
-    console.log('empty');
-    var zero = Coords.fractional(0, 0, 0);
-    var fractionalBox = { a: zero, b: zero };
-    var sampling = data.sampling[data.sampling.length - 1];
-    return {
-        guid: guid,
-        data: data,
-        params: params,
-        samplingInfo: {
-            sampling: sampling,
-            fractionalBox: fractionalBox,
-            gridDomain: Box.fractionalToDomain(fractionalBox, 'Query', sampling.dataDomain.delta),
-            blocks: []
-        },
-        result: { error: void 0, isEmpty: true }
-    };
+    return { kind: 'Empty', guid: guid, params: params, data: data };
 }
 function getQueryBox(data, queryBox) {
     switch (queryBox.kind) {
@@ -197,6 +182,13 @@ function getQueryBox(data, queryBox) {
         case 'Fractional': return Box.fractionalBoxReorderAxes(queryBox, data.header.axisOrder);
         default: return data.dataBox;
     }
+}
+function allocateValues(domain, numChannels, valueType) {
+    var values = [];
+    for (var i = 0; i < numChannels; i++) {
+        values[values.length] = DataFormat.createValueArray(valueType, domain.sampleVolume);
+    }
+    return values;
 }
 function createQueryContext(data, params, guid) {
     var inputQueryBox = getQueryBox(data, params.box);
@@ -213,42 +205,33 @@ function createQueryContext(data, params, guid) {
     if (Box.dimensions(queryBox).some(function (d) { return isNaN(d) || d > ServerConfig_1.default.limits.maxFractionalBoxDimension; })) {
         throw "The query box is too big.";
     }
-    var samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.precision);
+    var samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.detail);
     if (samplingInfo.blocks.length === 0)
         return emptyQueryContext(data, params, guid);
     return {
+        kind: 'Data',
         guid: guid,
         data: data,
         params: params,
         samplingInfo: samplingInfo,
-        result: { isEmpty: false }
+        values: allocateValues(samplingInfo.gridDomain, data.header.channels.length, data.header.valueType)
     };
-}
-function allocateResult(query) {
-    var size = query.samplingInfo.gridDomain.sampleVolume;
-    var numChannels = query.data.header.channels.length;
-    query.result.values = [];
-    for (var i = 0; i < numChannels; i++) {
-        query.result.values.push(DataFormat.createValueArray(query.data.header.valueType, size));
-    }
 }
 function _execute(file, params, guid, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
-        var data, output, query, e_2;
+        var output, data, query, e_2, query;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, createDataContext(file)];
-                case 1:
-                    data = _a.sent();
+                case 0:
                     output = void 0;
-                    _a.label = 2;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 5, 6, 7]);
+                    return [4 /*yield*/, createDataContext(file)];
                 case 2:
-                    _a.trys.push([2, 5, 6, 7]);
-                    // Step 1b: Create query context
+                    data = _a.sent();
                     query = createQueryContext(data, params, guid);
-                    if (!!query.result.isEmpty) return [3 /*break*/, 4];
-                    // Step 3a: Allocate space for result data
-                    allocateResult(query);
+                    if (!(query.kind === 'Data')) return [3 /*break*/, 4];
                     // Step 3b: Compose the result data
                     return [4 /*yield*/, Compose_1.default(query)];
                 case 3:
@@ -263,11 +246,7 @@ function _execute(file, params, guid, outputProvider) {
                     return [3 /*break*/, 7];
                 case 5:
                     e_2 = _a.sent();
-                    if (!query)
-                        query = emptyQueryContext(data, params, guid);
-                    query.result.error = "" + e_2;
-                    query.result.isEmpty = true;
-                    query.result.values = void 0;
+                    query = { kind: 'Error', guid: guid, params: params, message: "" + e_2 };
                     try {
                         if (!output)
                             output = outputProvider();
@@ -297,6 +276,6 @@ function queryBoxToString(queryBox) {
             var r = roundCoord;
             return "box-type=" + queryBox.kind + ",box-a=(" + r(a[0]) + "," + r(a[1]) + "," + r(a[2]) + "),box-b=(" + r(b[0]) + "," + r(b[1]) + "," + r(b[2]) + ")";
         default:
-            return queryBox.kind;
+            return "box-type=" + queryBox.kind;
     }
 }

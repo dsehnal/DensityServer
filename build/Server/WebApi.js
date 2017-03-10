@@ -110,12 +110,24 @@ function getSourceInfo(req) {
         id: req.params.source + "/" + req.params.id
     };
 }
+function validateSourndAndId(req, res) {
+    if (!req.params.source || req.params.source.length > 32 || !req.params.id || req.params.source.id > 32) {
+        res.writeHead(404);
+        res.end();
+        Logger.errorPlain("Query Box", 'Invalid source and/or id');
+        return true;
+    }
+    return false;
+}
 function getHeader(req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var headerWritten, _a, filename, id, header, e_1;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
+                    if (validateSourndAndId(req, res)) {
+                        return [2 /*return*/];
+                    }
                     headerWritten = false;
                     _b.label = 1;
                 case 1:
@@ -150,7 +162,7 @@ function getHeader(req, res) {
 function getQueryParams(req, isCell) {
     var a = [+req.params.a1, +req.params.a2, +req.params.a3];
     var b = [+req.params.b1, +req.params.b2, +req.params.b3];
-    var precision = Math.min(Math.max(0, (+req.query.precision) | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+    var detail = Math.min(Math.max(0, (+req.query.detail) | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     var isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
     var box = isCell
         ? { kind: 'Cell' }
@@ -164,7 +176,7 @@ function getQueryParams(req, isCell) {
         sourceId: req.params.source + "/" + req.params.id,
         asBinary: asBinary,
         box: box,
-        precision: precision
+        detail: detail
     };
 }
 function queryBox(req, res, params) {
@@ -173,6 +185,9 @@ function queryBox(req, res, params) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    if (validateSourndAndId(req, res)) {
+                        return [2 /*return*/];
+                    }
                     outputFilename = Api.getOutputFilename(req.params.source, req.params.id, params);
                     response = wrapResponse(outputFilename, res);
                     _a.label = 1;

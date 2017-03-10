@@ -86,7 +86,7 @@ function _volume_data_3d_number(ctx, i) {
     return ctx[i];
 }
 function _volume_data_3d(ctx) {
-    var data = ctx.query.result.values[ctx.channelIndex];
+    var data = ctx.query.values[ctx.channelIndex];
     var encoder;
     var typedArray;
     if (ctx.query.data.header.valueType === DataFormat.ValueType.Float32) {
@@ -140,9 +140,9 @@ var _density_server_result_fields = [
     string('server_version', function (ctx) { return Version_1.default; }),
     string('datetime_utc', function (ctx) { return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); }),
     string('guid', function (ctx) { return ctx.guid; }),
-    string('is_empty', function (ctx) { return ctx.result.isEmpty ? 'yes' : 'no'; }),
-    string('has_error', function (ctx) { return ctx.result.error ? 'yes' : 'no'; }),
-    string('error', function (ctx) { return ctx.result.error; }),
+    string('is_empty', function (ctx) { return ctx.kind === 'Empty' || ctx.kind === 'Error' ? 'yes' : 'no'; }),
+    string('has_error', function (ctx) { return ctx.kind === 'Error' ? 'yes' : 'no'; }),
+    string('error', function (ctx) { return ctx.kind === 'Error' ? ctx.message : ''; }, function (ctx) { return ctx.kind === 'Error'; }),
     string('query_source_id', function (ctx) { return ctx.params.sourceId; }),
     string('query_type', function (ctx) { return 'box'; }),
     string('query_box_type', function (ctx) { return ctx.params.box.kind.toLowerCase(); }),
@@ -166,8 +166,10 @@ function _density_server_result(ctx) {
 function write(writer, query) {
     writer.startDataBlock('SERVER');
     writer.writeCategory(_density_server_result, [query]);
-    var result = query.result;
-    if (!result.isEmpty && !result.error && result.values) {
+    switch (query.kind) {
+        case 'Data':
+    }
+    if (query.kind === 'Data') {
         var header = query.data.header;
         for (var i = 0; i < header.channels.length; i++) {
             writer.startDataBlock(header.channels[i]);

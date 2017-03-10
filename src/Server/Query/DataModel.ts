@@ -50,7 +50,7 @@ export interface QueryParams {
     sourceId: string,
     asBinary: boolean,
     box: QueryParamsBox,
-    precision: number,
+    detail: number,
     forcedSamplingLevel?: number
 }
 
@@ -63,16 +63,11 @@ export interface QuerySamplingInfo {
     blocks: QueryBlock[]
 }
 
-export interface QueryContext {
-    guid: string,
-    data: DataContext,
-    params: QueryParams,    
-    samplingInfo: QuerySamplingInfo,
-    result: QueryResult
-}
+export type QueryContext = QueryContext.Error | QueryContext.Empty | QueryContext.Data
 
-export interface QueryResult {
-    isEmpty: boolean,
-    error?: string,
-    values?: DataFormat.ValueArray[]
+export namespace QueryContext {
+    type Base = { guid: string, params: QueryParams }
+    export type Error = { kind: 'Error', message: string } & Base
+    export type Empty = { kind: 'Empty', data: DataContext } & Base
+    export type Data = { kind: 'Data', data: DataContext, samplingInfo: QuerySamplingInfo, values: DataFormat.ValueArray[] } & Base
 }

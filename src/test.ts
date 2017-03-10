@@ -38,13 +38,13 @@ function wrapResponse(fn: string) {
     return w;
 }
 
-async function query(src: string, id: string, asBinary: boolean, box: Data.QueryParamsBox) {
+async function query(src: string, id: string, asBinary: boolean, box: Data.QueryParamsBox, detail: number = 0) {
     const params: Data.QueryParams = {
         sourceFilename: `g:/test/mdb/${src}-${id}.mdb`,
         sourceId: `${src}/${id}`,
         asBinary,
         box,
-        precision: 2
+        detail
     };
     const res = () => wrapResponse(`g:/test/${Api.getOutputFilename(src, id, params)}`);
     await Api.queryBox(params, res)
@@ -63,7 +63,13 @@ async function run() {
     });
 
     await query('emd', '8116', false, { kind: 'Cell' });
-    await query('emd', '8116', true, { kind: 'Cell' });
+    await query('emd', '8116', true, { kind: 'Cell' }, 0);
+    await query('emd', '8116', true, { kind: 'Cell' }, 1);
+    await query('emd', '8116', true, { kind: 'Cell' }, 2);
+    await query('emd', '8116', true, { kind: 'Cell' }, 3);
+    await query('emd', '8116', true, { kind: 'Cell' }, 4);
+    await query('emd', '8116', true, { kind: 'Cell' }, 5);
+    await query('emd', '8116', true, { kind: 'Cell' }, 6);
 
     await query('xray', '1cbs', false, { 
         kind: 'Fractional',

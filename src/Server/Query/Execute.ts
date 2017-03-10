@@ -21,8 +21,8 @@ export default async function execute(params: Data.QueryParams, outputProvider: 
     State.pendingQueries++;
 
     const guid = generateUUID();
-    params.precision = Math.min(Math.max(0, params.precision | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);        
-    Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},precision=${params.precision},${queryBoxToString(params.box)}`);
+    params.detail = Math.min(Math.max(0, params.detail | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);        
+    Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},detail=${params.detail},${queryBoxToString(params.box)}`);
     
     let sourceFile: number | undefined = void 0;
     try {
@@ -132,22 +132,7 @@ function pickSampling(data: Data.DataContext, queryBox: Box.Fractional, forcedLe
 }
 
 function emptyQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string): Data.QueryContext {
-    console.log('empty');
-    const zero = Coords.fractional(0,0,0);
-    const fractionalBox = { a: zero, b: zero };
-    const sampling = data.sampling[data.sampling.length - 1];
-    return {
-        guid,
-        data,
-        params,
-        samplingInfo: { 
-            sampling, 
-            fractionalBox,
-            gridDomain: Box.fractionalToDomain<'Query'>(fractionalBox, 'Query', sampling.dataDomain.delta),
-            blocks: []
-        },
-        result: { error: void 0, isEmpty: true } as any
-    }
+    return { kind: 'Empty', guid, params, data }    
 }
 
 function getQueryBox(data: Data.DataContext, queryBox: Data.QueryParamsBox) {
@@ -156,6 +141,14 @@ function getQueryBox(data: Data.DataContext, queryBox: Data.QueryParamsBox) {
         case 'Fractional': return Box.fractionalBoxReorderAxes(queryBox, data.header.axisOrder);            
         default: return data.dataBox;
     }
+}
+
+function allocateValues(domain: Coords.GridDomain<'Query'>, numChannels: number, valueType: DataFormat.ValueType) {
+    const values = [];
+    for (let i = 0; i < numChannels; i++) {
+        values[values.length] = DataFormat.createValueArray(valueType, domain.sampleVolume);
+    }
+    return values;
 }
 
 function createQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string): Data.QueryContext {
@@ -174,42 +167,32 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
         throw `The query box is too big.`;
     }
 
-    const samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.precision);
+    const samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.detail);
 
     if (samplingInfo.blocks.length === 0) return emptyQueryContext(data, params, guid);
 
     return {
+        kind: 'Data',
         guid,
         data,
         params,
         samplingInfo,
-        result: { isEmpty: false }
+        values: allocateValues(samplingInfo.gridDomain, data.header.channels.length, data.header.valueType)
     }
 }
 
-function allocateResult(query: Data.QueryContext) {
-    const size = query.samplingInfo.gridDomain.sampleVolume;
-    const numChannels = query.data.header.channels.length;
-    query.result.values = [];
-    for (let i = 0; i < numChannels; i++) {
-        query.result.values.push(DataFormat.createValueArray(query.data.header.valueType, size));
-    }
-}
 
 async function _execute(file: number, params: Data.QueryParams, guid: string, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
-    // Step 1a: Create data context
-    const data = await createDataContext(file);
 
     let output: any = void 0;
-    let query;
-
     try {
-        // Step 1b: Create query context
-        query = createQueryContext(data, params, guid);
+        // Step 1a: Create data context
+        const data = await createDataContext(file);
 
-        if (!query.result.isEmpty) {
-            // Step 3a: Allocate space for result data
-            allocateResult(query);
+        // Step 1b: Create query context
+        const query = createQueryContext(data, params, guid);
+
+        if (query.kind === 'Data') {
             // Step 3b: Compose the result data
             await compose(query);
         }
@@ -219,10 +202,7 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, ou
         encode(query, output);
         output.end();
     } catch (e) {
-        if (!query) query = emptyQueryContext(data, params, guid);
-        query.result.error = `${e}`;
-        query.result.isEmpty = true;
-        query.result.values = void 0;
+        const query: Data.QueryContext = { kind: 'Error', guid, params, message: `${e}` }
         try {
             if (!output) output = outputProvider();
             encode(query, output);
@@ -247,6 +227,6 @@ function queryBoxToString(queryBox: Data.QueryParamsBox) {
             const r = roundCoord;
             return `box-type=${queryBox.kind},box-a=(${r(a[0])},${r(a[1])},${r(a[2])}),box-b=(${r(b[0])},${r(b[1])},${r(b[2])})`;
         default:
-            return queryBox.kind;
+            return `box-type=${queryBox.kind}`;
     }
 }

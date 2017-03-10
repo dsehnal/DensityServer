@@ -5,10 +5,10 @@
 import VERSION from './Version'
 import ServerConfig from '../ServerConfig'
 
-function precision(i: number) {
+function detail(i: number) {
      return `<span class='id'>${i}</span><small> (${Math.round(100 * ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel[i] / 1000 / 1000) / 100 }M voxels)</small>`;
 }
-const precMax = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1;
+const detailMax = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1;
 
 export default `
 <!DOCTYPE html>
@@ -118,10 +118,10 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
     <td>Determines the coordinate space the query is in. Can be <span class='id'>cartesian</span> or <span class='id'>fractional</span>. An optional argument, default values is <span class='id'>cartesian</span>.</td>
     </tr>
     <tr>
-      <td class="cs-docs-param-name">precision</td>
+      <td class="cs-docs-param-name">detail</td>
       <td>
-        Determines the maximum number of voxels the query can return. Possible values are in the range from ${precision(0)} to ${precision(precMax)}. 
-        Default value is <span class='id'>0</span>.
+        Determines the maximum number of voxels the query can return. Possible values are in the range from ${detail(0)} to ${detail(detailMax)}. 
+        Default value is <span class='id'>0</span>. Note: different detail levels might lead to the same result.
       </td>
     </tr>
     </tbody></table>
@@ -133,7 +133,7 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
   <small>Returns (downsampled) volume data for the entire "data cell". For X-ray data, returns unit cell of 2Fo-Fc and Fo-Fc volumes, for EM data returns everything.</small></h2>
   <div style="margin: 24px 24px 0 24px">    
     <h4>Example</h4>
-    <a href="/DensityServer/emd/8116/cell?precision=1" class="cs-docs-template-link" target="_blank" rel="nofollow">/DensityServer/emd/8116/cell?precision=1</a><br>
+    <a href="/DensityServer/emd/8116/cell?detail=1" class="cs-docs-template-link" target="_blank" rel="nofollow">/DensityServer/emd/8116/cell?detail=1</a><br>
     <h4>Parameters</h4>
     <table cellpadding="0" cellspacing="0" style='width: 100%'>
     <tbody><tr><th style='width: 80px'>Name</th><th>Description</th></tr>
@@ -150,10 +150,10 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
     <td>Determines if text based <span class='id'>CIF</span> or binary <span class='id'>BinaryCIF</span> encoding is used. An optional argument, default is <span class='id'>BinaryCIF</span> encoding.</td>
     </tr>
     <tr>
-      <td class="cs-docs-param-name">precision</td>
+      <td class="cs-docs-param-name">detail</td>
       <td>
-        Determines the maximum number of voxels the query can return. Possible values are in the range from ${precision(0)} to ${precision(precMax)}. 
-        Default value is <span class='id'>0</span>.
+        Determines the maximum number of voxels the query can return. Possible values are in the range from ${detail(0)} to ${detail(detailMax)}. 
+        Default value is <span class='id'>0</span>. Note: different detail levels might lead to the same result.
       </td>
     </tr>
     </tbody></table>

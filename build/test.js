@@ -71,7 +71,8 @@ function wrapResponse(fn) {
     };
     return w;
 }
-function query(src, id, asBinary, box) {
+function query(src, id, asBinary, box, detail) {
+    if (detail === void 0) { detail = 0; }
     return __awaiter(this, void 0, void 0, function () {
         var params, res;
         return __generator(this, function (_a) {
@@ -82,7 +83,7 @@ function query(src, id, asBinary, box) {
                         sourceId: src + "/" + id,
                         asBinary: asBinary,
                         box: box,
-                        precision: 2
+                        detail: detail
                     };
                     res = function () { return wrapResponse("g:/test/" + Api.getOutputFilename(src, id, params)); };
                     return [4 /*yield*/, Api.queryBox(params, res)];
@@ -114,15 +115,33 @@ function run() {
                     return [4 /*yield*/, query('emd', '8116', false, { kind: 'Cell' })];
                 case 3:
                     _a.sent();
-                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' })];
+                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 0)];
                 case 4:
+                    _a.sent();
+                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 1)];
+                case 5:
+                    _a.sent();
+                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 2)];
+                case 6:
+                    _a.sent();
+                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 3)];
+                case 7:
+                    _a.sent();
+                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 4)];
+                case 8:
+                    _a.sent();
+                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 5)];
+                case 9:
+                    _a.sent();
+                    return [4 /*yield*/, query('emd', '8116', true, { kind: 'Cell' }, 6)];
+                case 10:
                     _a.sent();
                     return [4 /*yield*/, query('xray', '1cbs', false, {
                             kind: 'Fractional',
                             a: Coordinate.fractional(0, 0, 0),
                             b: Coordinate.fractional(6, 6, 6)
                         })];
-                case 5:
+                case 11:
                     _a.sent();
                     return [2 /*return*/];
             }

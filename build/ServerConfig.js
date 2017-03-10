@@ -25,12 +25,9 @@ var Config = {
             2 * 1024 * 1024,
             4 * 1024 * 1024,
             8 * 1024 * 1024,
-            16 * 1024 * 1024 // ~ 256*256*256
-        ],
-        /**
-         * The maximum number of concurrent queries before the server returns 503 Service Unavailable.
-         */
-        maxQueueLength: 32
+            16 * 1024 * 1024,
+            24 * 1024 * 1024
+        ]
     },
     /**
      * Specify the prefix of the API, i.e.

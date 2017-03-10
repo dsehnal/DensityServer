@@ -9,14 +9,14 @@ import * as Logger from './Utils/Logger'
 import * as DataFormat from '../Common/DataFormat'
 import ServerConfig from '../ServerConfig'
 
-export function getOutputFilename(source: string, id: string, { asBinary, box, precision }: Data.QueryParams) {
+export function getOutputFilename(source: string, id: string, { asBinary, box, detail }: Data.QueryParams) {
     function n(s: string) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase() }
     function r(v: number) { return Math.round(10 * v) / 10; }
-    const prec = Math.min(Math.max(0, precision | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+    const det = Math.min(Math.max(0, detail | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     const boxInfo = box.kind === 'Cell' 
         ? 'cell'
         : `${box.kind === 'Cartesian' ? 'cartn' : 'frac'}_${r(box.a[0])}_${r(box.a[1])}_${r(box.a[2])}_${r(box.b[0])}_${r(box.b[1])}_${r(box.b[2])}`;
-    return `${n(source)}_${n(id)}-${boxInfo}.${asBinary ? 'bcif' : 'cif'}_p${prec}`;
+    return `${n(source)}_${n(id)}-${boxInfo}_d${det}.${asBinary ? 'bcif' : 'cif'}`;
 }
 
 /** Reads the header and includes information about available detail levels */
