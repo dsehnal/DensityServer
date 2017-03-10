@@ -40,39 +40,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var File = require("../Common/File");
 var DataFormat = require("../Common/DataFormat");
-/** Fill a cube at position (u,v) with values from each of the channel */
-function fillCubeBuffer(ctx, sampling, u, v) {
-    var blockSize = ctx.blockSize, cubeBuffer = ctx.cubeBuffer;
-    var sampleCount = sampling.sampleCount;
-    var _a = sampling.blocks, buffers = _a.buffers, slicesWritten = _a.slicesWritten;
-    var elementSize = DataFormat.getValueByteSize(ctx.valueType);
-    var sizeH = sampleCount[0], sizeHK = sampleCount[0] * sampleCount[1];
-    var offsetH = u * blockSize, offsetK = v * blockSize;
-    var copyH = Math.min(blockSize, sampleCount[0] - offsetH) * elementSize, maxK = offsetK + Math.min(blockSize, sampleCount[1] - offsetK), maxL = slicesWritten;
-    var writeOffset = 0;
-    for (var _i = 0, buffers_1 = buffers; _i < buffers_1.length; _i++) {
-        var src = buffers_1[_i];
-        for (var l = 0; l < maxL; l++) {
-            for (var k = offsetK; k < maxK; k++) {
-                // copying the bytes direct is faster than using buffer.write* functions.
-                var start = (l * sizeHK + k * sizeH + offsetH) * elementSize;
-                src.copy(cubeBuffer, writeOffset, start, start + copyH);
-                writeOffset += copyH;
-            }
-        }
-    }
-    // flip the byte order if needed.
-    File.ensureLittleEndian(ctx.cubeBuffer, ctx.litteEndianCubeBuffer, writeOffset, elementSize, 0);
-    return writeOffset;
-}
-function updateProgress(progress, progressDone) {
-    var old = (100 * progress.current / progress.max).toFixed(0);
-    progress.current += progressDone;
-    var $new = (100 * progress.current / progress.max).toFixed(0);
-    if (old !== $new) {
-        process.stdout.write("\rWriting data...    " + $new + "%");
-    }
-}
 /** Converts a layer to blocks and writes them to the output file. */
 function writeBlockLayer(ctx, sampling) {
     return __awaiter(this, void 0, void 0, function () {
@@ -112,3 +79,36 @@ function writeBlockLayer(ctx, sampling) {
     });
 }
 exports.writeBlockLayer = writeBlockLayer;
+/** Fill a cube at position (u,v) with values from each of the channel */
+function fillCubeBuffer(ctx, sampling, u, v) {
+    var blockSize = ctx.blockSize, cubeBuffer = ctx.cubeBuffer;
+    var sampleCount = sampling.sampleCount;
+    var _a = sampling.blocks, buffers = _a.buffers, slicesWritten = _a.slicesWritten;
+    var elementSize = DataFormat.getValueByteSize(ctx.valueType);
+    var sizeH = sampleCount[0], sizeHK = sampleCount[0] * sampleCount[1];
+    var offsetH = u * blockSize, offsetK = v * blockSize;
+    var copyH = Math.min(blockSize, sampleCount[0] - offsetH) * elementSize, maxK = offsetK + Math.min(blockSize, sampleCount[1] - offsetK), maxL = slicesWritten;
+    var writeOffset = 0;
+    for (var _i = 0, buffers_1 = buffers; _i < buffers_1.length; _i++) {
+        var src = buffers_1[_i];
+        for (var l = 0; l < maxL; l++) {
+            for (var k = offsetK; k < maxK; k++) {
+                // copying the bytes direct is faster than using buffer.write* functions.
+                var start = (l * sizeHK + k * sizeH + offsetH) * elementSize;
+                src.copy(cubeBuffer, writeOffset, start, start + copyH);
+                writeOffset += copyH;
+            }
+        }
+    }
+    // flip the byte order if needed.
+    File.ensureLittleEndian(ctx.cubeBuffer, ctx.litteEndianCubeBuffer, writeOffset, elementSize, 0);
+    return writeOffset;
+}
+function updateProgress(progress, progressDone) {
+    var old = (100 * progress.current / progress.max).toFixed(0);
+    progress.current += progressDone;
+    var $new = (100 * progress.current / progress.max).toFixed(0);
+    if (old !== $new) {
+        process.stdout.write("\rWriting data...    " + $new + "%");
+    }
+}

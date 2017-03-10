@@ -6,6 +6,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var CIF = require("../../lib/CIFTools");
 var Version_1 = require("../Version");
 var DataFormat = require("../../Common/DataFormat");
+function encode(query, output) {
+    var w = query.params.asBinary
+        ? new CIF.Binary.Writer("DensityServer " + Version_1.default)
+        : new CIF.Text.Writer();
+    write(w, query);
+    w.encode();
+    w.flush(output);
+}
+exports.default = encode;
 var E = CIF.Binary.Encoder;
 function string(name, string, isSpecified) {
     if (isSpecified) {
@@ -168,12 +177,3 @@ function write(writer, query) {
         }
     }
 }
-function encode(query, output) {
-    var w = query.params.asBinary
-        ? new CIF.Binary.Writer("DensityServer " + Version_1.default)
-        : new CIF.Text.Writer();
-    write(w, query);
-    w.encode();
-    w.flush(output);
-}
-exports.default = encode;

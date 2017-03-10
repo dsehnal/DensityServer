@@ -9,6 +9,14 @@ import * as Sampling from './Sampling'
 import * as DataFormat from '../Common/DataFormat'
 import * as fs from 'fs'
 
+export default async function pack(input: { name: string, filename: string }[], blockSize: number, isPeriodic: boolean, outputFilename: string) {
+    try {
+        await create(outputFilename, input, blockSize, isPeriodic);
+    } catch (e) {
+        console.error('[Error] ' + e);
+    }
+}
+
 function getTime() {
     let t = process.hrtime();
     return t[0] * 1000 + t[1] / 1000000;
@@ -102,11 +110,3 @@ async function create(filename: string, sourceDensities: { name: string, filenam
         // console.log(hh.header);
     }
 } 
-
-export default async function pack(input: { name: string, filename: string }[], blockSize: number, isPeriodic: boolean, outputFilename: string) {
-    try {
-        await create(outputFilename, input, blockSize, isPeriodic);
-    } catch (e) {
-        console.error('[Error] ' + e);
-    }
-}

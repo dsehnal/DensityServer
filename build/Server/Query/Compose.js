@@ -42,6 +42,36 @@ var DataFormat = require("../../Common/DataFormat");
 var Box = require("../Algebra/Box");
 var Coords = require("../Algebra/Coordinate");
 var File = require("../../Common/File");
+function compose(query) {
+    return __awaiter(this, void 0, void 0, function () {
+        var _i, _a, block, channelIndex;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    _i = 0, _a = query.samplingInfo.blocks;
+                    _b.label = 1;
+                case 1:
+                    if (!(_i < _a.length)) return [3 /*break*/, 4];
+                    block = _a[_i];
+                    return [4 /*yield*/, fillBlock(query, block)];
+                case 2:
+                    _b.sent();
+                    _b.label = 3;
+                case 3:
+                    _i++;
+                    return [3 /*break*/, 1];
+                case 4:
+                    if (query.samplingInfo.sampling.rate > 1) {
+                        for (channelIndex = 0; channelIndex < query.result.values.length; channelIndex++) {
+                            dataChannelToRelativeValues(query, channelIndex);
+                        }
+                    }
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.default = compose;
 function readBlock(query, coord, blockBox) {
     return __awaiter(this, void 0, void 0, function () {
         var numChannels, blockSampleCount, size, _a, valueType, blockSize, dataSampleCount, buffer, byteOffset, values;
@@ -70,7 +100,6 @@ function readBlock(query, coord, blockBox) {
         });
     });
 }
-exports.readBlock = readBlock;
 function fillData(query, blockData, blockGridBox, queryGridBox) {
     var source = blockData.values;
     var _a = Coords.gridMetrics(query.samplingInfo.gridDomain.sampleCount), tSizeH = _a.sizeX, tSizeHK = _a.sizeXY;
@@ -133,33 +162,3 @@ function dataChannelToRelativeValues(query, channelIndex) {
         values[i] = (values[i] - mean) / sigma;
     }
 }
-function compose(query) {
-    return __awaiter(this, void 0, void 0, function () {
-        var _i, _a, block, channelIndex;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    _i = 0, _a = query.samplingInfo.blocks;
-                    _b.label = 1;
-                case 1:
-                    if (!(_i < _a.length)) return [3 /*break*/, 4];
-                    block = _a[_i];
-                    return [4 /*yield*/, fillBlock(query, block)];
-                case 2:
-                    _b.sent();
-                    _b.label = 3;
-                case 3:
-                    _i++;
-                    return [3 /*break*/, 1];
-                case 4:
-                    if (query.samplingInfo.sampling.rate > 1) {
-                        for (channelIndex = 0; channelIndex < query.result.values.length; channelIndex++) {
-                            dataChannelToRelativeValues(query, channelIndex);
-                        }
-                    }
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.default = compose;

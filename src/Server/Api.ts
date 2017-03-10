@@ -3,7 +3,7 @@
  */
 
 import * as File from '../Common/File'
-import * as Query from './Query/Execute'
+import execute from './Query/Execute'
 import * as Data from './Query/DataModel'
 import * as Logger from './Utils/Logger'
 import * as DataFormat from '../Common/DataFormat'
@@ -17,21 +17,6 @@ export function getOutputFilename(source: string, id: string, { asBinary, box, p
         ? 'cell'
         : `${box.kind === 'Cartesian' ? 'cartn' : 'frac'}_${r(box.a[0])}_${r(box.a[1])}_${r(box.a[2])}_${r(box.b[0])}_${r(box.b[1])}_${r(box.b[2])}`;
     return `${n(source)}_${n(id)}-${boxInfo}.${asBinary ? 'bcif' : 'cif'}_p${prec}`;
-}
-
-async function readHeader(filename: string | undefined, sourceId: string) {
-    let file: number | undefined = void 0;
-    try {
-        if (!filename) return void 0;
-        file = await File.openRead(filename);
-        const header = await DataFormat.readHeader(file);
-        return header.header;
-    } catch (e) {
-        Logger.errorPlain(`Info ${sourceId}`, e);
-        return void 0;
-    } finally {
-        File.close(file);
-    }
 }
 
 /** Reads the header and includes information about available detail levels */
@@ -48,5 +33,20 @@ export async function getHeaderJson(filename: string | undefined, sourceId: stri
 }
 
 export async function queryBox(params: Data.QueryParams, outputProvider: () => Data.QueryOutputStream) {    
-    return await Query.execute(params, outputProvider);        
+    return await execute(params, outputProvider);        
+}
+
+async function readHeader(filename: string | undefined, sourceId: string) {
+    let file: number | undefined = void 0;
+    try {
+        if (!filename) return void 0;
+        file = await File.openRead(filename);
+        const header = await DataFormat.readHeader(file);
+        return header.header;
+    } catch (e) {
+        Logger.errorPlain(`Info ${sourceId}`, e);
+        return void 0;
+    } finally {
+        File.close(file);
+    }
 }

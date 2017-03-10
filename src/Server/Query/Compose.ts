@@ -8,7 +8,18 @@ import * as Box from '../Algebra/Box'
 import * as Coords from '../Algebra/Coordinate'
 import * as File from '../../Common/File'
 
-export async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Block'>, blockBox: Box.Fractional): Promise<Data.BlockData> {
+export default async function compose(query: Data.QueryContext) {
+    for (const block of query.samplingInfo.blocks) {
+        await fillBlock(query, block);
+    }
+    if (query.samplingInfo.sampling.rate > 1) {
+        for (let channelIndex = 0; channelIndex < query.result.values!.length; channelIndex++) {
+            dataChannelToRelativeValues(query, channelIndex);
+        }
+    }
+}
+
+async function readBlock(query: Data.QueryContext, coord: Coords.Grid<'Block'>, blockBox: Box.Fractional): Promise<Data.BlockData> {
     const numChannels = query.data.header.channels.length;
     const blockSampleCount = Box.dimensions(Box.fractionalToGrid(blockBox, query.samplingInfo.sampling.dataDomain));
     const size = numChannels * blockSampleCount[0] * blockSampleCount[1] * blockSampleCount[2];
@@ -87,16 +98,5 @@ function dataChannelToRelativeValues(query: Data.QueryContext, channelIndex: num
     const values = query.result.values![channelIndex];
     for (let i = 0, _ii = values.length; i < _ii; i++) {
         values[i] = (values[i] - mean) / sigma;
-    }
-}
-
-export default async function compose(query: Data.QueryContext) {
-    for (const block of query.samplingInfo.blocks) {
-        await fillBlock(query, block);
-    }
-    if (query.samplingInfo.sampling.rate > 1) {
-        for (let channelIndex = 0; channelIndex < query.result.values!.length; channelIndex++) {
-            dataChannelToRelativeValues(query, channelIndex);
-        }
     }
 }

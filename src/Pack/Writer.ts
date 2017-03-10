@@ -6,6 +6,23 @@ import * as Data from './DataModel'
 import * as File from '../Common/File'
 import * as DataFormat from '../Common/DataFormat'
 
+/** Converts a layer to blocks and writes them to the output file. */
+export async function writeBlockLayer(ctx: Data.Context, sampling: Data.Sampling) {
+    const nU = Math.ceil(sampling.sampleCount[0] / ctx.blockSize);
+    const nV = Math.ceil(sampling.sampleCount[1] / ctx.blockSize);
+    const startOffset = ctx.dataByteOffset + sampling.byteOffset;
+
+    for (let v = 0; v < nV; v++) {
+        for (let u = 0; u < nU; u++) {
+            const size = fillCubeBuffer(ctx, sampling, u, v);
+            await File.writeBuffer(ctx.file, startOffset + sampling.writeByteOffset, ctx.litteEndianCubeBuffer, size);
+            sampling.writeByteOffset += size;
+            updateProgress(ctx.progress, 1);
+        }
+    }
+    sampling.blocks.slicesWritten = 0;
+}
+
 /** Fill a cube at position (u,v) with values from each of the channel */
 function fillCubeBuffer(ctx: Data.Context, sampling: Data.Sampling, u: number, v: number): number {
     const { blockSize, cubeBuffer } = ctx;
@@ -42,21 +59,4 @@ function updateProgress(progress: Data.Progress, progressDone: number) {
     if (old !== $new) {
         process.stdout.write(`\rWriting data...    ${$new}%`);
     }
-}
-
-/** Converts a layer to blocks and writes them to the output file. */
-export async function writeBlockLayer(ctx: Data.Context, sampling: Data.Sampling) {
-    const nU = Math.ceil(sampling.sampleCount[0] / ctx.blockSize);
-    const nV = Math.ceil(sampling.sampleCount[1] / ctx.blockSize);
-    const startOffset = ctx.dataByteOffset + sampling.byteOffset;
-
-    for (let v = 0; v < nV; v++) {
-        for (let u = 0; u < nU; u++) {
-            const size = fillCubeBuffer(ctx, sampling, u, v);
-            await File.writeBuffer(ctx.file, startOffset + sampling.writeByteOffset, ctx.litteEndianCubeBuffer, size);
-            sampling.writeByteOffset += size;
-            updateProgress(ctx.progress, 1);
-        }
-    }
-    sampling.blocks.slicesWritten = 0;
 }

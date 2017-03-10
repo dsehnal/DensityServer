@@ -44,6 +44,27 @@ var Data = require("./DataModel");
 var Sampling = require("./Sampling");
 var DataFormat = require("../Common/DataFormat");
 var fs = require("fs");
+function pack(input, blockSize, isPeriodic, outputFilename) {
+    return __awaiter(this, void 0, void 0, function () {
+        var e_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, create(outputFilename, input, blockSize, isPeriodic)];
+                case 1:
+                    _a.sent();
+                    return [3 /*break*/, 3];
+                case 2:
+                    e_1 = _a.sent();
+                    console.error('[Error] ' + e_1);
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.default = pack;
 function getTime() {
     var t = process.hrtime();
     return t[0] * 1000 + t[1] / 1000000;
@@ -174,24 +195,3 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
         });
     });
 }
-function pack(input, blockSize, isPeriodic, outputFilename) {
-    return __awaiter(this, void 0, void 0, function () {
-        var e_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    _a.trys.push([0, 2, , 3]);
-                    return [4 /*yield*/, create(outputFilename, input, blockSize, isPeriodic)];
-                case 1:
-                    _a.sent();
-                    return [3 /*break*/, 3];
-                case 2:
-                    e_1 = _a.sent();
-                    console.error('[Error] ' + e_1);
-                    return [3 /*break*/, 3];
-                case 3: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.default = pack;

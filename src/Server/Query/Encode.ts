@@ -8,6 +8,15 @@ import * as Coords from  '../Algebra/Coordinate'
 import VERSION from '../Version'
 import * as DataFormat from '../../Common/DataFormat'
 
+export default function encode(query: Data.QueryContext, output: CIF.OutputStream) {
+    let w = query.params.asBinary 
+        ? new CIF.Binary.Writer<ResultContext>(`DensityServer ${VERSION}`) 
+        : new CIF.Text.Writer<ResultContext>();
+    write(w, query);
+    w.encode();
+    w.flush(output);
+}
+
 interface ResultContext {
     query: Data.QueryContext,
     channelIndex: number
@@ -210,13 +219,4 @@ function write(writer: Writer, query: Data.QueryContext) {
             writer.writeCategory(_volume_data_3d, ctx);
         }
     }
-}
-
-export default function encode(query: Data.QueryContext, output: CIF.OutputStream) {
-    let w = query.params.asBinary 
-        ? new CIF.Binary.Writer<ResultContext>(`DensityServer ${VERSION}`) 
-        : new CIF.Text.Writer<ResultContext>();
-    write(w, query);
-    w.encode();
-    w.flush(output);
 }

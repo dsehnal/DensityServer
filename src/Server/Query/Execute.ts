@@ -16,6 +16,29 @@ import identify from './Identify'
 import compose from './Compose'
 import encode from './Encode'
 
+export default async function execute(params: Data.QueryParams, outputProvider: () => Data.QueryOutputStream) {
+    const start = getTime();
+    State.pendingQueries++;
+
+    const guid = generateUUID();
+    params.precision = Math.min(Math.max(0, params.precision | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);        
+    Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},precision=${params.precision},${queryBoxToString(params.box)}`);
+    
+    let sourceFile: number | undefined = void 0;
+    try {
+        sourceFile = await File.openRead(params.sourceFilename);
+        await _execute(sourceFile, params, guid, outputProvider);     
+        return true;
+    } catch (e) {
+        Logger.error(guid, e);
+        return false;
+    } finally {
+        File.close(sourceFile);
+        Logger.log(guid, 'Time', `${Math.round(getTime() - start)}ms`);
+        State.pendingQueries--;
+    }
+}
+
 function getTime() {
     let t = process.hrtime();
     return t[0] * 1000 + t[1] / 1000000;
@@ -31,7 +54,7 @@ function generateUUID() {
     return uuid;
 }
 
-export function blockDomain(domain: Coords.GridDomain<'Data'>, blockSize: number): Coords.GridDomain<'Block'> {
+function blockDomain(domain: Coords.GridDomain<'Data'>, blockSize: number): Coords.GridDomain<'Block'> {
     const delta = Coords.fractional(blockSize * domain.delta[0], blockSize * domain.delta[1], blockSize * domain.delta[2]);
     return Coords.domain<'Block'>('Block', {
         origin: domain.origin,
@@ -225,28 +248,5 @@ function queryBoxToString(queryBox: Data.QueryParamsBox) {
             return `box-type=${queryBox.kind},box-a=(${r(a[0])},${r(a[1])},${r(a[2])}),box-b=(${r(b[0])},${r(b[1])},${r(b[2])})`;
         default:
             return queryBox.kind;
-    }
-}
-
-export async function execute(params: Data.QueryParams, outputProvider: () => Data.QueryOutputStream) {
-    const start = getTime();
-    State.pendingQueries++;
-
-    const guid = generateUUID();
-    params.precision = Math.min(Math.max(0, params.precision | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);        
-    Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},precision=${params.precision},${queryBoxToString(params.box)}`);
-    
-    let sourceFile: number | undefined = void 0;
-    try {
-        sourceFile = await File.openRead(params.sourceFilename);
-        await _execute(sourceFile, params, guid, outputProvider);     
-        return true;
-    } catch (e) {
-        Logger.error(guid, e);
-        return false;
-    } finally {
-        File.close(sourceFile);
-        Logger.log(guid, 'Time', `${Math.round(getTime() - start)}ms`);
-        State.pendingQueries--;
     }
 }

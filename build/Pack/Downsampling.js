@@ -4,6 +4,43 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
+ * Downsamples each slice of input data and checks if there is enough data to perform
+ * higher rate downsampling.
+ */
+function downsampleLayer(ctx) {
+    for (var i = 0, _ii = ctx.sampling.length - 1; i < _ii; i++) {
+        var s = ctx.sampling[i];
+        downsampleSlice(ctx, s);
+        if (canDownsampleBuffer(s, false)) {
+            downsampleBuffer(ctx.kernel, s, ctx.sampling[i + 1], ctx.blockSize);
+        }
+        else {
+            break;
+        }
+    }
+}
+exports.downsampleLayer = downsampleLayer;
+/**
+ * When the "native" (rate = 1) sampling is finished, there might still
+ * be some data left to be processed for the higher rate samplings.
+ */
+function finalize(ctx) {
+    for (var i = 0, _ii = ctx.sampling.length - 1; i < _ii; i++) {
+        var s = ctx.sampling[i];
+        // skip downsampling the 1st slice because that is guaranteed to be done in "downsampleLayer"
+        if (i > 0)
+            downsampleSlice(ctx, s);
+        // this is different from downsample layer in that it does not need 2 extra slices but just 1 is enough.
+        if (canDownsampleBuffer(s, true)) {
+            downsampleBuffer(ctx.kernel, s, ctx.sampling[i + 1], ctx.blockSize);
+        }
+        else {
+            break;
+        }
+    }
+}
+exports.finalize = finalize;
+/**
  * The functions downsampleH and downsampleHK both essentially do the
  * same thing: downsample along H (1st axis in axis order) and K (2nd axis in axis order) axes respectively.
  *
@@ -123,40 +160,3 @@ function downsampleBuffer(kernel, source, target, blockSize) {
     }
     target.blocks.slicesWritten++;
 }
-/**
- * Downsamples each slice of input data and checks if there is enough data to perform
- * higher rate downsampling.
- */
-function downsampleLayer(ctx) {
-    for (var i = 0, _ii = ctx.sampling.length - 1; i < _ii; i++) {
-        var s = ctx.sampling[i];
-        downsampleSlice(ctx, s);
-        if (canDownsampleBuffer(s, false)) {
-            downsampleBuffer(ctx.kernel, s, ctx.sampling[i + 1], ctx.blockSize);
-        }
-        else {
-            break;
-        }
-    }
-}
-exports.downsampleLayer = downsampleLayer;
-/**
- * When the "native" (rate = 1) sampling is finished, there might still
- * be some data left to be processed for the higher rate samplings.
- */
-function finalize(ctx) {
-    for (var i = 0, _ii = ctx.sampling.length - 1; i < _ii; i++) {
-        var s = ctx.sampling[i];
-        // skip downsampling the 1st slice because that is guaranteed to be done in "downsampleLayer"
-        if (i > 0)
-            downsampleSlice(ctx, s);
-        // this is different from downsample layer in that it does not need 2 extra slices but just 1 is enough.
-        if (canDownsampleBuffer(s, true)) {
-            downsampleBuffer(ctx.kernel, s, ctx.sampling[i + 1], ctx.blockSize);
-        }
-        else {
-            break;
-        }
-    }
-}
-exports.finalize = finalize;

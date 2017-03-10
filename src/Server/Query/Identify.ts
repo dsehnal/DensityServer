@@ -7,6 +7,34 @@ import * as Box from '../Algebra/Box'
 import * as Data from './DataModel'
 import { FastMap } from '../Utils/Collections'
 
+/** Find a list of unique blocks+offsets that overlap with the query region. */
+export default function findUniqueBlocks(data: Data.DataContext, sampling: Data.Sampling, queryBox: Box.Fractional) {
+    const translations = data.header.spacegroup.isPeriodic
+        // find all query box translations that overlap with the unit cell.
+        ? findDataOverlapTranslationList(queryBox, sampling.dataDomain) 
+        // no translations
+        : [Coords.fractional(0, 0, 0)];
+
+    const blocks: UniqueBlocks = FastMap.create<number, Data.QueryBlock>();
+    for (const t of translations) {
+        findUniqueBlocksOffset(data, sampling, queryBox, t, blocks);
+    }
+    
+    const blockList = blocks.forEach((b, _, ctx) => { ctx!.push(b) }, [] as Data.QueryBlock[]);
+
+    // sort the data so that the first coodinate changes the fastest 
+    // this is because that's how the data is laid out in the underlaying 
+    // data format and reading the data 'in order' makes it faster.
+    blockList.sort((a, b) => {
+        const x = a.coord, y = b.coord;
+        for (let i = 2; i >= 0; i--) {
+            if (x[i] !== y[i]) return x[i] - y[i];
+        }
+        return 0;
+    });
+    return blockList;
+}
+
 type Translations = Coords.Fractional[]
 
 /**
@@ -89,32 +117,3 @@ function findUniqueBlocksOffset(data: Data.DataContext, sampling: Data.Sampling,
         }    
     }
 }
-
-/** Find a list of unique blocks+offsets that overlap with the query region. */
-export default function findUniqueBlocks(data: Data.DataContext, sampling: Data.Sampling, queryBox: Box.Fractional) {
-    const translations = data.header.spacegroup.isPeriodic
-        // find all query box translations that overlap with the unit cell.
-        ? findDataOverlapTranslationList(queryBox, sampling.dataDomain) 
-        // no translations
-        : [Coords.fractional(0, 0, 0)];
-
-    const blocks: UniqueBlocks = FastMap.create<number, Data.QueryBlock>();
-    for (const t of translations) {
-        findUniqueBlocksOffset(data, sampling, queryBox, t, blocks);
-    }
-    
-    const blockList = blocks.forEach((b, _, ctx) => { ctx!.push(b) }, [] as Data.QueryBlock[]);
-
-    // sort the data so that the first coodinate changes the fastest 
-    // this is because that's how the data is laid out in the underlaying 
-    // data format and reading the data 'in order' makes it faster.
-    blockList.sort((a, b) => {
-        const x = a.coord, y = b.coord;
-        for (let i = 2; i >= 0; i--) {
-            if (x[i] !== y[i]) return x[i] - y[i];
-        }
-        return 0;
-    });
-    return blockList;
-}
-

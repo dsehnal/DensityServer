@@ -5,7 +5,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var express = require("express");
 var compression = require("compression");
-var WebApi = require("./Server/WebApi");
+var WebApi_1 = require("./Server/WebApi");
 var Version_1 = require("./Server/Version");
 var ServerConfig_1 = require("./ServerConfig");
 var Logger = require("./Server/Utils/Logger");
@@ -39,7 +39,7 @@ function setupShutdown() {
 var port = process.env.port || ServerConfig_1.default.defaultPort;
 var app = express();
 app.use(compression({ level: 6, memLevel: 9, chunkSize: 16 * 16384, filter: function () { return true; } }));
-WebApi.init(app);
+WebApi_1.default(app);
 app.listen(port);
 console.log("DensityServer " + Version_1.default + ", (c) 2016 - now, David Sehnal");
 console.log("");

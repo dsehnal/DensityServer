@@ -44,6 +44,22 @@ var Documentation_1 = require("./Documentation");
 var ServerConfig_1 = require("../ServerConfig");
 var Logger = require("./Utils/Logger");
 var State_1 = require("./State");
+function init(app) {
+    function makePath(p) {
+        return ServerConfig_1.default.apiPrefix + '/' + p;
+    }
+    // Header
+    app.get(makePath(':source/:id/?$'), function (req, res) { return getHeader(req, res); });
+    // Box /:src/:id/box/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
+    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), function (req, res) { return queryBox(req, res, getQueryParams(req, false)); });
+    // Cell /:src/:id/cell/?text=0|1&space=cartesian|fractional
+    app.get(makePath(':source/:id/cell/?'), function (req, res) { return queryBox(req, res, getQueryParams(req, true)); });
+    app.get('*', function (req, res) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(Documentation_1.default);
+    });
+}
+exports.default = init;
 function mapFile(type, id) {
     return ServerConfig_1.default.mapFile(type || '', id || '');
 }
@@ -193,19 +209,3 @@ function queryDone() {
         process.exit(0);
     }
 }
-function init(app) {
-    function makePath(p) {
-        return ServerConfig_1.default.apiPrefix + '/' + p;
-    }
-    // Header
-    app.get(makePath(':source/:id/?$'), function (req, res) { return getHeader(req, res); });
-    // Box /:src/:id/box/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
-    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), function (req, res) { return queryBox(req, res, getQueryParams(req, false)); });
-    // Cell /:src/:id/cell/?text=0|1&space=cartesian|fractional
-    app.get(makePath(':source/:id/cell/?'), function (req, res) { return queryBox(req, res, getQueryParams(req, true)); });
-    app.get('*', function (req, res) {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(Documentation_1.default);
-    });
-}
-exports.init = init;

@@ -44,6 +44,87 @@ var File = require("../Common/File");
 var Downsampling = require("./Downsampling");
 var Writer = require("./Writer");
 var DataFormat = require("../Common/DataFormat");
+function createContext(filename, channels, blockSize, isPeriodic) {
+    return __awaiter(this, void 0, void 0, function () {
+        var header, samplingCounts, valueType, cubeBuffer, litteEndianCubeBuffer, ctx, _a, byteOffset, _i, _b, s;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0:
+                    header = channels[0].header;
+                    samplingCounts = getSamplingCounts(channels[0].header.extent, blockSize);
+                    valueType = CCP4.getValueType(header);
+                    cubeBuffer = new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
+                    litteEndianCubeBuffer = File.IsNativeEndianLittle
+                        ? cubeBuffer
+                        : new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
+                    // The data can be periodic iff the extent is the same as the grid and origin is 0.
+                    if (header.grid.some(function (v, i) { return v !== header.extent[i]; }) || header.origin.some(function (v) { return v !== 0; })) {
+                        isPeriodic = false;
+                    }
+                    _a = {};
+                    return [4 /*yield*/, File.createFile(filename)];
+                case 1:
+                    ctx = (_a.file = _c.sent(),
+                        _a.isPeriodic = isPeriodic,
+                        _a.channels = channels,
+                        _a.valueType = valueType,
+                        _a.blockSize = blockSize,
+                        _a.cubeBuffer = cubeBuffer,
+                        _a.litteEndianCubeBuffer = litteEndianCubeBuffer,
+                        _a.kernel = { size: 5, coefficients: [1, 4, 6, 4, 1], coefficientSum: 16 },
+                        _a.sampling = samplingCounts.map(function (__, i) { return createSampling(i, valueType, channels.length, samplingCounts, blockSize); }),
+                        _a.dataByteOffset = 0,
+                        _a.totalByteSize = 0,
+                        _a.progress = { current: 0, max: 0 },
+                        _a);
+                    byteOffset = 0;
+                    for (_i = 0, _b = ctx.sampling; _i < _b.length; _i++) {
+                        s = _b[_i];
+                        // Max progress = total number of blocks that need to be written.
+                        ctx.progress.max += Data.samplingBlockCount(s, blockSize);
+                        s.byteOffset = byteOffset;
+                        byteOffset += s.byteSize;
+                    }
+                    ctx.dataByteOffset = 4 + DataFormat.encodeHeader(Data.createHeader(ctx)).byteLength;
+                    ctx.totalByteSize = ctx.dataByteOffset + byteOffset;
+                    return [2 /*return*/, ctx];
+            }
+        });
+    });
+}
+exports.createContext = createContext;
+function processData(ctx) {
+    return __awaiter(this, void 0, void 0, function () {
+        var channel, _i, _a, src;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    channel = ctx.channels[0];
+                    _b.label = 1;
+                case 1:
+                    if (!!channel.slices.isFinished) return [3 /*break*/, 7];
+                    _i = 0, _a = ctx.channels;
+                    _b.label = 2;
+                case 2:
+                    if (!(_i < _a.length)) return [3 /*break*/, 5];
+                    src = _a[_i];
+                    return [4 /*yield*/, CCP4.readSlices(src)];
+                case 3:
+                    _b.sent();
+                    _b.label = 4;
+                case 4:
+                    _i++;
+                    return [3 /*break*/, 2];
+                case 5: return [4 /*yield*/, processSlices(ctx)];
+                case 6:
+                    _b.sent();
+                    return [3 /*break*/, 1];
+                case 7: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.processData = processData;
 /** Determine the suitable sampling rates for the input data */
 function getSamplingCounts(baseSampleCount, blockSize) {
     var ret = [baseSampleCount];
@@ -114,55 +195,6 @@ function createSampling(index, valueType, numChannels, sampleCounts, blockSize) 
         writeByteOffset: 0
     };
 }
-function createContext(filename, channels, blockSize, isPeriodic) {
-    return __awaiter(this, void 0, void 0, function () {
-        var header, samplingCounts, valueType, cubeBuffer, litteEndianCubeBuffer, ctx, _a, byteOffset, _i, _b, s;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
-                case 0:
-                    header = channels[0].header;
-                    samplingCounts = getSamplingCounts(channels[0].header.extent, blockSize);
-                    valueType = CCP4.getValueType(header);
-                    cubeBuffer = new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
-                    litteEndianCubeBuffer = File.IsNativeEndianLittle
-                        ? cubeBuffer
-                        : new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
-                    // The data can be periodic iff the extent is the same as the grid and origin is 0.
-                    if (header.grid.some(function (v, i) { return v !== header.extent[i]; }) || header.origin.some(function (v) { return v !== 0; })) {
-                        isPeriodic = false;
-                    }
-                    _a = {};
-                    return [4 /*yield*/, File.createFile(filename)];
-                case 1:
-                    ctx = (_a.file = _c.sent(),
-                        _a.isPeriodic = isPeriodic,
-                        _a.channels = channels,
-                        _a.valueType = valueType,
-                        _a.blockSize = blockSize,
-                        _a.cubeBuffer = cubeBuffer,
-                        _a.litteEndianCubeBuffer = litteEndianCubeBuffer,
-                        _a.kernel = { size: 5, coefficients: [1, 4, 6, 4, 1], coefficientSum: 16 },
-                        _a.sampling = samplingCounts.map(function (__, i) { return createSampling(i, valueType, channels.length, samplingCounts, blockSize); }),
-                        _a.dataByteOffset = 0,
-                        _a.totalByteSize = 0,
-                        _a.progress = { current: 0, max: 0 },
-                        _a);
-                    byteOffset = 0;
-                    for (_i = 0, _b = ctx.sampling; _i < _b.length; _i++) {
-                        s = _b[_i];
-                        // Max progress = total number of blocks that need to be written.
-                        ctx.progress.max += Data.samplingBlockCount(s, blockSize);
-                        s.byteOffset = byteOffset;
-                        byteOffset += s.byteSize;
-                    }
-                    ctx.dataByteOffset = 4 + DataFormat.encodeHeader(Data.createHeader(ctx)).byteLength;
-                    ctx.totalByteSize = ctx.dataByteOffset + byteOffset;
-                    return [2 /*return*/, ctx];
-            }
-        });
-    });
-}
-exports.createContext = createContext;
 function copyLayer(ctx, sliceIndex) {
     var channels = ctx.channels;
     var _a = ctx.sampling[0], blocks = _a.blocks, sampleCount = _a.sampleCount;
@@ -246,35 +278,3 @@ function processSlices(ctx) {
         });
     });
 }
-function processData(ctx) {
-    return __awaiter(this, void 0, void 0, function () {
-        var channel, _i, _a, src;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    channel = ctx.channels[0];
-                    _b.label = 1;
-                case 1:
-                    if (!!channel.slices.isFinished) return [3 /*break*/, 7];
-                    _i = 0, _a = ctx.channels;
-                    _b.label = 2;
-                case 2:
-                    if (!(_i < _a.length)) return [3 /*break*/, 5];
-                    src = _a[_i];
-                    return [4 /*yield*/, CCP4.readSlices(src)];
-                case 3:
-                    _b.sent();
-                    _b.label = 4;
-                case 4:
-                    _i++;
-                    return [3 /*break*/, 2];
-                case 5: return [4 /*yield*/, processSlices(ctx)];
-                case 6:
-                    _b.sent();
-                    return [3 /*break*/, 1];
-                case 7: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.processData = processData;

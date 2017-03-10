@@ -5,7 +5,7 @@
 import * as express from 'express'
 import * as compression from 'compression'
 
-import * as WebApi from './Server/WebApi'
+import init from './Server/WebApi'
 import VERSION from './Server/Version'
 import ServerConfig from './ServerConfig'
 import * as Logger from './Server/Utils/Logger'
@@ -43,7 +43,7 @@ let port = process.env.port || ServerConfig.defaultPort;
 
 let app = express();
 app.use(compression({ level: 6, memLevel: 9, chunkSize: 16 * 16384, filter: () => true }));
-WebApi.init(app);
+init(app);
 
 app.listen(port);
 

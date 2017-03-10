@@ -6,6 +6,31 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Coords = require("../Algebra/Coordinate");
 var Box = require("../Algebra/Box");
 var Collections_1 = require("../Utils/Collections");
+/** Find a list of unique blocks+offsets that overlap with the query region. */
+function findUniqueBlocks(data, sampling, queryBox) {
+    var translations = data.header.spacegroup.isPeriodic
+        ? findDataOverlapTranslationList(queryBox, sampling.dataDomain)
+        : [Coords.fractional(0, 0, 0)];
+    var blocks = Collections_1.FastMap.create();
+    for (var _i = 0, translations_1 = translations; _i < translations_1.length; _i++) {
+        var t = translations_1[_i];
+        findUniqueBlocksOffset(data, sampling, queryBox, t, blocks);
+    }
+    var blockList = blocks.forEach(function (b, _, ctx) { ctx.push(b); }, []);
+    // sort the data so that the first coodinate changes the fastest 
+    // this is because that's how the data is laid out in the underlaying 
+    // data format and reading the data 'in order' makes it faster.
+    blockList.sort(function (a, b) {
+        var x = a.coord, y = b.coord;
+        for (var i = 2; i >= 0; i--) {
+            if (x[i] !== y[i])
+                return x[i] - y[i];
+        }
+        return 0;
+    });
+    return blockList;
+}
+exports.default = findUniqueBlocks;
 /**
  * Find the integer interval [x, y] so that for all k \in [x, y]
  * [a + k, b + k] intersects with (u, v)
@@ -76,28 +101,3 @@ function findUniqueBlocksOffset(data, sampling, queryBox, offset, blocks) {
         }
     }
 }
-/** Find a list of unique blocks+offsets that overlap with the query region. */
-function findUniqueBlocks(data, sampling, queryBox) {
-    var translations = data.header.spacegroup.isPeriodic
-        ? findDataOverlapTranslationList(queryBox, sampling.dataDomain)
-        : [Coords.fractional(0, 0, 0)];
-    var blocks = Collections_1.FastMap.create();
-    for (var _i = 0, translations_1 = translations; _i < translations_1.length; _i++) {
-        var t = translations_1[_i];
-        findUniqueBlocksOffset(data, sampling, queryBox, t, blocks);
-    }
-    var blockList = blocks.forEach(function (b, _, ctx) { ctx.push(b); }, []);
-    // sort the data so that the first coodinate changes the fastest 
-    // this is because that's how the data is laid out in the underlaying 
-    // data format and reading the data 'in order' makes it faster.
-    blockList.sort(function (a, b) {
-        var x = a.coord, y = b.coord;
-        for (var i = 2; i >= 0; i--) {
-            if (x[i] !== y[i])
-                return x[i] - y[i];
-        }
-        return 0;
-    });
-    return blockList;
-}
-exports.default = findUniqueBlocks;

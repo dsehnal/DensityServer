@@ -48,6 +48,43 @@ var ServerConfig_1 = require("../../ServerConfig");
 var Identify_1 = require("./Identify");
 var Compose_1 = require("./Compose");
 var Encode_1 = require("./Encode");
+function execute(params, outputProvider) {
+    return __awaiter(this, void 0, void 0, function () {
+        var start, guid, sourceFile, e_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    start = getTime();
+                    State_1.State.pendingQueries++;
+                    guid = generateUUID();
+                    params.precision = Math.min(Math.max(0, params.precision | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+                    Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + ",precision=" + params.precision + "," + queryBoxToString(params.box));
+                    sourceFile = void 0;
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 4, 5, 6]);
+                    return [4 /*yield*/, File.openRead(params.sourceFilename)];
+                case 2:
+                    sourceFile = _a.sent();
+                    return [4 /*yield*/, _execute(sourceFile, params, guid, outputProvider)];
+                case 3:
+                    _a.sent();
+                    return [2 /*return*/, true];
+                case 4:
+                    e_1 = _a.sent();
+                    Logger.error(guid, e_1);
+                    return [2 /*return*/, false];
+                case 5:
+                    File.close(sourceFile);
+                    Logger.log(guid, 'Time', Math.round(getTime() - start) + "ms");
+                    State_1.State.pendingQueries--;
+                    return [7 /*endfinally*/];
+                case 6: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.default = execute;
 function getTime() {
     var t = process.hrtime();
     return t[0] * 1000 + t[1] / 1000000;
@@ -70,7 +107,6 @@ function blockDomain(domain, blockSize) {
         sampleCount: Coords.sampleCounts(domain.dimensions, delta)
     });
 }
-exports.blockDomain = blockDomain;
 function createSampling(header, index, dataOffset) {
     var sampling = header.sampling[index];
     var dataDomain = Coords.domain('Data', {
@@ -198,7 +234,7 @@ function allocateResult(query) {
 }
 function _execute(file, params, guid, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
-        var data, output, query, e_1;
+        var data, output, query, e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, createDataContext(file)];
@@ -226,10 +262,10 @@ function _execute(file, params, guid, outputProvider) {
                     output.end();
                     return [3 /*break*/, 7];
                 case 5:
-                    e_1 = _a.sent();
+                    e_2 = _a.sent();
                     if (!query)
                         query = emptyQueryContext(data, params, guid);
-                    query.result.error = "" + e_1;
+                    query.result.error = "" + e_2;
                     query.result.isEmpty = true;
                     query.result.values = void 0;
                     try {
@@ -240,7 +276,7 @@ function _execute(file, params, guid, outputProvider) {
                     catch (f) {
                         throw f;
                     }
-                    throw e_1;
+                    throw e_2;
                 case 6:
                     if (output)
                         output.end();
@@ -264,40 +300,3 @@ function queryBoxToString(queryBox) {
             return queryBox.kind;
     }
 }
-function execute(params, outputProvider) {
-    return __awaiter(this, void 0, void 0, function () {
-        var start, guid, sourceFile, e_2;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    start = getTime();
-                    State_1.State.pendingQueries++;
-                    guid = generateUUID();
-                    params.precision = Math.min(Math.max(0, params.precision | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
-                    Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + ",precision=" + params.precision + "," + queryBoxToString(params.box));
-                    sourceFile = void 0;
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 4, 5, 6]);
-                    return [4 /*yield*/, File.openRead(params.sourceFilename)];
-                case 2:
-                    sourceFile = _a.sent();
-                    return [4 /*yield*/, _execute(sourceFile, params, guid, outputProvider)];
-                case 3:
-                    _a.sent();
-                    return [2 /*return*/, true];
-                case 4:
-                    e_2 = _a.sent();
-                    Logger.error(guid, e_2);
-                    return [2 /*return*/, false];
-                case 5:
-                    File.close(sourceFile);
-                    Logger.log(guid, 'Time', Math.round(getTime() - start) + "ms");
-                    State_1.State.pendingQueries--;
-                    return [7 /*endfinally*/];
-                case 6: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.execute = execute;

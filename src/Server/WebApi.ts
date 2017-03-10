@@ -14,6 +14,24 @@ import ServerConfig from '../ServerConfig'
 import * as Logger from './Utils/Logger'
 import { State } from './State'
 
+export default function init(app: express.Express) {
+    function makePath(p: string) {
+        return ServerConfig.apiPrefix + '/' + p;
+    }
+
+    // Header
+    app.get(makePath(':source/:id/?$'), (req, res) => getHeader(req, res));
+    // Box /:src/:id/box/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
+    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), (req, res) => queryBox(req, res, getQueryParams(req, false)));
+    // Cell /:src/:id/cell/?text=0|1&space=cartesian|fractional
+    app.get(makePath(':source/:id/cell/?'), (req, res) => queryBox(req, res, getQueryParams(req, true)));
+
+    app.get('*', (req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(Docs);
+    });
+} 
+
 function mapFile(type: string, id: string) {
     return ServerConfig.mapFile(type || '', id || '');
 }
@@ -141,21 +159,3 @@ function queryDone() {
         process.exit(0);
     }
 }
-
-export function init(app: express.Express) {
-    function makePath(p: string) {
-        return ServerConfig.apiPrefix + '/' + p;
-    }
-
-    // Header
-    app.get(makePath(':source/:id/?$'), (req, res) => getHeader(req, res));
-    // Box /:src/:id/box/:a1,:a2,:a3/:b1,:b2,:b3?text=0|1&space=cartesian|fractional
-    app.get(makePath(':source/:id/box/:a1,:a2,:a3/:b1,:b2,:b3/?'), (req, res) => queryBox(req, res, getQueryParams(req, false)));
-    // Cell /:src/:id/cell/?text=0|1&space=cartesian|fractional
-    app.get(makePath(':source/:id/cell/?'), (req, res) => queryBox(req, res, getQueryParams(req, true)));
-
-    app.get('*', (req, res) => {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(Docs);
-    });
-} 

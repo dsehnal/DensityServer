@@ -39,7 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var File = require("../Common/File");
-var Query = require("./Query/Execute");
+var Execute_1 = require("./Query/Execute");
 var Logger = require("./Utils/Logger");
 var DataFormat = require("../Common/DataFormat");
 var ServerConfig_1 = require("../ServerConfig");
@@ -54,9 +54,46 @@ function getOutputFilename(source, id, _a) {
     return n(source) + "_" + n(id) + "-" + boxInfo + "." + (asBinary ? 'bcif' : 'cif') + "_p" + prec;
 }
 exports.getOutputFilename = getOutputFilename;
+/** Reads the header and includes information about available detail levels */
+function getHeaderJson(filename, sourceId) {
+    return __awaiter(this, void 0, void 0, function () {
+        var header, e_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    Logger.logPlain('Header', sourceId);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, readHeader(filename, sourceId)];
+                case 2:
+                    header = _a.sent();
+                    header.availablePrecisions = ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.map(function (maxVoxels, precision) { return ({ precision: precision, maxVoxels: maxVoxels }); });
+                    return [2 /*return*/, JSON.stringify(header, null, 2)];
+                case 3:
+                    e_1 = _a.sent();
+                    Logger.errorPlain("Header " + sourceId, e_1);
+                    return [2 /*return*/, void 0];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.getHeaderJson = getHeaderJson;
+function queryBox(params, outputProvider) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, Execute_1.default(params, outputProvider)];
+                case 1: return [2 /*return*/, _a.sent()];
+            }
+        });
+    });
+}
+exports.queryBox = queryBox;
 function readHeader(filename, sourceId) {
     return __awaiter(this, void 0, void 0, function () {
-        var file, header, e_1;
+        var file, header, e_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -74,8 +111,8 @@ function readHeader(filename, sourceId) {
                     header = _a.sent();
                     return [2 /*return*/, header.header];
                 case 4:
-                    e_1 = _a.sent();
-                    Logger.errorPlain("Info " + sourceId, e_1);
+                    e_2 = _a.sent();
+                    Logger.errorPlain("Info " + sourceId, e_2);
                     return [2 /*return*/, void 0];
                 case 5:
                     File.close(file);
@@ -85,40 +122,3 @@ function readHeader(filename, sourceId) {
         });
     });
 }
-/** Reads the header and includes information about available detail levels */
-function getHeaderJson(filename, sourceId) {
-    return __awaiter(this, void 0, void 0, function () {
-        var header, e_2;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    Logger.logPlain('Header', sourceId);
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, readHeader(filename, sourceId)];
-                case 2:
-                    header = _a.sent();
-                    header.availablePrecisions = ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.map(function (maxVoxels, precision) { return ({ precision: precision, maxVoxels: maxVoxels }); });
-                    return [2 /*return*/, JSON.stringify(header, null, 2)];
-                case 3:
-                    e_2 = _a.sent();
-                    Logger.errorPlain("Header " + sourceId, e_2);
-                    return [2 /*return*/, void 0];
-                case 4: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.getHeaderJson = getHeaderJson;
-function queryBox(params, outputProvider) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, Query.execute(params, outputProvider)];
-                case 1: return [2 /*return*/, _a.sent()];
-            }
-        });
-    });
-}
-exports.queryBox = queryBox;

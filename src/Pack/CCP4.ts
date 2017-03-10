@@ -158,4 +158,3 @@ export async function open(name: string, filename: string, blockSize: number): P
         slices: createSliceBuffer(header, blockSize)
     };
 }
-
