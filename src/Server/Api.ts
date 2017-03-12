@@ -23,8 +23,18 @@ export function getOutputFilename(source: string, id: string, { asBinary, box, d
 export async function getHeaderJson(filename: string | undefined, sourceId: string) {
     Logger.logPlain('Header', sourceId);
     try {
-        const header: any = await readHeader(filename, sourceId);
-        header.availablePrecisions = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.map((maxVoxels, precision) => ({ precision, maxVoxels }));
+        const header = { ...await readHeader(filename, sourceId) };
+        const { sampleCount } = header!.sampling[0];
+        const maxVoxelCount = sampleCount[0] * sampleCount[1] * sampleCount[2];
+        const precisions = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel
+            .map((maxVoxels, precision) => ({ precision, maxVoxels }));
+        const availablePrecisions = [];
+        for (const p of precisions) {
+            availablePrecisions.push(p);
+            if (p.maxVoxels > maxVoxelCount) break;
+        }       
+        (header as any).availablePrecisions = availablePrecisions;
+        (header as any).isAvailable = true;
         return JSON.stringify(header, null, 2);
     } catch (e) {
         Logger.errorPlain(`Header ${sourceId}`, e);

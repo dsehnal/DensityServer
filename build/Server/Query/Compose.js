@@ -124,7 +124,7 @@ function createBlockGridDomain(block, grid) {
 /** Read the block data and fill all the overlaps with the query region. */
 function fillBlock(query, block) {
     return __awaiter(this, void 0, void 0, function () {
-        var baseBox, blockGridDomain, blockData, _i, _a, offset, offsetBlockBox, dataBox, blockGridBox, queryGridBox;
+        var baseBox, blockGridDomain, blockData, _i, _a, offset, offsetQueryBox, dataBox, offsetDataBox, blockGridBox, queryGridBox;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -135,12 +135,13 @@ function fillBlock(query, block) {
                     blockData = _b.sent();
                     for (_i = 0, _a = block.offsets; _i < _a.length; _i++) {
                         offset = _a[_i];
-                        offsetBlockBox = Box.shift(baseBox, offset);
-                        dataBox = Box.intersect(offsetBlockBox, query.samplingInfo.fractionalBox);
+                        offsetQueryBox = Box.shift(query.samplingInfo.fractionalBox, offset);
+                        dataBox = Box.intersect(baseBox, offsetQueryBox);
                         if (!dataBox)
                             continue;
+                        offsetDataBox = Box.shift(dataBox, Coords.invert(offset));
                         blockGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, blockGridDomain));
-                        queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.samplingInfo.gridDomain));
+                        queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(offsetDataBox, query.samplingInfo.gridDomain));
                         fillData(query, blockData, blockGridBox, queryGridBox);
                     }
                     return [2 /*return*/];

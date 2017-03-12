@@ -117,6 +117,10 @@ function sub(a, b) {
     return withCoord(a, a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 exports.sub = sub;
+function invert(a) {
+    return withCoord(a, -a[0], -a[1], -a[2]);
+}
+exports.invert = invert;
 /** Maps each grid point to a unique integer */
 function linearGridIndex(a) {
     var samples = a.domain.sampleCount;

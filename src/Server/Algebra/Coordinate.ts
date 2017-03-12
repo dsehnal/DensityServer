@@ -157,6 +157,10 @@ export function sub<S extends Space>(a: Coord<S>, b: Coord<S>): Coord<S> {
     return withCoord(a, a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 }
 
+export function invert<S extends Space>(a: Coord<S>): Coord<S> {
+    return withCoord(a, -a[0], -a[1], -a[2]);
+}
+
 /** Maps each grid point to a unique integer */
 export function linearGridIndex<K>(a: Grid<K>) {
     const samples = a.domain.sampleCount;

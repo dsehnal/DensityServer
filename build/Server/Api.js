@@ -2,6 +2,14 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -57,21 +65,35 @@ exports.getOutputFilename = getOutputFilename;
 /** Reads the header and includes information about available detail levels */
 function getHeaderJson(filename, sourceId) {
     return __awaiter(this, void 0, void 0, function () {
-        var header, e_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var header, _a, _b, sampleCount, maxVoxelCount, precisions, availablePrecisions, _i, precisions_1, p, e_1;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     Logger.logPlain('Header', sourceId);
-                    _a.label = 1;
+                    _c.label = 1;
                 case 1:
-                    _a.trys.push([1, 3, , 4]);
+                    _c.trys.push([1, 3, , 4]);
+                    _a = __assign;
+                    _b = [{}];
                     return [4 /*yield*/, readHeader(filename, sourceId)];
                 case 2:
-                    header = _a.sent();
-                    header.availablePrecisions = ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.map(function (maxVoxels, precision) { return ({ precision: precision, maxVoxels: maxVoxels }); });
+                    header = _a.apply(void 0, _b.concat([_c.sent()]));
+                    sampleCount = header.sampling[0].sampleCount;
+                    maxVoxelCount = sampleCount[0] * sampleCount[1] * sampleCount[2];
+                    precisions = ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel
+                        .map(function (maxVoxels, precision) { return ({ precision: precision, maxVoxels: maxVoxels }); });
+                    availablePrecisions = [];
+                    for (_i = 0, precisions_1 = precisions; _i < precisions_1.length; _i++) {
+                        p = precisions_1[_i];
+                        availablePrecisions.push(p);
+                        if (p.maxVoxels > maxVoxelCount)
+                            break;
+                    }
+                    header.availablePrecisions = availablePrecisions;
+                    header.isAvailable = true;
                     return [2 /*return*/, JSON.stringify(header, null, 2)];
                 case 3:
-                    e_1 = _a.sent();
+                    e_1 = _c.sent();
                     Logger.errorPlain("Header " + sourceId, e_1);
                     return [2 /*return*/, void 0];
                 case 4: return [2 /*return*/];

@@ -76,12 +76,14 @@ async function fillBlock(query: Data.QueryContext.Data, block: Data.QueryBlock) 
     const blockData: Data.BlockData = await readBlock(query, block.coord, baseBox);
         
     for (const offset of block.offsets) {
-        const offsetBlockBox = Box.shift(baseBox, offset);
-        const dataBox = Box.intersect(offsetBlockBox, query.samplingInfo.fractionalBox);
-
+        const offsetQueryBox = Box.shift(query.samplingInfo.fractionalBox, offset);
+        const dataBox = Box.intersect(baseBox, offsetQueryBox);
         if (!dataBox) continue;
+
+        const offsetDataBox = Box.shift(dataBox, Coords.invert(offset));
+
         const blockGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, blockGridDomain));
-        const queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(dataBox, query.samplingInfo.gridDomain));
+        const queryGridBox = Box.clampGridToSamples(Box.fractionalToGrid(offsetDataBox, query.samplingInfo.gridDomain));
 
         fillData(query, blockData, blockGridBox, queryGridBox);
     }
