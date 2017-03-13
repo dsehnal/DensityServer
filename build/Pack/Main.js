@@ -38,11 +38,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var CCP4 = require("./CCP4");
-var File = require("../Common/File");
-var Data = require("./DataModel");
-var Sampling = require("./Sampling");
-var DataFormat = require("../Common/DataFormat");
+var CCP4 = require("./ccp4");
+var File = require("../common/file");
+var Data = require("./data-model");
+var Sampling = require("./sampling");
+var DataFormat = require("../common/data-format");
 var fs = require("fs");
 function pack(input, blockSize, isPeriodic, outputFilename) {
     return __awaiter(this, void 0, void 0, function () {

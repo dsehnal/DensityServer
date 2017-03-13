@@ -2,12 +2,12 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as File from '../Common/File'
-import execute from './Query/Execute'
-import * as Data from './Query/DataModel'
-import * as Logger from './Utils/Logger'
-import * as DataFormat from '../Common/DataFormat'
-import ServerConfig from '../ServerConfig'
+import * as File from '../common/file'
+import execute from './query/execute'
+import * as Data from './query/data-model'
+import * as Logger from './utils/logger'
+import * as DataFormat from '../common/data-format'
+import ServerConfig from '../server-config'
 
 export function getOutputFilename(source: string, id: string, { asBinary, box, detail }: Data.QueryParams) {
     function n(s: string) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase() }

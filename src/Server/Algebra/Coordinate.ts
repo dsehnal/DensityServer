@@ -2,7 +2,7 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as LA from './Linear'
+import * as LA from './linear'
 
 export interface SpacegroupInfo {
     number: number,

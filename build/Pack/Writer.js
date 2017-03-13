@@ -38,8 +38,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var File = require("../Common/File");
-var DataFormat = require("../Common/DataFormat");
+var File = require("../common/file");
+var DataFormat = require("../common/data-format");
 /** Converts a layer to blocks and writes them to the output file. */
 function writeBlockLayer(ctx, sampling) {
     return __awaiter(this, void 0, void 0, function () {

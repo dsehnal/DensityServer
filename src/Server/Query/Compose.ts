@@ -2,11 +2,11 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as DataFormat from '../../Common/DataFormat'
-import * as Data from './DataModel'
-import * as Box from '../Algebra/Box'
-import * as Coords from '../Algebra/Coordinate'
-import * as File from '../../Common/File'
+import * as DataFormat from '../../common/data-format'
+import * as Data from './data-model'
+import * as Box from '../algebra/box'
+import * as Coords from '../algebra/coordinate'
+import * as File from '../../common/file'
 
 export default async function compose(query: Data.QueryContext.Data) {
     for (const block of query.samplingInfo.blocks) {

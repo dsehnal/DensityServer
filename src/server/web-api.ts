@@ -4,15 +4,15 @@
 
 import * as express from 'express'
 
-import * as Api from './Api'
+import * as Api from './api'
 
-import * as Data from './Query/DataModel'
-import * as Coords from './Algebra/Coordinate'
-import Docs from './Documentation'
-import * as CIFTools from '../lib/CIFTools'
-import ServerConfig from '../ServerConfig'
-import * as Logger from './Utils/Logger'
-import { State } from './State'
+import * as Data from './query/data-model'
+import * as Coords from './algebra/coordinate'
+import Docs from './documentation'
+import * as CIFTools from '../lib/cif-tools'
+import ServerConfig from '../server-config'
+import * as Logger from './utils/logger'
+import { State } from './state'
 
 export default function init(app: express.Express) {
     function makePath(p: string) {

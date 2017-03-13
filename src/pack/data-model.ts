@@ -2,8 +2,8 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as CCP4 from './CCP4'
-import * as DataFormat from '../Common/DataFormat'
+import * as CCP4 from './ccp4'
+import * as DataFormat from '../common/data-format'
 
 const FORMAT_VERSION = '1.0.0';
 

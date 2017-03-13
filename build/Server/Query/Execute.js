@@ -38,13 +38,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var DataFormat = require("../../Common/DataFormat");
+var DataFormat = require("../../common/data-format");
 var File = require("../../Common/File");
-var Coords = require("../Algebra/Coordinate");
-var Box = require("../Algebra/Box");
-var Logger = require("../Utils/Logger");
-var State_1 = require("../State");
-var ServerConfig_1 = require("../../ServerConfig");
+var Coords = require("../algebra/coordinate");
+var Box = require("../algebra/box");
+var Logger = require("../utils/logger");
+var state_1 = require("../state");
+var server_config_1 = require("../../server-config");
 var Identify_1 = require("./Identify");
 var Compose_1 = require("./Compose");
 var Encode_1 = require("./Encode");
@@ -55,9 +55,9 @@ function execute(params, outputProvider) {
             switch (_a.label) {
                 case 0:
                     start = getTime();
-                    State_1.State.pendingQueries++;
+                    state_1.State.pendingQueries++;
                     guid = generateUUID();
-                    params.detail = Math.min(Math.max(0, params.detail | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+                    params.detail = Math.min(Math.max(0, params.detail | 0), server_config_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
                     Logger.log(guid, 'Info', "id=" + params.sourceId + ",encoding=" + (params.asBinary ? 'binary' : 'text') + ",detail=" + params.detail + "," + queryBoxToString(params.box));
                     sourceFile = void 0;
                     _a.label = 1;
@@ -77,7 +77,7 @@ function execute(params, outputProvider) {
                 case 5:
                     File.close(sourceFile);
                     Logger.log(guid, 'Time', Math.round(getTime() - start) + "ms");
-                    State_1.State.pendingQueries--;
+                    state_1.State.pendingQueries--;
                     return [7 /*endfinally*/];
                 case 6: return [2 /*return*/];
             }
@@ -159,14 +159,14 @@ function pickSampling(data, queryBox, forcedLevel, precision) {
     if (forcedLevel > 0) {
         return createQuerySampling(data, data.sampling[Math.min(data.sampling.length, forcedLevel) - 1], queryBox);
     }
-    var sizeLimit = ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel[precision] || (2 * 1024 * 1024);
+    var sizeLimit = server_config_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel[precision] || (2 * 1024 * 1024);
     for (var _i = 0, _a = data.sampling; _i < _a.length; _i++) {
         var s = _a[_i];
         var gridBox = Box.fractionalToGrid(queryBox, s.dataDomain);
         var approxSize = Box.volume(gridBox);
         if (approxSize <= sizeLimit) {
             var sampling = createQuerySampling(data, s, queryBox);
-            if (sampling.blocks.length <= ServerConfig_1.default.limits.maxRequestBlockCount) {
+            if (sampling.blocks.length <= server_config_1.default.limits.maxRequestBlockCount) {
                 return sampling;
             }
         }
@@ -202,7 +202,7 @@ function createQueryContext(data, params, guid) {
     else {
         queryBox = inputQueryBox;
     }
-    if (Box.dimensions(queryBox).some(function (d) { return isNaN(d) || d > ServerConfig_1.default.limits.maxFractionalBoxDimension; })) {
+    if (Box.dimensions(queryBox).some(function (d) { return isNaN(d) || d > server_config_1.default.limits.maxFractionalBoxDimension; })) {
         throw "The query box is too big.";
     }
     var samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.detail);

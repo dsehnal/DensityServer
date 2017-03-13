@@ -2,10 +2,10 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as Coords from '../Algebra/Coordinate'
-import * as Box from '../Algebra/Box'
-import * as Data from './DataModel'
-import { FastMap } from '../Utils/Collections'
+import * as Coords from '../algebra/coordinate'
+import * as Box from '../algebra/box'
+import * as Data from './data-model'
+import { FastMap } from '../utils/collections'
 
 /** Find a list of unique blocks+offsets that overlap with the query region. */
 export default function findUniqueBlocks(data: Data.DataContext, sampling: Data.Sampling, queryBox: Box.Fractional) {

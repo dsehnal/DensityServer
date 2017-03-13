@@ -38,10 +38,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var DataFormat = require("../../Common/DataFormat");
-var Box = require("../Algebra/Box");
-var Coords = require("../Algebra/Coordinate");
-var File = require("../../Common/File");
+var DataFormat = require("../../common/data-format");
+var Box = require("../algebra/box");
+var Coords = require("../algebra/coordinate");
+var File = require("../../common/file");
 function compose(query) {
     return __awaiter(this, void 0, void 0, function () {
         var _i, _a, block;

@@ -2,9 +2,9 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as Data from './DataModel'
-import * as File from '../Common/File'
-import * as DataFormat from '../Common/DataFormat'
+import * as Data from './data-model'
+import * as File from '../common/file'
+import * as DataFormat from '../common/data-format'
 
 /** Converts a layer to blocks and writes them to the output file. */
 export async function writeBlockLayer(ctx: Data.Context, sampling: Data.Sampling) {

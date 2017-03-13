@@ -2,15 +2,15 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as DataFormat from '../../Common/DataFormat'
+import * as DataFormat from '../../common/data-format'
 import * as File from '../../Common/File'
-import * as Data from './DataModel'
-import * as Coords from '../Algebra/Coordinate'
-import * as Box from '../Algebra/Box'
-import * as CIF from '../../lib/CIFTools'
-import * as Logger from '../Utils/Logger'
-import { State } from '../State'
-import ServerConfig from '../../ServerConfig'
+import * as Data from './data-model'
+import * as Coords from '../algebra/coordinate'
+import * as Box from '../algebra/box'
+import * as CIF from '../../lib/cif-tools'
+import * as Logger from '../utils/logger'
+import { State } from '../state'
+import ServerConfig from '../../server-config'
 
 import identify from './Identify'
 import compose from './Compose'

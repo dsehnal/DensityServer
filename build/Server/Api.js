@@ -46,16 +46,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var File = require("../Common/File");
-var Execute_1 = require("./Query/Execute");
-var Logger = require("./Utils/Logger");
-var DataFormat = require("../Common/DataFormat");
-var ServerConfig_1 = require("../ServerConfig");
+var File = require("../common/file");
+var execute_1 = require("./query/execute");
+var Logger = require("./utils/logger");
+var DataFormat = require("../common/data-format");
+var server_config_1 = require("../server-config");
 function getOutputFilename(source, id, _a) {
     var asBinary = _a.asBinary, box = _a.box, detail = _a.detail;
     function n(s) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase(); }
     function r(v) { return Math.round(10 * v) / 10; }
-    var det = Math.min(Math.max(0, detail | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+    var det = Math.min(Math.max(0, detail | 0), server_config_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     var boxInfo = box.kind === 'Cell'
         ? 'cell'
         : (box.kind === 'Cartesian' ? 'cartn' : 'frac') + "_" + r(box.a[0]) + "_" + r(box.a[1]) + "_" + r(box.a[2]) + "_" + r(box.b[0]) + "_" + r(box.b[1]) + "_" + r(box.b[2]);
@@ -80,7 +80,7 @@ function getHeaderJson(filename, sourceId) {
                     header = _a.apply(void 0, _b.concat([_c.sent()]));
                     sampleCount = header.sampling[0].sampleCount;
                     maxVoxelCount = sampleCount[0] * sampleCount[1] * sampleCount[2];
-                    precisions = ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel
+                    precisions = server_config_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel
                         .map(function (maxVoxels, precision) { return ({ precision: precision, maxVoxels: maxVoxels }); });
                     availablePrecisions = [];
                     for (_i = 0, precisions_1 = precisions; _i < precisions_1.length; _i++) {
@@ -106,7 +106,7 @@ function queryBox(params, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, Execute_1.default(params, outputProvider)];
+                case 0: return [4 /*yield*/, execute_1.default(params, outputProvider)];
                 case 1: return [2 /*return*/, _a.sent()];
             }
         });

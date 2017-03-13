@@ -38,8 +38,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var Api = require("./Server/Api");
-var Coordinate = require("./Server/Algebra/Coordinate");
+var Api = require("./server/api");
+var Coordinate = require("./server/algebra/coordinate");
 var fs = require("fs");
 function wrapResponse(fn) {
     var w = {

@@ -3,8 +3,8 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var Main_1 = require("./Pack/Main");
-var Version_1 = require("./Pack/Version");
+var main_1 = require("./pack/main");
+var version_1 = require("./pack/version");
 var config = {
     input: [],
     isPeriodic: false,
@@ -13,7 +13,7 @@ var config = {
 };
 function printHelp() {
     var help = [
-        "DensityServer Packer " + Version_1.default + ", (c) 2016 - now, David Sehnal",
+        "DensityServer Packer " + version_1.default + ", (c) 2016 - now, David Sehnal",
         "",
         "The input data must be CCP4/MAP mode 2 (32-bit floats) files.",
         "",
@@ -61,7 +61,7 @@ function parseInput() {
                 config.outputFilename = process.argv[++i];
                 break;
             case '-v':
-                console.log(Version_1.default);
+                console.log(version_1.default);
                 process.exit();
                 return false;
             default:
@@ -73,5 +73,5 @@ function parseInput() {
     return input;
 }
 if (parseInput()) {
-    Main_1.default(config.input, config.blockSize, config.isPeriodic, config.outputFilename);
+    main_1.default(config.input, config.blockSize, config.isPeriodic, config.outputFilename);
 }

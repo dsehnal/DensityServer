@@ -2,11 +2,11 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as CCP4 from './CCP4'
-import * as File from '../Common/File'
-import * as Data from './DataModel'
-import * as Sampling from './Sampling'
-import * as DataFormat from '../Common/DataFormat'
+import * as CCP4 from './ccp4'
+import * as File from '../common/file'
+import * as Data from './data-model'
+import * as Sampling from './sampling'
+import * as DataFormat from '../common/data-format'
 import * as fs from 'fs'
 
 export default async function pack(input: { name: string, filename: string }[], blockSize: number, isPeriodic: boolean, outputFilename: string) {

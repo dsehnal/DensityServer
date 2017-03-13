@@ -3,7 +3,7 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var CIF = require("../lib/CIFTools");
+var CIF = require("../lib/cif-tools");
 var MsgPack = CIF.Binary.MessagePack;
 exports.bool = { kind: 'bool' };
 exports.int = { kind: 'int' };

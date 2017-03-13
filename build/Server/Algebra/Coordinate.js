@@ -3,7 +3,7 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var LA = require("./Linear");
+var LA = require("./linear");
 /** Constructs spacegroup skew matrix from supplied info */
 function spacegroup(info) {
     var cellAngles = info.angles, cellSize = info.size;

@@ -38,12 +38,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var CCP4 = require("./CCP4");
-var Data = require("./DataModel");
-var File = require("../Common/File");
-var Downsampling = require("./Downsampling");
-var Writer = require("./Writer");
-var DataFormat = require("../Common/DataFormat");
+var CCP4 = require("./ccp4");
+var Data = require("./data-model");
+var File = require("../common/file");
+var Downsampling = require("./downsampling");
+var Writer = require("./writer");
+var DataFormat = require("../common/data-format");
 function createContext(filename, channels, blockSize, isPeriodic) {
     return __awaiter(this, void 0, void 0, function () {
         var header, samplingCounts, valueType, cubeBuffer, litteEndianCubeBuffer, ctx, _a, byteOffset, _i, _b, s;

@@ -3,15 +3,15 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var Coords = require("../Algebra/Coordinate");
-var Box = require("../Algebra/Box");
-var Collections_1 = require("../Utils/Collections");
+var Coords = require("../algebra/coordinate");
+var Box = require("../algebra/box");
+var collections_1 = require("../utils/collections");
 /** Find a list of unique blocks+offsets that overlap with the query region. */
 function findUniqueBlocks(data, sampling, queryBox) {
     var translations = data.header.spacegroup.isPeriodic
         ? findDataOverlapTranslationList(queryBox, sampling.dataDomain)
         : [Coords.fractional(0, 0, 0)];
-    var blocks = Collections_1.FastMap.create();
+    var blocks = collections_1.FastMap.create();
     for (var _i = 0, translations_1 = translations; _i < translations_1.length; _i++) {
         var t = translations_1[_i];
         findUniqueBlocksOffset(data, sampling, queryBox, t, blocks);

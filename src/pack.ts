@@ -2,8 +2,8 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import pack from './Pack/Main'
-import VERSION from './Pack/Version'
+import pack from './pack/main'
+import VERSION from './pack/version'
 
 let config = {
     input: <{ name: string, filename: string }[]>[],

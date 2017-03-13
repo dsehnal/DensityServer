@@ -2,8 +2,8 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import VERSION from './Version'
-import ServerConfig from '../ServerConfig'
+import VERSION from './version'
+import ServerConfig from '../server-config'
 
 function detail(i: number) {
      return `<span class='id'>${i}</span><small> (${Math.round(100 * ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel[i] / 1000 / 1000) / 100 }M voxels)</small>`;

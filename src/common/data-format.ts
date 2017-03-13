@@ -2,8 +2,8 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as File from './File'
-import * as Schema from './BinarySchema'
+import * as File from './file'
+import * as Schema from './binary-schema'
 
 export type ValueType = 'float32' | 'int8'
 

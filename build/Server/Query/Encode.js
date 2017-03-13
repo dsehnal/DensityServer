@@ -3,12 +3,12 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var CIF = require("../../lib/CIFTools");
-var Version_1 = require("../Version");
-var DataFormat = require("../../Common/DataFormat");
+var CIF = require("../../lib/cif-tools");
+var version_1 = require("../version");
+var DataFormat = require("../../common/data-format");
 function encode(query, output) {
     var w = query.params.asBinary
-        ? new CIF.Binary.Writer("DensityServer " + Version_1.default)
+        ? new CIF.Binary.Writer("DensityServer " + version_1.default)
         : new CIF.Text.Writer();
     write(w, query);
     w.encode();
@@ -136,7 +136,7 @@ function queryBoxDimension(e, d) {
     return string("query_box_" + e + "[" + d + "]", function (ctx) { return pickQueryBoxDimension(ctx, e, d); }, function (ctx) { return ctx.params.box.kind !== 'Cell'; });
 }
 var _density_server_result_fields = [
-    string('server_version', function (ctx) { return Version_1.default; }),
+    string('server_version', function (ctx) { return version_1.default; }),
     string('datetime_utc', function (ctx) { return new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''); }),
     string('guid', function (ctx) { return ctx.guid; }),
     string('is_empty', function (ctx) { return ctx.kind === 'Empty' || ctx.kind === 'Error' ? 'yes' : 'no'; }),

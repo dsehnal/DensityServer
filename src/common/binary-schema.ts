@@ -2,7 +2,7 @@
  * Copyright (c) 2017 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as CIF from '../lib/CIFTools'
+import * as CIF from '../lib/cif-tools'
 import MsgPack = CIF.Binary.MessagePack
 
 export type Bool = { kind: 'bool' }

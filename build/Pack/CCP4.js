@@ -38,8 +38,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var File = require("../Common/File");
-var DataFormat = require("../Common/DataFormat");
+var File = require("../common/file");
+var DataFormat = require("../common/data-format");
 function getValueType(header) {
     if (header.mode === 2 /* Float32 */)
         return DataFormat.ValueType.Float32;

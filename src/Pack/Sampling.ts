@@ -2,12 +2,12 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as CCP4 from './CCP4'
-import * as Data from './DataModel'
-import * as File from '../Common/File'
-import * as Downsampling from './Downsampling'
-import * as Writer from './Writer'
-import * as DataFormat from '../Common/DataFormat'
+import * as CCP4 from './ccp4'
+import * as Data from './data-model'
+import * as File from '../common/file'
+import * as Downsampling from './downsampling'
+import * as Writer from './writer'
+import * as DataFormat from '../common/data-format'
 
 export async function createContext(filename: string, channels: CCP4.Data[], blockSize: number, isPeriodic: boolean): Promise<Data.Context> {
     const header = channels[0].header;

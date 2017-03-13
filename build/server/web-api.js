@@ -38,15 +38,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var Api = require("./Api");
-var Coords = require("./Algebra/Coordinate");
-var Documentation_1 = require("./Documentation");
-var ServerConfig_1 = require("../ServerConfig");
-var Logger = require("./Utils/Logger");
-var State_1 = require("./State");
+var Api = require("./api");
+var Coords = require("./algebra/coordinate");
+var documentation_1 = require("./documentation");
+var server_config_1 = require("../server-config");
+var Logger = require("./utils/logger");
+var state_1 = require("./state");
 function init(app) {
     function makePath(p) {
-        return ServerConfig_1.default.apiPrefix + '/' + p;
+        return server_config_1.default.apiPrefix + '/' + p;
     }
     // Header
     app.get(makePath(':source/:id/?$'), function (req, res) { return getHeader(req, res); });
@@ -56,12 +56,12 @@ function init(app) {
     app.get(makePath(':source/:id/cell/?'), function (req, res) { return queryBox(req, res, getQueryParams(req, true)); });
     app.get('*', function (req, res) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(Documentation_1.default);
+        res.end(documentation_1.default);
     });
 }
 exports.default = init;
 function mapFile(type, id) {
-    return ServerConfig_1.default.mapFile(type || '', id || '');
+    return server_config_1.default.mapFile(type || '', id || '');
 }
 function wrapResponse(fn, res) {
     var w = {
@@ -162,7 +162,7 @@ function getHeader(req, res) {
 function getQueryParams(req, isCell) {
     var a = [+req.params.a1, +req.params.a2, +req.params.a3];
     var b = [+req.params.b1, +req.params.b2, +req.params.b3];
-    var detail = Math.min(Math.max(0, (+req.query.detail) | 0), ServerConfig_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+    var detail = Math.min(Math.max(0, (+req.query.detail) | 0), server_config_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     var isCartesian = (req.query.space || '').toLowerCase() !== 'fractional';
     var box = isCell
         ? { kind: 'Cell' }
@@ -220,7 +220,7 @@ function queryBox(req, res, params) {
     });
 }
 function queryDone() {
-    if (State_1.State.shutdownOnZeroPending) {
+    if (state_1.State.shutdownOnZeroPending) {
         process.exit(0);
     }
 }

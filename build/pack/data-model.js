@@ -3,8 +3,8 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var CCP4 = require("./CCP4");
-var DataFormat = require("../Common/DataFormat");
+var CCP4 = require("./ccp4");
+var DataFormat = require("../common/data-format");
 var FORMAT_VERSION = '1.0.0';
 function createHeader(ctx) {
     var header = ctx.channels[0].header;

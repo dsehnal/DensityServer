@@ -38,8 +38,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var File = require("./File");
-var Schema = require("./BinarySchema");
+var File = require("./file");
+var Schema = require("./binary-schema");
 var ValueType;
 (function (ValueType) {
     ValueType.Float32 = 'float32';

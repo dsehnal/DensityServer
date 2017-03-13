@@ -53,7 +53,7 @@ Running the Server
    npm install --only=production
    ```
 
-- Update ``build/ServerConfig.js`` to link to your data and optionally tweak the other parameters.
+- Update ``build/server-config.js`` to link to your data and optionally tweak the other parameters.
 
 - Run it:
 

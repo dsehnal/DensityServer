@@ -2,8 +2,8 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as File from '../Common/File'
-import * as DataFormat from '../Common/DataFormat'
+import * as File from '../common/file'
+import * as DataFormat from '../common/data-format'
 
 export const enum Mode { Int8 = 0, Float32 = 2 }
 

@@ -3,7 +3,7 @@
  */
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var Coords = require("./Coordinate");
+var Coords = require("./coordinate");
 ///////////////////////////////////////////
 // CONVERSIONS
 ///////////////////////////////////////////

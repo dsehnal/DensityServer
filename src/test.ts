@@ -2,9 +2,9 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as Data from './Server/Query/DataModel'
-import * as Api from './Server/Api'
-import * as Coordinate from './Server/Algebra/Coordinate'
+import * as Data from './server/query/data-model'
+import * as Api from './server/api'
+import * as Coordinate from './server/algebra/coordinate'
 
 import * as fs from 'fs'
 

@@ -5,11 +5,11 @@
 import * as express from 'express'
 import * as compression from 'compression'
 
-import init from './Server/WebApi'
-import VERSION from './Server/Version'
-import ServerConfig from './ServerConfig'
-import * as Logger from './Server/Utils/Logger'
-import { State } from './Server/State'
+import init from './server/web-api'
+import VERSION from './server/version'
+import ServerConfig from './server-config'
+import * as Logger from './server/utils/logger'
+import { State } from './server/state'
 
 function setupShutdown() {
     if (ServerConfig.shutdownParams.timeoutVarianceMinutes > ServerConfig.shutdownParams.timeoutMinutes) {

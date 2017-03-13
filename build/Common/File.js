@@ -40,7 +40,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var path = require("path");
-var DataFormat = require("./DataFormat");
+var DataFormat = require("./data-format");
 exports.IsNativeEndianLittle = new Uint16Array(new Uint8Array([0x12, 0x34]).buffer)[0] === 0x3412;
 function openRead(filename) {
     return __awaiter(this, void 0, void 0, function () {

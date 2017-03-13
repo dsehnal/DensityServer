@@ -2,11 +2,11 @@
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
 
-import * as CIF from '../../lib/CIFTools'
-import * as Data from  './DataModel'
-import * as Coords from  '../Algebra/Coordinate'
-import VERSION from '../Version'
-import * as DataFormat from '../../Common/DataFormat'
+import * as CIF from '../../lib/cif-tools'
+import * as Data from  './data-model'
+import * as Coords from  '../algebra/coordinate'
+import VERSION from '../version'
+import * as DataFormat from '../../common/data-format'
 
 export default function encode(query: Data.QueryContext, output: CIF.OutputStream) {
     let w = query.params.asBinary 
