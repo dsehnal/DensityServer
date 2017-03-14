@@ -1,7 +1,7 @@
 {
   "name": "densityserver",
-  "version": "0.1.0",
-  "description": "A server for sending subsets of molecular density data (electron densty, EM).",
+  "version": "0.9.0",
+  "description": "A server for efficiently accessing 3D volumetric data.",
   "scripts": {},
   "main": "",
   "author": "David Sehnal <david.sehnal@gmail.com>",
