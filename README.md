@@ -15,7 +15,7 @@ There is an instance of the server at [WebChem](https://webchem.ncbr.muni.cz/Den
 Installing the Server 
 =====================
 
-- Install [Node.js](https://nodejs.org/en/) (tested on Node v6).
+- Install [Node.js](https://nodejs.org/en/) (tested on Node 6.* and 7.*; x64 version is strongly preferred).
 - Get the code:
 
     ```
