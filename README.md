@@ -21,7 +21,7 @@ Installing the Server
     ```
     git clone https://github.com/dsehnal/DensityServer.git
     ```
-    or [download it as ZIP](https://github.com/dsehnal/DensityServer/archive/master.zip). No building is required, only the `build` folder in the archive is needed.
+    or [download it as ZIP](https://github.com/dsehnal/DensityServer/archive/master.zip). No building is required, only the `build` folder and the ``package.json`` file in the archive are needed.
 
 - Prepare the data.
 - Run the server.
