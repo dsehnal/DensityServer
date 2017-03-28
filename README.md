@@ -10,7 +10,7 @@ DensityServer is a service for accessing subsets of volumetric density data. It 
 It uses the text based CIF and binary [BinaryCIF](https://github.com/dsehnal/BinaryCIF) formats to deliver the data to the client. The server support is integrated into the 
 [LiteMol Viewer](https://github.com/dsehnal/LiteMol).
 
-There is an instance of the server at [WebChem](https://webchem.ncbr.muni.cz/DensityServer/) and PDBe.
+For quick info about the benefits of using the server, check out the [examples](docs/examples.md). There is an instance of the server at [WebChem](https://webchem.ncbr.muni.cz/DensityServer/) and PDBe.
 
 Installing the Server 
 =====================
@@ -85,6 +85,20 @@ Building
     ```
     gulp
     ```
+
+## Navigating the Source Code
+
+The source code is split into 2 mains parts: [``pack``](src/pack) and [``server``](src/server):
+
+- The [``pack``](src/pack) part provides the means of converting CCP4 files into the internal block format.
+- The [``server``](src/server) includes
+  - [``query``](src/server/query): the main part of the server that handles a query. [``execute.ts``](src/server/query/execute.ts) is the "entry point".
+  - [``algebra``](src/server/algebra): linear, "coordinate", and "box" algebra provides the means for calculations necessary to concent a user query into a menaningful response.
+  - API wrapper that handles the requests.
+
+## Documentation
+
+Basic information about how the server works is present in the [``docs``](src/docs) folder.
 
 Consuming the Data 
 ==================
