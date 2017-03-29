@@ -38,44 +38,73 @@ function wrapResponse(fn: string) {
     return w;
 }
 
-async function query(src: string, id: string, asBinary: boolean, box: Data.QueryParamsBox, detail: number = 0) {
+async function query(src: string, id: string, asBinary: boolean, box: Data.QueryParamsBox, detail: number = 0, forcedSamplingLevel?: number) {
     const params: Data.QueryParams = {
         sourceFilename: `g:/test/mdb/${src}-${id}.mdb`,
         sourceId: `${src}/${id}`,
         asBinary,
         box,
-        detail
+        detail,
+        forcedSamplingLevel
     };
     const res = () => wrapResponse(`g:/test/${Api.getOutputFilename(src, id, params)}`);
     await Api.queryBox(params, res)
 }
 
 async function run() {
-    await query('xray', '1cbs', false, { 
-        kind: 'Cartesian',
-        a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
-        b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
-    });
-    await query('xray', '1cbs', true, { 
-        kind: 'Cartesian',
-        a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
-        b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
-    });
+    // await query('xray', '1cbs', false, { 
+    //     kind: 'Cartesian',
+    //     a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
+    //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
+    // });
+    // await query('xray', '1cbs', true, { 
+    //     kind: 'Cartesian',
+    //     a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
+    //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
+    // });
 
-    await query('emd', '8116', false, { kind: 'Cell' });
-    await query('emd', '8116', true, { kind: 'Cell' }, 0);
-    await query('emd', '8116', true, { kind: 'Cell' }, 1);
-    await query('emd', '8116', true, { kind: 'Cell' }, 2);
-    await query('emd', '8116', true, { kind: 'Cell' }, 3);
-    await query('emd', '8116', true, { kind: 'Cell' }, 4);
+    await query('xray', '1tqn', true, { 
+        kind: 'Cartesian',
+        a: Coordinate.cartesian(-42.996,-64.169,-45.335),
+        b: Coordinate.cartesian(8.768,15.316,21.599) 
+    }, 0, 1);
+    await query('xray', '1tqn', true, { 
+        kind: 'Cartesian',
+        a: Coordinate.cartesian(-42.996,-64.169,-45.335),
+        b: Coordinate.cartesian(8.768,15.316,21.599) 
+    }, 0, 2);
+
+    await query('xray', '1tqn', true, { 
+        kind: 'Cartesian',
+        a: Coordinate.cartesian(-22.367,-33.367,-21.634),
+        b: Coordinate.cartesian(-7.106,-10.042,-0.937) 
+    }, 0, 1);
+    await query('xray', '1tqn', true, { 
+        kind: 'Cartesian',
+        a: Coordinate.cartesian(-22.367,-33.367,-21.634),
+        b: Coordinate.cartesian(-7.106,-10.042,-0.937) 
+    }, 0, 2);
+
+    // await query('emd', '8116', true, { kind: 'Cell' }, 0, 1);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 0, 2);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 0, 3);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 0, 4);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 0, 5);
+
+    //await query('emd', '8116', false, { kind: 'Cell' });
+    // await query('emd', '8116', true, { kind: 'Cell' }, 0);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 1);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 2);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 3);
+    // await query('emd', '8116', true, { kind: 'Cell' }, 4);
     // await query('emd', '8116', true, { kind: 'Cell' }, 5);
     // await query('emd', '8116', true, { kind: 'Cell' }, 6);
 
-    await query('xray', '1cbs', false, { 
-        kind: 'Fractional',
-        a: Coordinate.fractional(0, 0, 0),
-        b: Coordinate.fractional(6, 6, 6)
-    });
+    // await query('xray', '1cbs', false, { 
+    //     kind: 'Fractional',
+    //     a: Coordinate.fractional(0, 0, 0),
+    //     b: Coordinate.fractional(6, 6, 6)
+    // });
 }
 
 run();

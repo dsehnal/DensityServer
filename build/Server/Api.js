@@ -52,14 +52,16 @@ var Logger = require("./utils/logger");
 var DataFormat = require("../common/data-format");
 var server_config_1 = require("../server-config");
 function getOutputFilename(source, id, _a) {
-    var asBinary = _a.asBinary, box = _a.box, detail = _a.detail;
+    var asBinary = _a.asBinary, box = _a.box, detail = _a.detail, forcedSamplingLevel = _a.forcedSamplingLevel;
     function n(s) { return (s || '').replace(/[ \n\t]/g, '').toLowerCase(); }
     function r(v) { return Math.round(10 * v) / 10; }
-    var det = Math.min(Math.max(0, detail | 0), server_config_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
+    var det = forcedSamplingLevel !== void 0
+        ? "l" + forcedSamplingLevel
+        : "d" + Math.min(Math.max(0, detail | 0), server_config_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     var boxInfo = box.kind === 'Cell'
         ? 'cell'
         : (box.kind === 'Cartesian' ? 'cartn' : 'frac') + "_" + r(box.a[0]) + "_" + r(box.a[1]) + "_" + r(box.a[2]) + "_" + r(box.b[0]) + "_" + r(box.b[1]) + "_" + r(box.b[2]);
-    return n(source) + "_" + n(id) + "-" + boxInfo + "_d" + det + "." + (asBinary ? 'bcif' : 'cif');
+    return n(source) + "_" + n(id) + "-" + boxInfo + "_" + det + "." + (asBinary ? 'bcif' : 'cif');
 }
 exports.getOutputFilename = getOutputFilename;
 /** Reads the header and includes information about available detail levels */
