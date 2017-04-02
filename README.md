@@ -84,7 +84,15 @@ The program ``local`` in the build folder can be used to query the data without 
             topRight?: number[],
         }
         params: {
+            /** Determines the detail level as specified in server-config */
             detail?: number,
+            /** 
+             * Determines the sampling level:
+             * 1: Original data
+             * 2: Downsampled by factor 1/2
+             * ...
+             * N: downsampled 1/2^(N-1)
+             */
             forcedSamplingLevel?: number,
             asBinary: boolean,
         },
@@ -92,7 +100,7 @@ The program ``local`` in the build folder can be used to query the data without 
     }
     ```
 
-    for example:
+    Example ``jobs.json`` file content:
 
     ```TypeScript
     [{

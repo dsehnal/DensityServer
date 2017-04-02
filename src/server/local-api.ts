@@ -22,7 +22,15 @@ export interface JobEntry {
         topRight?: number[],
     }
     params: {
+        /** Determines the detail level as specified in server-config */
         detail?: number,
+        /** 
+         * Determines the sampling level:
+         * 1: Original data
+         * 2: Downsampled by factor 1/2
+         * ...
+         * N: downsampled 1/2^(N-1)
+         */
         forcedSamplingLevel?: number,
         asBinary: boolean,
     },
