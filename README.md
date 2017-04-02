@@ -63,6 +63,55 @@ Running the Server
 
     In production it is a good idea to use a service that will keep the server running, such as [forever.js](https://github.com/foreverjs/forever).
 
+### Local Mode
+
+The program ``local`` in the build folder can be used to query the data without running a http server.
+
+- ``node build/local`` prints the program usage.
+- ``node build/local jobs.json`` takes a list of jobs to execute in JSON format. A job entry is defined by this interface:
+
+    ```TypeScript
+    interface JobEntry {
+        source: {
+            filename: string,    
+            name: string,
+            id: string
+        },
+        query: {
+            kind: 'box' | 'cell',
+            space?: 'fractional' | 'cartesian',
+            bottomLeft?: number[],
+            topRight?: number[],
+        }
+        params: {
+            detail?: number,
+            forcedSamplingLevel?: number,
+            asBinary: boolean,
+        },
+        outputFolder: string
+    }
+    ```
+
+    for example:
+
+    ```TypeScript
+    [{
+        source: {
+            filename: `g:/test/mdb/emd-8116.mdb`,
+            name: 'emd',
+            id: '8116',
+        },
+        query: {
+            kind: 'cell'
+        },
+        params: {
+            detail: 4,
+            asBinary: true
+        },
+        outputFolder: 'g:/test/local-test'
+    }]
+    ```
+
 Building
 ========
 

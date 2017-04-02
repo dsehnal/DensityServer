@@ -40,6 +40,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Api = require("./server/api");
 var Coordinate = require("./server/algebra/coordinate");
+var LocalApi = require("./server/local-api");
 var fs = require("fs");
 function wrapResponse(fn) {
     var w = {
@@ -97,35 +98,50 @@ function query(src, id, asBinary, box, detail, forcedSamplingLevel) {
 }
 function run() {
     return __awaiter(this, void 0, void 0, function () {
+        var job, job1;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: 
-                // await query('xray', '1cbs', false, { 
-                //     kind: 'Cartesian',
-                //     a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
-                //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
-                // });
-                // await query('xray', '1cbs', true, { 
-                //     kind: 'Cartesian',
-                //     a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
-                //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
-                // });
-                return [4 /*yield*/, query('xray', '1tqn', true, {
-                        kind: 'Cartesian',
-                        a: Coordinate.cartesian(-42.996, -64.169, -45.335),
-                        b: Coordinate.cartesian(8.768, 15.316, 21.599)
-                    }, 0, 1)];
+                case 0:
+                    job = {
+                        source: {
+                            filename: "g:/test/mdb/xray-1tqn.mdb",
+                            name: 'xray',
+                            id: '1tqn',
+                        },
+                        query: {
+                            kind: 'box',
+                            space: 'cartesian',
+                            bottomLeft: [-42.996, -64.169, -45.335],
+                            topRight: [8.768, 15.316, 21.599]
+                        },
+                        params: {
+                            forcedSamplingLevel: 2,
+                            asBinary: true
+                        },
+                        outputFolder: 'g:/test/local-test'
+                    };
+                    job1 = {
+                        source: {
+                            filename: "g:/test/mdb/emd-8116.mdb",
+                            name: 'emd',
+                            id: '8116',
+                        },
+                        query: {
+                            kind: 'cell'
+                        },
+                        params: {
+                            detail: 4,
+                            asBinary: true
+                        },
+                        outputFolder: 'g:/test/local-test'
+                    };
+                    LocalApi.run([job, job1]);
+                    return [4 /*yield*/, query('xray', '1tqn', true, {
+                            kind: 'Cartesian',
+                            a: Coordinate.cartesian(-42.996, -64.169, -45.335),
+                            b: Coordinate.cartesian(8.768, 15.316, 21.599)
+                        }, 0, 1)];
                 case 1:
-                    // await query('xray', '1cbs', false, { 
-                    //     kind: 'Cartesian',
-                    //     a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
-                    //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
-                    // });
-                    // await query('xray', '1cbs', true, { 
-                    //     kind: 'Cartesian',
-                    //     a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
-                    //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
-                    // });
                     _a.sent();
                     return [4 /*yield*/, query('xray', '1tqn', true, {
                             kind: 'Cartesian',

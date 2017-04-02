@@ -33,6 +33,8 @@ greatly reduces the server latency.
     [H,K,L] => [H/2, K, L] => [H/2, K/2, L] => [H/2, K/2, L/2]
     ```
 
+    (if the dimension is odd, the value ``(D+1)/2`` is used instead).
+
 - Apply the downsampling step iteratively until the number of samples along the largest dimension is smaller than "block size" (or the smallest dimension has >2 samples).
 
 ## Satisfying the query

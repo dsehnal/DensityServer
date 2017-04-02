@@ -183,7 +183,6 @@ function createQueryContext(data: Data.DataContext, params: Data.QueryParams, gu
 
 
 async function _execute(file: number, params: Data.QueryParams, guid: string, outputProvider: () => (CIF.OutputStream & { end: () => void })) {
-
     let output: any = void 0;
     try {
         // Step 1a: Create data context

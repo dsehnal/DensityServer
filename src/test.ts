@@ -6,6 +6,8 @@ import * as Data from './server/query/data-model'
 import * as Api from './server/api'
 import * as Coordinate from './server/algebra/coordinate'
 
+import * as LocalApi from './server/local-api'
+
 import * as fs from 'fs'
 
 function wrapResponse(fn: string) {
@@ -39,6 +41,13 @@ function wrapResponse(fn: string) {
 }
 
 async function query(src: string, id: string, asBinary: boolean, box: Data.QueryParamsBox, detail: number = 0, forcedSamplingLevel?: number) {
+
+    // const job: LocalApi.JobEntry = {
+    //     sourceFilename: `g:/test/mdb/${src}-${id}.mdb`,
+    //     sourceName: src,
+    //     sourceId: id,
+    // }
+
     const params: Data.QueryParams = {
         sourceFilename: `g:/test/mdb/${src}-${id}.mdb`,
         sourceId: `${src}/${id}`,
@@ -62,6 +71,43 @@ async function run() {
     //     a: Coordinate.cartesian(14.555000305175781, 16.075000762939453, 9.847999572753906),
     //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
     // });
+
+    const job: LocalApi.JobEntry = {
+        source: {
+            filename: `g:/test/mdb/xray-1tqn.mdb`,
+            name: 'xray',
+            id: '1tqn',
+        },
+        query: {
+            kind: 'box',
+            space: 'cartesian',
+            bottomLeft: [-42.996,-64.169,-45.335],
+            topRight: [8.768,15.316,21.599]
+        },
+        params: {
+            forcedSamplingLevel: 2,
+            asBinary: true
+        },
+        outputFolder: 'g:/test/local-test'
+    }
+
+    const job1: LocalApi.JobEntry = {
+        source: {
+            filename: `g:/test/mdb/emd-8116.mdb`,
+            name: 'emd',
+            id: '8116',
+        },
+        query: {
+            kind: 'cell'
+        },
+        params: {
+            detail: 4,
+            asBinary: true
+        },
+        outputFolder: 'g:/test/local-test'
+    }
+
+    LocalApi.run([job, job1]);
 
     await query('xray', '1tqn', true, { 
         kind: 'Cartesian',
@@ -108,3 +154,5 @@ async function run() {
 }
 
 run();
+
+
