@@ -14,7 +14,8 @@ This document provides a high level overview of how the DensityServer works.
 ## Data Layout
 
 To enable efficient access to the 3D data, the density values are stored in a "block level" format. 
-This means that the data is split into ``NxNxN`` blocks (by default ``N=96``). This data layout 
+This means that the data is split into ``NxNxN`` blocks (by default ``N=96``, which corresponds to ``96^3 * 4 bytes = 3.375MB`` disk read 
+per block access and provides good size/performance ratio).  This data layout 
 enables to access the data from a hard drive using a bounded number of disk seeks/reads which
 greatly reduces the server latency.
 
@@ -56,8 +57,7 @@ Downsampling the data results in changing of absolute contour levels. To mitigat
 - The "range" of the data went from (-0.4, 6) to (-0.3,3).
 - Attempting to use the same absolute contour level on both "data sets" will likely yield very different results.
 - The effect is similar if instead of skipping values they are averaged (or weighted averaged in the case of the ``[1 4 6 4 1]`` kernel) only not as severe.
-- As a result, the "absolute range" of the data changes, some outlier values are lost, but the relative proportions (i.e. deviation ``X`` from mean in ``Y = mean + sigma * X``) are somewhat preserved. 
-
+- As a result, the "absolute range" of the data changes, some outlier values are lost, but the mean and relative proportions (i.e. deviation ``X`` from mean in ``Y = mean + sigma * X``) are preserved. 
 
 ----------------------
 
@@ -73,9 +73,10 @@ Downsampling the data results in changing of absolute contour levels. To mitigat
 ### Toy example:
 
 ```
-Start with 3.5GB compressed Mode 2 CCP4 
+Start with 3.5GB compressed density data in the CCP4 mode 2 format (32-bit float for each value)
     => ~4GB uncompressed CCP4
     => Downsample by 1/4 => 4GB * (1/4)^3 = 62MB
     => Convert to BinaryCIF => 62MB / 4 = ~16MB
-    => Gzip: 2 - 8 MB depending on the "nature" of the data.
+    => Gzip: 2 - 8 MB depending on the "density" of the data 
+        (e.g. a viral shell data will be smaller because it is "empty" inside)
 ```
