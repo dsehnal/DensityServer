@@ -1,5 +1,6 @@
 # 0.9.1
 * Removed max fractional dimension checking.
+* Fix a bug in MDB packer.
 
 # 0.9.0
 * Rewrote pretty much everything to add downsampling.

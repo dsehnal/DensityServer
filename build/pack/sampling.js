@@ -238,42 +238,59 @@ function shouldSamplingBeWritten(sampling, blockSize, isDataFinished) {
         return sampling.blocks.slicesWritten > 0;
     return sampling.blocks.slicesWritten >= blockSize;
 }
-function processSlices(ctx) {
+function writeBlocks(ctx, isDataFinished) {
     return __awaiter(this, void 0, void 0, function () {
-        var channel, sliceCount, i, isDataFinished, _i, _a, s;
+        var _i, _a, s;
         return __generator(this, function (_b) {
             switch (_b.label) {
+                case 0:
+                    _i = 0, _a = ctx.sampling;
+                    _b.label = 1;
+                case 1:
+                    if (!(_i < _a.length)) return [3 /*break*/, 4];
+                    s = _a[_i];
+                    if (!shouldSamplingBeWritten(s, ctx.blockSize, isDataFinished)) return [3 /*break*/, 3];
+                    updateValuesInfo(s);
+                    return [4 /*yield*/, Writer.writeBlockLayer(ctx, s)];
+                case 2:
+                    _b.sent();
+                    _b.label = 3;
+                case 3:
+                    _i++;
+                    return [3 /*break*/, 1];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function processSlices(ctx) {
+    return __awaiter(this, void 0, void 0, function () {
+        var channel, sliceCount, i, isDataFinished;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
                     channel = ctx.channels[0];
                     sliceCount = channel.slices.sliceCount;
                     i = 0;
-                    _b.label = 1;
+                    _a.label = 1;
                 case 1:
-                    if (!(i < sliceCount)) return [3 /*break*/, 6];
+                    if (!(i < sliceCount)) return [3 /*break*/, 5];
                     copyLayer(ctx, i);
                     Downsampling.downsampleLayer(ctx);
                     isDataFinished = i === sliceCount - 1 && channel.slices.isFinished;
-                    if (isDataFinished) {
-                        Downsampling.finalize(ctx);
-                    }
-                    _i = 0, _a = ctx.sampling;
-                    _b.label = 2;
+                    return [4 /*yield*/, writeBlocks(ctx, isDataFinished)];
                 case 2:
-                    if (!(_i < _a.length)) return [3 /*break*/, 5];
-                    s = _a[_i];
-                    if (!shouldSamplingBeWritten(s, ctx.blockSize, isDataFinished)) return [3 /*break*/, 4];
-                    updateValuesInfo(s);
-                    return [4 /*yield*/, Writer.writeBlockLayer(ctx, s)];
+                    _a.sent();
+                    if (!isDataFinished) return [3 /*break*/, 4];
+                    Downsampling.finalize(ctx);
+                    return [4 /*yield*/, writeBlocks(ctx, isDataFinished)];
                 case 3:
-                    _b.sent();
-                    _b.label = 4;
+                    _a.sent();
+                    _a.label = 4;
                 case 4:
-                    _i++;
-                    return [3 /*break*/, 2];
-                case 5:
                     i++;
                     return [3 /*break*/, 1];
-                case 6: return [2 /*return*/];
+                case 5: return [2 /*return*/];
             }
         });
     });

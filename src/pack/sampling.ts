@@ -180,6 +180,15 @@ function shouldSamplingBeWritten(sampling: Data.Sampling, blockSize: number, isD
     return sampling.blocks.slicesWritten >= blockSize;
 }
 
+async function writeBlocks(ctx: Data.Context, isDataFinished: boolean) {
+    for (const s of ctx.sampling) {
+        if (shouldSamplingBeWritten(s, ctx.blockSize, isDataFinished)) {
+            updateValuesInfo(s);
+            await Writer.writeBlockLayer(ctx, s);
+        }
+    }
+}
+
 async function processSlices(ctx: Data.Context) {
     const channel = ctx.channels[0];
     const sliceCount = channel.slices.sliceCount;
@@ -188,16 +197,12 @@ async function processSlices(ctx: Data.Context) {
         Downsampling.downsampleLayer(ctx);
 
         const isDataFinished = i === sliceCount - 1 && channel.slices.isFinished;
+        
+        await writeBlocks(ctx, isDataFinished);
 
         if (isDataFinished) {
             Downsampling.finalize(ctx);
-        }
-
-        for (const s of ctx.sampling) {
-            if (shouldSamplingBeWritten(s, ctx.blockSize, isDataFinished)) {
-                updateValuesInfo(s);
-                await Writer.writeBlockLayer(ctx, s);
-            }
+            await writeBlocks(ctx, isDataFinished);
         }
     }
 }

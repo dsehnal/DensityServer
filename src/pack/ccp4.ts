@@ -140,7 +140,6 @@ export async function readSlices(data: Data) {
     const sliceByteCount = sliceCount * sliceSize;
 
     await File.readTypedArray(slices.buffer, data.file, header.dataOffset + sliceByteOffset, sliceByteCount, 0, header.littleEndian);
-
     slices.slicesRead += sliceCount;
     slices.sliceCount = sliceCount;
 
