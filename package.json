@@ -19,8 +19,8 @@
     "@types/node": "0.0.2",
     "gulp": "^3.9.1",
     "gulp-clean": "^0.3.2",
-    "gulp-typescript": "^3.1.5",
-    "typescript": "^2.2.1"
+    "gulp-typescript": "^3.1.6",
+    "typescript": "^2.3.0"
   },
   "dependencies": {
     "compression": "^1.6.2",

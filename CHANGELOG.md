@@ -1,3 +1,6 @@
+# 0.9.1
+* Removed max fractional dimension checking.
+
 # 0.9.0
 * Rewrote pretty much everything to add downsampling.
 

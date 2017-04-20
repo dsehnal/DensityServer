@@ -1,7 +1,7 @@
+"use strict";
 /*
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var version_1 = require("./version");
 var server_config_1 = require("../server-config");

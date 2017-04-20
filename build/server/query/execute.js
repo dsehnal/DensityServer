@@ -1,7 +1,7 @@
+"use strict";
 /*
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11,8 +11,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
-    return { next: verb(0), "throw": verb(1), "return": verb(2) };
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -202,8 +202,12 @@ function createQueryContext(data, params, guid) {
     else {
         queryBox = inputQueryBox;
     }
-    if (Box.dimensions(queryBox).some(function (d) { return isNaN(d) || d > server_config_1.default.limits.maxFractionalBoxDimension; })) {
-        throw "The query box is too big.";
+    var dimensions = Box.dimensions(queryBox);
+    if (dimensions.some(function (d) { return isNaN(d); })) {
+        throw "The query box is not defined.";
+    }
+    if (dimensions[0] * dimensions[1] * dimensions[2] > server_config_1.default.limits.maxFractionalBoxVolume) {
+        throw "The query box volume is too big.";
     }
     var samplingInfo = pickSampling(data, queryBox, params.forcedSamplingLevel !== void 0 ? params.forcedSamplingLevel : 0, params.detail);
     if (samplingInfo.blocks.length === 0)

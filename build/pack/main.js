@@ -1,7 +1,7 @@
+"use strict";
 /*
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11,8 +11,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
-    return { next: verb(0), "throw": verb(1), "return": verb(2) };
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -116,9 +116,9 @@ function writeHeader(ctx) {
 }
 function create(filename, sourceDensities, blockSize, isPeriodic) {
     return __awaiter(this, void 0, void 0, function () {
-        var startedTime, files, channels_1, _i, sourceDensities_1, s, _a, _b, _c, isOk, context, _d, channels_2, s, time, _e, files_1, f;
-        return __generator(this, function (_f) {
-            switch (_f.label) {
+        var startedTime, files, channels_1, _i, sourceDensities_1, s, _a, _b, isOk, context, _c, channels_2, s, time, _d, files_1, f;
+        return __generator(this, function (_e) {
+            switch (_e.label) {
                 case 0:
                     startedTime = getTime();
                     if (blockSize % 4 !== 0 || blockSize < 4) {
@@ -130,20 +130,20 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
                     console.log("Block Size: " + blockSize + ".");
                     process.stdout.write('Initializing... ');
                     files = [];
-                    _f.label = 1;
+                    _e.label = 1;
                 case 1:
-                    _f.trys.push([1, , 10, 11]);
+                    _e.trys.push([1, , 10, 11]);
                     channels_1 = [];
                     _i = 0, sourceDensities_1 = sourceDensities;
-                    _f.label = 2;
+                    _e.label = 2;
                 case 2:
                     if (!(_i < sourceDensities_1.length)) return [3 /*break*/, 5];
                     s = sourceDensities_1[_i];
                     _b = (_a = channels_1).push;
                     return [4 /*yield*/, CCP4.open(s.name, s.filename, blockSize)];
                 case 3:
-                    _b.apply(_a, [_f.sent()]);
-                    _f.label = 4;
+                    _b.apply(_a, [_e.sent()]);
+                    _e.label = 4;
                 case 4:
                     _i++;
                     return [3 /*break*/, 2];
@@ -154,9 +154,9 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
                     }
                     return [4 /*yield*/, Sampling.createContext(filename, channels_1, blockSize, isPeriodic)];
                 case 6:
-                    context = _f.sent();
-                    for (_d = 0, channels_2 = channels_1; _d < channels_2.length; _d++) {
-                        s = channels_2[_d];
+                    context = _e.sent();
+                    for (_c = 0, channels_2 = channels_1; _c < channels_2.length; _c++) {
+                        s = channels_2[_c];
                         files.push(s.file);
                     }
                     files.push(context.file);
@@ -165,13 +165,13 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
                     process.stdout.write('Allocating...      0%');
                     return [4 /*yield*/, allocateFile(context)];
                 case 7:
-                    _f.sent();
+                    _e.sent();
                     process.stdout.write('\rAllocating...      done.\n');
                     // Step 3: Process and write the data 
                     process.stdout.write('Writing data...    0%');
                     return [4 /*yield*/, Sampling.processData(context)];
                 case 8:
-                    _f.sent();
+                    _e.sent();
                     process.stdout.write('\rWriting data...    done.\n');
                     // Step 4: Write the header at the start of the file.
                     // The header is written last because the sigma/min/max values are computed 
@@ -179,14 +179,14 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
                     process.stdout.write('Writing header...  ');
                     return [4 /*yield*/, writeHeader(context)];
                 case 9:
-                    _f.sent();
+                    _e.sent();
                     process.stdout.write('done.\n');
                     time = getTime() - startedTime;
                     console.log("[Done] " + time.toFixed(0) + "ms.");
                     return [3 /*break*/, 11];
                 case 10:
-                    for (_e = 0, files_1 = files; _e < files_1.length; _e++) {
-                        f = files_1[_e];
+                    for (_d = 0, files_1 = files; _d < files_1.length; _d++) {
+                        f = files_1[_d];
                         File.close(f);
                     }
                     return [7 /*endfinally*/];

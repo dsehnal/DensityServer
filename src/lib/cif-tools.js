@@ -2,14 +2,14 @@
 ; var __CIFTools = function () {
   'use strict';
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
-    CIFTools.VERSION = { number: "1.1.1", date: "Dec 14 2016" };
+    CIFTools.VERSION = { number: "1.1.5", date: "April 20 2017" };
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -152,7 +152,7 @@ var CIFTools;
     })(Utils = CIFTools.Utils || (CIFTools.Utils = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 /**
  * Efficient integer and float parsers.
@@ -244,7 +244,7 @@ var CIFTools;
     })(Utils = CIFTools.Utils || (CIFTools.Utils = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -393,7 +393,7 @@ var CIFTools;
     })(Utils = CIFTools.Utils || (CIFTools.Utils = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -459,7 +459,7 @@ var CIFTools;
     })(Category = CIFTools.Category || (CIFTools.Category = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -503,10 +503,10 @@ var CIFTools;
     CIFTools.ParserSuccess = ParserSuccess;
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 /*
     On data representation of molecular files
@@ -552,15 +552,15 @@ var CIFTools;
         "use strict";
         var ShortStringPool;
         (function (ShortStringPool) {
-            function create() { return new Map(); }
+            function create() { return Object.create(null); }
             ShortStringPool.create = create;
             function get(pool, str) {
                 if (str.length > 6)
                     return str;
-                var value = pool.get(str);
+                var value = pool[str];
                 if (value !== void 0)
                     return value;
-                pool.set(str, str);
+                pool[str] = str;
                 return str;
             }
             ShortStringPool.get = get;
@@ -772,7 +772,7 @@ var CIFTools;
     })(Text = CIFTools.Text || (CIFTools.Text = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -1097,9 +1097,11 @@ var CIFTools;
                     // escaped is always Value
                     if (state.isEscaped) {
                         state.currentTokenType = 3 /* Value */;
+                        // _ always means column name
                     }
                     else if (state.data.charCodeAt(state.currentTokenStart) === 95) {
                         state.currentTokenType = 4 /* ColumnName */;
+                        // 5th char needs to be _ for data_ or loop_
                     }
                     else if (state.currentTokenEnd - state.currentTokenStart >= 5 && state.data.charCodeAt(state.currentTokenStart + 4) === 95) {
                         if (isData(state))
@@ -1110,6 +1112,7 @@ var CIFTools;
                             state.currentTokenType = 2 /* Loop */;
                         else
                             state.currentTokenType = 3 /* Value */;
+                        // all other tests failed, we are at Value token.
                     }
                     else {
                         state.currentTokenType = 3 /* Value */;
@@ -1230,6 +1233,7 @@ var CIFTools;
                     }
                     block = new Text.DataBlock(data, data.substring(tokenizer.currentTokenStart + 5, tokenizer.currentTokenEnd));
                     moveNext(tokenizer);
+                    // Save frame
                 }
                 else if (token === 1 /* Save */) {
                     id = data.substring(tokenizer.currentTokenStart + 5, tokenizer.currentTokenEnd);
@@ -1252,18 +1256,21 @@ var CIFTools;
                         saveFrame = new Text.DataBlock(data, id);
                     }
                     moveNext(tokenizer);
+                    // Loop
                 }
                 else if (token === 2 /* Loop */) {
                     cat = handleLoop(tokenizer, inSaveFrame ? saveFrame : block);
                     if (cat.hasError) {
                         return error(cat.errorLine, cat.errorMessage);
                     }
+                    // Single row
                 }
                 else if (token === 4 /* ColumnName */) {
                     cat = handleSingle(tokenizer, inSaveFrame ? saveFrame : block);
                     if (cat.hasError) {
                         return error(cat.errorLine, cat.errorMessage);
                     }
+                    // Out of options
                 }
                 else {
                     return error(tokenizer.currentLineNumber, "Unexpected token. Expected data_, loop_, or data name.");
@@ -1285,7 +1292,7 @@ var CIFTools;
     })(Text = CIFTools.Text || (CIFTools.Text = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -1344,8 +1351,8 @@ var CIFTools;
                 var f = fields_1[_i];
                 StringWriter.writePadRight(writer, category.desc.name + "." + f.name, width);
                 var presence = f.presence;
-                var p = void 0;
-                if (presence && (p = presence(data, 0)) !== 0 /* Present */) {
+                var p = presence ? presence(data, 0) : 0 /* Present */;
+                if (p !== 0 /* Present */) {
                     if (p === 1 /* NotSpecified */)
                         writeNotSpecified(writer);
                     else
@@ -1381,8 +1388,8 @@ var CIFTools;
                     for (var _b = 0, fields_3 = fields; _b < fields_3.length; _b++) {
                         var f = fields_3[_b];
                         var presence = f.presence;
-                        var p = void 0;
-                        if (presence && (p = presence(data, i)) !== 0 /* Present */) {
+                        var p = presence ? presence(data, i) : 0 /* Present */;
+                        if (p !== 0 /* Present */) {
                             if (p === 1 /* NotSpecified */)
                                 writeNotSpecified(writer);
                             else
@@ -1531,7 +1538,7 @@ var CIFTools;
     })(Text = CIFTools.Text || (CIFTools.Text = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -1539,6 +1546,10 @@ var CIFTools;
     (function (Binary) {
         var MessagePack;
         (function (MessagePack) {
+            /*
+             * Adapted from https://github.com/rcsb/mmtf-javascript
+             * by Alexander Rose <alexander.rose@weirdbyte.de>, MIT License, Copyright (c) 2016
+             */
             /**
              * decode all key-value pairs of a map into an object
              * @param  {Integer} length - number of key-value pairs
@@ -1748,7 +1759,7 @@ var CIFTools;
     })(Binary = CIFTools.Binary || (CIFTools.Binary = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -2042,7 +2053,7 @@ var CIFTools;
     })(Binary = CIFTools.Binary || (CIFTools.Binary = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -2088,37 +2099,50 @@ var CIFTools;
                 }
             }
             MessagePack.utf8Write = utf8Write;
+            var __chars = function () {
+                var data = [];
+                for (var i = 0; i < 1024; i++)
+                    data[i] = String.fromCharCode(i);
+                return data;
+            }();
+            function throwError(err) {
+                throw new Error(err);
+            }
             function utf8Read(data, offset, length) {
-                var str = [];
+                var chars = __chars;
+                var str = void 0, chunk = [], chunkSize = 512, chunkOffset = 0;
                 for (var i = offset, end = offset + length; i < end; i++) {
                     var byte = data[i];
                     // One byte character
                     if ((byte & 0x80) === 0x00) {
-                        str[str.length] = String.fromCharCode(byte);
-                        continue;
+                        chunk[chunkOffset++] = chars[byte];
                     }
-                    // Two byte character
-                    if ((byte & 0xe0) === 0xc0) {
-                        str[str.length] = String.fromCharCode(((byte & 0x0f) << 6) |
-                            (data[++i] & 0x3f));
-                        continue;
+                    else if ((byte & 0xe0) === 0xc0) {
+                        chunk[chunkOffset++] = chars[((byte & 0x0f) << 6) | (data[++i] & 0x3f)];
                     }
-                    // Three byte character
-                    if ((byte & 0xf0) === 0xe0) {
-                        str[str.length] = String.fromCharCode(((byte & 0x0f) << 12) |
+                    else if ((byte & 0xf0) === 0xe0) {
+                        chunk[chunkOffset++] = String.fromCharCode(((byte & 0x0f) << 12) |
                             ((data[++i] & 0x3f) << 6) |
                             ((data[++i] & 0x3f) << 0));
-                        continue;
                     }
-                    // Four byte character
-                    if ((byte & 0xf8) === 0xf0) {
-                        str[str.length] = String.fromCharCode(((byte & 0x07) << 18) |
+                    else if ((byte & 0xf8) === 0xf0) {
+                        chunk[chunkOffset++] = String.fromCharCode(((byte & 0x07) << 18) |
                             ((data[++i] & 0x3f) << 12) |
                             ((data[++i] & 0x3f) << 6) |
                             ((data[++i] & 0x3f) << 0));
-                        continue;
                     }
-                    throw new Error("Invalid byte " + byte.toString(16));
+                    else
+                        throwError("Invalid byte " + byte.toString(16));
+                    if (chunkOffset === chunkSize) {
+                        str = str || [];
+                        str[str.length] = chunk.join('');
+                        chunkOffset = 0;
+                    }
+                }
+                if (!str)
+                    return chunk.slice(0, chunkOffset).join('');
+                if (chunkOffset > 0) {
+                    str[str.length] = chunk.slice(0, chunkOffset).join('');
                 }
                 return str.join('');
             }
@@ -2143,7 +2167,7 @@ var CIFTools;
                         count += 4;
                         continue;
                     }
-                    throw new Error("bad codepoint " + codePoint);
+                    throwError("bad codepoint " + codePoint);
                 }
                 return count;
             }
@@ -2152,7 +2176,7 @@ var CIFTools;
     })(Binary = CIFTools.Binary || (CIFTools.Binary = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -2338,7 +2362,7 @@ var CIFTools;
                 var str = encoding.stringData;
                 var offsets = decode({ encoding: encoding.offsetEncoding, data: encoding.offsets });
                 var indices = decode({ encoding: encoding.dataEncoding, data: data });
-                var cache = new Map();
+                var cache = Object.create(null);
                 var result = new Array(indices.length);
                 var offset = 0;
                 for (var _i = 0, indices_1 = indices; _i < indices_1.length; _i++) {
@@ -2347,10 +2371,10 @@ var CIFTools;
                         result[offset++] = null;
                         continue;
                     }
-                    var v = cache.get(i);
+                    var v = cache[i];
                     if (v === void 0) {
                         v = str.substring(offsets[i], offsets[i + 1]);
-                        cache.set(i, v);
+                        cache[i] = v;
                     }
                     result[offset++] = v;
                 }
@@ -2360,7 +2384,7 @@ var CIFTools;
     })(Binary = CIFTools.Binary || (CIFTools.Binary = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -2524,7 +2548,7 @@ var CIFTools;
     })(Binary = CIFTools.Binary || (CIFTools.Binary = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -2567,7 +2591,6 @@ var CIFTools;
             return Encoder;
         }());
         Binary.Encoder = Encoder;
-        var Encoder;
         (function (Encoder) {
             function by(f) {
                 return new Encoder([f]);
@@ -2592,8 +2615,7 @@ var CIFTools;
                 _a[6 /* Uint32 */] = function (v, i, a) { v.setUint32(4 * i, a, true); },
                 _a[32 /* Float32 */] = function (v, i, a) { v.setFloat32(4 * i, a, true); },
                 _a[33 /* Float64 */] = function (v, i, a) { v.setFloat64(8 * i, a, true); },
-                _a
-            );
+                _a);
             var byteSizes = (_b = {},
                 _b[2 /* Int16 */] = 2,
                 _b[5 /* Uint16 */] = 2,
@@ -2601,8 +2623,7 @@ var CIFTools;
                 _b[6 /* Uint32 */] = 4,
                 _b[32 /* Float32 */] = 4,
                 _b[33 /* Float64 */] = 8,
-                _b
-            );
+                _b);
             function byteArray(data) {
                 var type = Binary.Encoding.getDataType(data);
                 if (type === 1 /* Int8 */)
@@ -2852,7 +2873,7 @@ var CIFTools;
             }
             Encoder.integerPacking = integerPacking;
             function stringArray(data) {
-                var map = new Map();
+                var map = Object.create(null);
                 var strings = [];
                 var accLength = 0;
                 var offsets = CIFTools.Utils.ChunkedArray.create(function (s) { return new Int32Array(s); }, 1024, 1);
@@ -2866,14 +2887,14 @@ var CIFTools;
                         output[i++] = -1;
                         continue;
                     }
-                    var index = map.get(s);
+                    var index = map[s];
                     if (index === void 0) {
                         // increment the length
                         accLength += s.length;
                         // store the string and index                   
                         index = strings.length;
                         strings[index] = s;
-                        map.set(s, index);
+                        map[s] = index;
                         // write the offset
                         CIFTools.Utils.ChunkedArray.add(offsets, accLength);
                     }
@@ -2892,7 +2913,7 @@ var CIFTools;
     })(Binary = CIFTools.Binary || (CIFTools.Binary = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -2933,7 +2954,7 @@ var CIFTools;
     })(Binary = CIFTools.Binary || (CIFTools.Binary = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -2966,7 +2987,7 @@ var CIFTools;
     })(Binary = CIFTools.Binary || (CIFTools.Binary = {}));
 })(CIFTools || (CIFTools = {}));
 /*
- * Copyright (c) 2016 David Sehnal, licensed under MIT License, See LICENSE file for more info.
+ * Copyright (c) 2016 - now David Sehnal, licensed under MIT License, See LICENSE file for more info.
  */
 var CIFTools;
 (function (CIFTools) {
@@ -2991,8 +3012,8 @@ var CIFTools;
                 var _d = data_2[_i];
                 var d = _d.data;
                 for (var i = 0, _b = _d.count; i < _b; i++) {
-                    var p = void 0;
-                    if (presence && (p = presence(d, i)) !== 0 /* Present */) {
+                    var p = presence ? presence(d, i) : 0 /* Present */;
+                    if (p !== 0 /* Present */) {
                         mask[offset] = p;
                         if (isNative)
                             array[offset] = null;

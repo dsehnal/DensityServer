@@ -10,9 +10,9 @@ var Config = {
          */
         maxRequestBlockCount: 32,
         /**
-         * The maximum fractional dimension of the query box.
+         * The maximum fractional volume of the query box (to prevent queries that are too big).
          */
-        maxFractionalBoxDimension: 3,
+        maxFractionalBoxVolume: 1024,
         /**
          * What is the (approximate) maximum desired size in voxel count by precision level
          * Rule of thumb: <response gzipped size> \in [<voxel count> / 8, <voxel count> / 4];
@@ -62,10 +62,10 @@ var Config = {
      */
     mapFile: function (source, id) {
         switch (source.toLowerCase()) {
-            // case 'emd': return `g:/test/mdb/emd-${id.toLowerCase()}.mdb`;
-            // case 'x-ray': return `g:/test/mdb/xray-${id.toLowerCase()}.mdb`;
-            case 'emd': return "D:/Data/DenistyServer/emd/emd_" + id.toLowerCase() + ".mdb";
-            case 'x-ray': return "D:/Data/DenistyServer/x-ray/" + id.toLowerCase() + ".mdb";
+            case 'emd': return "g:/test/mdb/emd-" + id.toLowerCase() + ".mdb";
+            case 'x-ray': return "g:/test/mdb/xray-" + id.toLowerCase() + ".mdb";
+            //case 'emd': return `D:/Data/DenistyServer/emd/emd_${id.toLowerCase()}.mdb`;
+            //case 'x-ray': return `D:/Data/DenistyServer/x-ray/${id.toLowerCase()}.mdb`;
             default: return void 0;
         }
     }

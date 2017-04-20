@@ -1,7 +1,7 @@
+"use strict";
 /*
  * Copyright (c) 2017 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
-"use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var CIF = require("../lib/cif-tools");
 var MsgPack = CIF.Binary.MessagePack;

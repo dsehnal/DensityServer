@@ -1,7 +1,7 @@
+"use strict";
 /*
  * Copyright (c) 2016 - now, David Sehnal, licensed under Apache 2.0, See LICENSE file for more info.
  */
-"use strict";
 var __assign = (this && this.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
@@ -19,8 +19,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
-    return { next: verb(0), "throw": verb(1), "return": verb(2) };
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -67,19 +67,18 @@ exports.getOutputFilename = getOutputFilename;
 /** Reads the header and includes information about available detail levels */
 function getHeaderJson(filename, sourceId) {
     return __awaiter(this, void 0, void 0, function () {
-        var header, _a, _b, sampleCount, maxVoxelCount, precisions, availablePrecisions, _i, precisions_1, p, e_1;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var header, _a, sampleCount, maxVoxelCount, precisions, availablePrecisions, _i, precisions_1, p, e_1;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     Logger.logPlain('Header', sourceId);
-                    _c.label = 1;
+                    _b.label = 1;
                 case 1:
-                    _c.trys.push([1, 3, , 4]);
-                    _a = __assign;
-                    _b = [{}];
+                    _b.trys.push([1, 3, , 4]);
+                    _a = [{}];
                     return [4 /*yield*/, readHeader(filename, sourceId)];
                 case 2:
-                    header = _a.apply(void 0, _b.concat([_c.sent()]));
+                    header = __assign.apply(void 0, _a.concat([_b.sent()]));
                     sampleCount = header.sampling[0].sampleCount;
                     maxVoxelCount = sampleCount[0] * sampleCount[1] * sampleCount[2];
                     precisions = server_config_1.default.limits.maxOutputSizeInVoxelCountByPrecisionLevel
@@ -95,7 +94,7 @@ function getHeaderJson(filename, sourceId) {
                     header.isAvailable = true;
                     return [2 /*return*/, JSON.stringify(header, null, 2)];
                 case 3:
-                    e_1 = _c.sent();
+                    e_1 = _b.sent();
                     Logger.errorPlain("Header " + sourceId, e_1);
                     return [2 /*return*/, void 0];
                 case 4: return [2 /*return*/];
