@@ -277,13 +277,13 @@ function processSlices(ctx) {
                     if (!(i < sliceCount)) return [3 /*break*/, 5];
                     copyLayer(ctx, i);
                     Downsampling.downsampleLayer(ctx);
-                    isDataFinished = i === sliceCount - 1 && channel.slices.isFinished;
-                    return [4 /*yield*/, writeBlocks(ctx, isDataFinished)];
+                    return [4 /*yield*/, writeBlocks(ctx, false)];
                 case 2:
                     _a.sent();
+                    isDataFinished = i === sliceCount - 1 && channel.slices.isFinished;
                     if (!isDataFinished) return [3 /*break*/, 4];
                     Downsampling.finalize(ctx);
-                    return [4 /*yield*/, writeBlocks(ctx, isDataFinished)];
+                    return [4 /*yield*/, writeBlocks(ctx, true)];
                 case 3:
                     _a.sent();
                     _a.label = 4;

@@ -196,13 +196,12 @@ async function processSlices(ctx: Data.Context) {
         copyLayer(ctx, i);
         Downsampling.downsampleLayer(ctx);
 
-        const isDataFinished = i === sliceCount - 1 && channel.slices.isFinished;
-        
-        await writeBlocks(ctx, isDataFinished);
+        await writeBlocks(ctx, false);
 
+        const isDataFinished = i === sliceCount - 1 && channel.slices.isFinished;
         if (isDataFinished) {
             Downsampling.finalize(ctx);
-            await writeBlocks(ctx, isDataFinished);
+            await writeBlocks(ctx, true);
         }
     }
 }
