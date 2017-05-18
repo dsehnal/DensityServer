@@ -3,7 +3,7 @@
  */
 
 import * as DataFormat from '../../common/data-format'
-import * as File from '../../common/File'
+import * as File from '../../common/file'
 import * as Data from './data-model'
 import * as Coords from '../algebra/coordinate'
 import * as Box from '../algebra/box'

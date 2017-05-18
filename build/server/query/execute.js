@@ -39,7 +39,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var DataFormat = require("../../common/data-format");
-var File = require("../../common/File");
+var File = require("../../common/file");
 var Coords = require("../algebra/coordinate");
 var Box = require("../algebra/box");
 var Logger = require("../utils/logger");
