@@ -1,3 +1,6 @@
+# 0.9.2
+* Changed "EM" naming access scheme.
+
 # 0.9.1
 * Removed max fractional dimension checking.
 * Fix a bug in MDB packer.

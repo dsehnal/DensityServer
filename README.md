@@ -38,10 +38,10 @@ To achieve this, use the ``build/pack`` application.
     node build/pack -xray main.ccp4 diff.ccp4 out.mdb
     ```
 
-- For EMD data, use:
+- For EM data, use:
 
     ```
-    node build/pack -em emd.map out.mdb
+    node build/pack -em em.map out.mdb
     ```
 
 Running the Server
@@ -106,7 +106,7 @@ The program ``local`` in the build folder can be used to query the data without 
     [{
         source: {
             filename: `g:/test/mdb/emd-8116.mdb`,
-            name: 'emd',
+            name: 'em',
             id: '8116',
         },
         query: {

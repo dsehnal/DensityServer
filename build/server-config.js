@@ -62,10 +62,11 @@ var Config = {
      */
     mapFile: function (source, id) {
         switch (source.toLowerCase()) {
-            case 'emd': return "g:/test/mdb/emd-" + id.toLowerCase() + ".mdb";
-            case 'x-ray': return "g:/test/mdb/xray-" + id.toLowerCase() + ".mdb";
-            //case 'emd': return `D:/Data/DenistyServer/emd/emd_${id.toLowerCase()}.mdb`;
-            //case 'x-ray': return `D:/Data/DenistyServer/x-ray/${id.toLowerCase()}.mdb`;
+            //case 'x-ray': return `g:/test/mdb/xray-${id.toLowerCase()}.mdb`;
+            //case 'em': return `g:/test/mdb/${id.toLowerCase()}.mdb`;
+            case 'x-ray': return "D:/Data/DenistyServer/x-ray/" + id.toLowerCase() + ".mdb";
+            case 'em': return "D:/Data/DenistyServer/emd/emd_" + id.split('-')[1].toLowerCase() + ".mdb";
+            case 'emd': return "D:/Data/DenistyServer/emd/emd_" + id + ".mdb";
             default: return void 0;
         }
     }

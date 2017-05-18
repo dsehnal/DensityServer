@@ -9,6 +9,8 @@ function detail(i: number) {
      return `<span class='id'>${i}</span><small> (${Math.round(100 * ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel[i] / 1000 / 1000) / 100 }M voxels)</small>`;
 }
 const detailMax = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1;
+const dataSource = `Specifies the data source (determined by the experiment method). Currently, <span class='id'>x-ray</span> and <span class='id'>em</span> sources are supported.`;
+const entryId = `Id of the entry. For <span class='id'>x-ray</span>, use PDB ID (i.e. <span class='id'>1cbs</span>) and for <span class='id'>em</span> use EMDB id (i.e. <span class='id'>emd-8116</span>).`;
 
 export default `
 <!DOCTYPE html>
@@ -66,18 +68,19 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
   <h2>Data Header / Check Availability <span>/&lt;source&gt;/&lt;id&gt;</span><br> 
   <small>Returns a JSON response specifying if data is available and the maximum region that can be queried.</small></h2>
   <div id="coordserver-documentation-ambientResidues-body" style="margin: 24px 24px 0 24px">
-    <h4>Example</h4>
-    <a href="/DensityServer/x-ray/1cbs" class="cs-docs-template-link" target="_blank" rel="nofollow">/x-ray/1cbs</a>
+    <h4>Examples</h4>
+    <a href="/DensityServer/x-ray/1cbs" class="cs-docs-template-link" target="_blank" rel="nofollow">/x-ray/1cbs</a><br>
+    <a href="/DensityServer/em/emd-8116" class="cs-docs-template-link" target="_blank" rel="nofollow">/em/emd-8116</a>
     <h4>Parameters</h4>
     <table cellpadding="0" cellspacing="0" style='width: 100%'>
     <tbody><tr><th style='width: 80px'>Name</th><th>Description</th></tr>
     <tr>
     <td class="cs-docs-param-name">source</td>
-    <td>Specifies the data source. Currently, <span class='id'>x-ray</span> and <span class='id'>emd</span> sources are supported.</td>
+    <td>${dataSource}</td>
     </tr>
     <tr>
     <td class="cs-docs-param-name">id</td>
-    <td>Id of the entry. For <span class='id'>x-ray</span>, use PDB ID and for <span class='id'>emd</span> use EMD data number.</td>
+    <td>${entryId}</td>
     </tr>
     </tbody></table>
   </div>
@@ -88,18 +91,18 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
   <small>Returns density data inside the specified box for the given entry. For X-ray data, returns 2Fo-Fc and Fo-Fc volumes in a single response.</small></h2>
   <div style="margin: 24px 24px 0 24px">    
     <h4>Examples</h4>
-    <a href="/DensityServer/emd/8003/box/-2,7,10/4,10,15.5?encoding=cif&space=cartesian" class="cs-docs-template-link" target="_blank" rel="nofollow">/emd/8003/box/-2,7,10/4,10,15.5?excoding=cif&space=cartesian</a><br>
+    <a href="/DensityServer/em/emd-8003/box/-2,7,10/4,10,15.5?encoding=cif&space=cartesian" class="cs-docs-template-link" target="_blank" rel="nofollow">/em/emd-8003/box/-2,7,10/4,10,15.5?excoding=cif&space=cartesian</a><br>
     <a href="/DensityServer/x-ray/1cbs/box/0.1,0.1,0.1/0.23,0.31,0.18?space=fractional" class="cs-docs-template-link" target="_blank" rel="nofollow">/x-ray/1cbs/box/0.1,0.1,0.1/0.23,0.31,0.18?space=fractional</a>
     <h4>Parameters</h4>
     <table cellpadding="0" cellspacing="0" style='width: 100%'>
     <tbody><tr><th style='width: 80px'>Name</th><th>Description</th></tr>
     <tr>
     <td class="cs-docs-param-name">source</td>
-    <td>Specifies the data source. Currently, <span class='id'>x-ray</span> and <span class='id'>emd</span> sources are supported.</td>
+    <td>${dataSource}</td>
     </tr>
     <tr>
     <td class="cs-docs-param-name">id</td>
-    <td>Id of the entry. For <span class='id'>x-ray</span>, use PDB ID and for <span class='id'>emd</span> use EMD data number.</td>
+    <td>${entryId}</td>
     </tr>
     <tr>
     <td class="cs-docs-param-name">a,b,c</td>
@@ -133,17 +136,17 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
   <small>Returns (downsampled) volume data for the entire "data cell". For X-ray data, returns unit cell of 2Fo-Fc and Fo-Fc volumes, for EM data returns everything.</small></h2>
   <div style="margin: 24px 24px 0 24px">    
     <h4>Example</h4>
-    <a href="/DensityServer/emd/8116/cell?detail=1" class="cs-docs-template-link" target="_blank" rel="nofollow">/DensityServer/emd/8116/cell?detail=1</a><br>
+    <a href="/DensityServer/em/emd-8116/cell?detail=1" class="cs-docs-template-link" target="_blank" rel="nofollow">/em/emd-8116/cell?detail=1</a><br>
     <h4>Parameters</h4>
     <table cellpadding="0" cellspacing="0" style='width: 100%'>
     <tbody><tr><th style='width: 80px'>Name</th><th>Description</th></tr>
     <tr>
     <td class="cs-docs-param-name">source</td>
-    <td>Specifies the data source. Currently, <span class='id'>x-ray</span> and <span class='id'>emd</span> sources are supported.</td>
+    <td>${dataSource}</td>
     </tr>
     <tr>
     <td class="cs-docs-param-name">id</td>
-    <td>Id of the entry. For <span class='id'>x-ray</span>, use PDB ID and for <span class='id'>emd</span> use EMD data number.</td>
+    <td>${entryId}</td>
     </tr>
     <tr>
     <td class="cs-docs-param-name">encoding</td>

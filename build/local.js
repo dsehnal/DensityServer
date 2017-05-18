@@ -64,7 +64,7 @@ function help() {
         }, {
             source: {
                 filename: "g:/test/mdb/emd-8116.mdb",
-                name: 'emd',
+                name: 'em',
                 id: '8116',
             },
             query: {
