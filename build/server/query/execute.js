@@ -39,15 +39,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var DataFormat = require("../../common/data-format");
-var File = require("../../Common/File");
+var File = require("../../common/File");
 var Coords = require("../algebra/coordinate");
 var Box = require("../algebra/box");
 var Logger = require("../utils/logger");
 var state_1 = require("../state");
 var server_config_1 = require("../../server-config");
-var Identify_1 = require("./Identify");
-var Compose_1 = require("./Compose");
-var Encode_1 = require("./Encode");
+var identify_1 = require("./identify");
+var compose_1 = require("./compose");
+var encode_1 = require("./encode");
 function execute(params, outputProvider) {
     return __awaiter(this, void 0, void 0, function () {
         var start, guid, sourceFile, e_1;
@@ -146,7 +146,7 @@ function createDataContext(file) {
 }
 function createQuerySampling(data, sampling, queryBox) {
     var fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
-    var blocks = Identify_1.default(data, sampling, fractionalBox);
+    var blocks = identify_1.default(data, sampling, fractionalBox);
     var ret = {
         sampling: sampling,
         fractionalBox: fractionalBox,
@@ -237,7 +237,7 @@ function _execute(file, params, guid, outputProvider) {
                     query = createQueryContext(data, params, guid);
                     if (!(query.kind === 'Data')) return [3 /*break*/, 4];
                     // Step 3b: Compose the result data
-                    return [4 /*yield*/, Compose_1.default(query)];
+                    return [4 /*yield*/, compose_1.default(query)];
                 case 3:
                     // Step 3b: Compose the result data
                     _a.sent();
@@ -245,7 +245,7 @@ function _execute(file, params, guid, outputProvider) {
                 case 4:
                     // Step 4: Encode the result
                     output = outputProvider();
-                    Encode_1.default(query, output);
+                    encode_1.default(query, output);
                     output.end();
                     return [3 /*break*/, 7];
                 case 5:
@@ -254,7 +254,7 @@ function _execute(file, params, guid, outputProvider) {
                     try {
                         if (!output)
                             output = outputProvider();
-                        Encode_1.default(query, output);
+                        encode_1.default(query, output);
                     }
                     catch (f) {
                         throw f;

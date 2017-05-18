@@ -3,7 +3,7 @@
  */
 
 import * as DataFormat from '../../common/data-format'
-import * as File from '../../Common/File'
+import * as File from '../../common/File'
 import * as Data from './data-model'
 import * as Coords from '../algebra/coordinate'
 import * as Box from '../algebra/box'
@@ -12,9 +12,9 @@ import * as Logger from '../utils/logger'
 import { State } from '../state'
 import ServerConfig from '../../server-config'
 
-import identify from './Identify'
-import compose from './Compose'
-import encode from './Encode'
+import identify from './identify'
+import compose from './compose'
+import encode from './encode'
 
 export default async function execute(params: Data.QueryParams, outputProvider: () => Data.QueryOutputStream) {
     const start = getTime();
