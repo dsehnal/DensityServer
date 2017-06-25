@@ -1,3 +1,6 @@
+# 0.9.3
+* Fixed a bug in CIFTools (BinaryCIF encoding).
+
 # 0.9.2
 * Changed "EM" naming access scheme.
 
