@@ -4,7 +4,6 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 var CCP4 = require("./ccp4");
-var DataFormat = require("../common/data-format");
 var FORMAT_VERSION = '1.0.0';
 function createHeader(ctx) {
     var header = ctx.channels[0].header;
@@ -14,7 +13,7 @@ function createHeader(ctx) {
     }
     return {
         formatVersion: FORMAT_VERSION,
-        valueType: header.mode === 2 /* Float32 */ ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8,
+        valueType: CCP4.getValueType(header),
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,
         origin: normalize(header.origin),

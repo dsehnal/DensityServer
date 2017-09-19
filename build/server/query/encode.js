@@ -88,7 +88,7 @@ function _volume_data_3d(ctx) {
     var data = ctx.query.values[ctx.channelIndex];
     var encoder;
     var typedArray;
-    if (ctx.query.data.header.valueType === DataFormat.ValueType.Float32) {
+    if (ctx.query.data.header.valueType === DataFormat.ValueType.Float32 || ctx.query.data.header.valueType === DataFormat.ValueType.Int16) {
         var min = void 0, max = void 0;
         min = data[0], max = data[0];
         for (var i = 0, n = data.length; i < n; i++) {

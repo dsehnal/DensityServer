@@ -5,7 +5,7 @@
 import * as File from '../common/file'
 import * as DataFormat from '../common/data-format'
 
-export const enum Mode { Int8 = 0, Float32 = 2 }
+export const enum Mode { Int8 = 0, Int16 = 1, Float32 = 2 }
 
 export interface Header {
     name: string,
@@ -42,16 +42,16 @@ export interface Data {
 
 export function getValueType(header: Header) {
     if (header.mode === Mode.Float32) return DataFormat.ValueType.Float32;
+    if (header.mode === Mode.Int16) return DataFormat.ValueType.Int16;
     return DataFormat.ValueType.Int8;
 }
 
 function createSliceBuffer(header: Header, blockSize: number): SliceBuffer {
     const { extent } = header;
-    const sliceSize = extent[0] * extent[1] * (header.mode === Mode.Float32 ? 4 : 1);
+    const valueType = getValueType(header);
+    const sliceSize = extent[0] * extent[1] * DataFormat.getValueByteSize(valueType);
     const sliceCapacity = Math.max(1, Math.floor(Math.min(64 * 1024 * 1024, sliceSize * extent[2]) / sliceSize));
-    const buffer = File.createTypedArrayBufferContext(
-        sliceCapacity * extent[0] * extent[1], 
-        header.mode === Mode.Float32 ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8);
+    const buffer = File.createTypedArrayBufferContext(sliceCapacity * extent[0] * extent[1], valueType);
     return {
         buffer,
         sliceCapacity,        
@@ -95,11 +95,11 @@ async function readHeader(name: string, file: number) {
     let littleEndian = true;
 
     let mode = data.readInt32LE(3 * 4);
-    if (mode !== 0 && mode !== 2) {
+    if (mode < 0 || mode > 2) {
         littleEndian = false;
         mode = data.readInt32BE(3 * 4, true);
-        if (mode !== 0 && mode !== 2) {
-            throw Error('Only CCP4 modes 0 and 2 are supported.');
+        if (mode < 0 || mode > 2) {
+            throw Error('Only CCP4 modes 0, 1, and 2 are supported.');
         }
     }
 

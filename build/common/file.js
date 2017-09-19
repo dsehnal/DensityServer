@@ -118,6 +118,10 @@ function makeDir(path, root) {
     }
     return !dirs.length || makeDir(dirs.join('/'), root);
 }
+function exists(filename) {
+    return fs.existsSync(filename);
+}
+exports.exists = exists;
 function createFile(filename) {
     return new Promise(function (res, rej) {
         if (fs.existsSync(filename))
@@ -161,13 +165,16 @@ exports.writeInt = writeInt;
 function getElementByteSize(type) {
     if (type === DataFormat.ValueType.Float32)
         return 4;
+    if (type === DataFormat.ValueType.Int16)
+        return 2;
     return 1;
 }
 function makeTypedArray(type, buffer) {
     if (type === DataFormat.ValueType.Float32)
         return new Float32Array(buffer);
-    var ret = new Int8Array(buffer);
-    return ret;
+    if (type === DataFormat.ValueType.Int16)
+        return new Int16Array(buffer);
+    return new Int8Array(buffer);
 }
 function createTypedArrayBufferContext(size, type) {
     var elementByteSize = getElementByteSize(type);

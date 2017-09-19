@@ -25,6 +25,10 @@ export function getOutputFilename(source: string, id: string, { asBinary, box, d
 export async function getHeaderJson(filename: string | undefined, sourceId: string) {
     Logger.logPlain('Header', sourceId);
     try {
+        if (!filename || !File.exists(filename)) {
+            Logger.errorPlain(`Header ${sourceId}`, 'File not found.');
+            return void 0;
+        }
         const header = { ...await readHeader(filename, sourceId) };
         const { sampleCount } = header!.sampling[0];
         const maxVoxelCount = sampleCount[0] * sampleCount[1] * sampleCount[2];

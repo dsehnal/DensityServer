@@ -44,6 +44,7 @@ var ValueType;
 (function (ValueType) {
     ValueType.Float32 = 'float32';
     ValueType.Int8 = 'int8';
+    ValueType.Int16 = 'int16';
 })(ValueType = exports.ValueType || (exports.ValueType = {}));
 var _schema;
 (function (_schema) {
@@ -79,14 +80,18 @@ var headerSchema = _schema.schema;
 function getValueByteSize(type) {
     if (type === ValueType.Float32)
         return 4;
+    if (type === ValueType.Int16)
+        return 2;
     return 1;
 }
 exports.getValueByteSize = getValueByteSize;
 function createValueArray(type, size) {
-    if (type === ValueType.Float32) {
-        return new Float32Array(new ArrayBuffer(4 * size));
+    switch (type) {
+        case ValueType.Float32: return new Float32Array(new ArrayBuffer(4 * size));
+        case ValueType.Int8: return new Int8Array(new ArrayBuffer(1 * size));
+        case ValueType.Int16: return new Int16Array(new ArrayBuffer(2 * size));
     }
-    return new Int8Array(new ArrayBuffer(size));
+    throw Error(type + " is not a supported value format.");
 }
 exports.createValueArray = createValueArray;
 function encodeHeader(header) {

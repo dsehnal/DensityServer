@@ -75,6 +75,10 @@ function getHeaderJson(filename, sourceId) {
                     _b.label = 1;
                 case 1:
                     _b.trys.push([1, 3, , 4]);
+                    if (!filename || !File.exists(filename)) {
+                        Logger.errorPlain("Header " + sourceId, 'File not found.');
+                        return [2 /*return*/, void 0];
+                    }
                     _a = [{}];
                     return [4 /*yield*/, readHeader(filename, sourceId)];
                 case 2:

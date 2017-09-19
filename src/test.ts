@@ -72,44 +72,45 @@ async function run() {
     //     b: Coordinate.cartesian(29.30299949645996, 35.73699951171875, 32.03700065612793) 
     // });
 
-    const job: LocalApi.JobEntry = {
-        source: {
-            filename: `g:/test/mdb/xray-1bzq.mdb`,
-            name: 'xray',
-            id: '1bzq',
-        },
-        query: {
-            kind: 'box',
-            space: 'cartesian',
-            bottomLeft: [-58.055,-33.175,-26.281],
-            topRight: [98.77,63.525,49.694]
-        },
-        params: {
-            forcedSamplingLevel: 2,
-            asBinary: true
-        },
-        outputFolder: 'g:/test/local-test'
-    }
-
-    LocalApi.run([job]);
-
-    // const job1: LocalApi.JobEntry = {
+    // const job: LocalApi.JobEntry = {
     //     source: {
-    //         filename: `g:/test/mdb/emd-8116.mdb`,
-    //         name: 'emd',
-    //         id: '8116',
+    //         filename: `g:/test/mdb/xray-1bzq.mdb`,
+    //         name: 'xray',
+    //         id: '1bzq',
     //     },
     //     query: {
-    //         kind: 'cell'
+    //         kind: 'box',
+    //         space: 'cartesian',
+    //         bottomLeft: [-58.055,-33.175,-26.281],
+    //         topRight: [98.77,63.525,49.694]
     //     },
     //     params: {
-    //         detail: 4,
+    //         forcedSamplingLevel: 2,
     //         asBinary: true
     //     },
     //     outputFolder: 'g:/test/local-test'
     // }
 
-    // LocalApi.run([job, job1]);
+    // LocalApi.run([job]);
+
+    const job1: LocalApi.JobEntry = {
+        source: {
+            filename: `g:/test/mdb/emd-5725.mdb`,
+            name: 'emd',
+            id: '5725',
+        },
+        query: {
+            kind: 'cell'
+        },
+        params: {
+            //detail: 4,
+            forcedSamplingLevel: 1,
+            asBinary: true
+        },
+        outputFolder: 'g:/test/local-test'
+    }
+
+    LocalApi.run([job1]);
 
     // await query('xray', '1tqn', true, { 
     //     kind: 'Cartesian',

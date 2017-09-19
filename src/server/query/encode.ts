@@ -125,7 +125,7 @@ function _volume_data_3d(ctx: ResultContext) {
     let encoder: E;
     let typedArray: any;
 
-    if (ctx.query.data.header.valueType === DataFormat.ValueType.Float32) {
+    if (ctx.query.data.header.valueType === DataFormat.ValueType.Float32 || ctx.query.data.header.valueType === DataFormat.ValueType.Int16) {
         let min: number, max: number;
         min = data[0], max = data[0];
         for (let i = 0, n = data.length; i < n; i++) {

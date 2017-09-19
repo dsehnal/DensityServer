@@ -67,6 +67,7 @@ var Config = {
             case 'x-ray': return "D:/Data/DenistyServer/x-ray/" + id.toLowerCase() + ".mdb";
             case 'em': return "D:/Data/DenistyServer/emd/emd_" + id.split('-')[1].toLowerCase() + ".mdb";
             case 'emd': return "D:/Data/DenistyServer/emd/emd_" + id + ".mdb";
+            //case 'emd': return `g:/test/mdb/emd-${id}.mdb`;
             default: return void 0;
         }
     }

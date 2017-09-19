@@ -43,14 +43,17 @@ var DataFormat = require("../common/data-format");
 function getValueType(header) {
     if (header.mode === 2 /* Float32 */)
         return DataFormat.ValueType.Float32;
+    if (header.mode === 1 /* Int16 */)
+        return DataFormat.ValueType.Int16;
     return DataFormat.ValueType.Int8;
 }
 exports.getValueType = getValueType;
 function createSliceBuffer(header, blockSize) {
     var extent = header.extent;
-    var sliceSize = extent[0] * extent[1] * (header.mode === 2 /* Float32 */ ? 4 : 1);
+    var valueType = getValueType(header);
+    var sliceSize = extent[0] * extent[1] * DataFormat.getValueByteSize(valueType);
     var sliceCapacity = Math.max(1, Math.floor(Math.min(64 * 1024 * 1024, sliceSize * extent[2]) / sliceSize));
-    var buffer = File.createTypedArrayBufferContext(sliceCapacity * extent[0] * extent[1], header.mode === 2 /* Float32 */ ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8);
+    var buffer = File.createTypedArrayBufferContext(sliceCapacity * extent[0] * extent[1], valueType);
     return {
         buffer: buffer,
         sliceCapacity: sliceCapacity,
@@ -100,11 +103,11 @@ function readHeader(name, file) {
                     data = (_a.sent()).buffer;
                     littleEndian = true;
                     mode = data.readInt32LE(3 * 4);
-                    if (mode !== 0 && mode !== 2) {
+                    if (mode < 0 || mode > 2) {
                         littleEndian = false;
                         mode = data.readInt32BE(3 * 4, true);
-                        if (mode !== 0 && mode !== 2) {
-                            throw Error('Only CCP4 modes 0 and 2 are supported.');
+                        if (mode < 0 || mode > 2) {
+                            throw Error('Only CCP4 modes 0, 1, and 2 are supported.');
                         }
                     }
                     readInt = littleEndian ? function (o) { return data.readInt32LE(o * 4); } : function (o) { return data.readInt32BE(o * 4); };

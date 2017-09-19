@@ -76,6 +76,10 @@ function makeDir(path: string, root?: string): boolean {
     return !dirs.length || makeDir(dirs.join('/'), root);
 }
 
+export function exists(filename: string) {
+    return fs.existsSync(filename);
+}
+
 export function createFile(filename: string) {
     return new Promise<number>((res, rej) => {
         if (fs.existsSync(filename)) fs.unlinkSync(filename);
@@ -112,13 +116,14 @@ export interface TypedArrayBufferContext {
 
 function getElementByteSize(type: DataFormat.ValueType) {
     if (type === DataFormat.ValueType.Float32) return 4;
+    if (type === DataFormat.ValueType.Int16) return 2;
     return 1;
 }
 
 function makeTypedArray(type: DataFormat.ValueType, buffer: ArrayBuffer): DataFormat.ValueArray {
     if (type === DataFormat.ValueType.Float32) return new Float32Array(buffer);
-    let ret = new Int8Array(buffer);
-    return ret;
+    if (type === DataFormat.ValueType.Int16) return new Int16Array(buffer);
+    return new Int8Array(buffer);
 }
 
 export function createTypedArrayBufferContext(size: number, type: DataFormat.ValueType): TypedArrayBufferContext {

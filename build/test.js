@@ -90,27 +90,25 @@ var LocalApi = require("./server/local-api");
 // }
 function run() {
     return __awaiter(this, void 0, void 0, function () {
-        var job;
+        var job1;
         return __generator(this, function (_a) {
-            job = {
+            job1 = {
                 source: {
-                    filename: "g:/test/mdb/xray-1bzq.mdb",
-                    name: 'xray',
-                    id: '1bzq',
+                    filename: "g:/test/mdb/emd-5725.mdb",
+                    name: 'emd',
+                    id: '5725',
                 },
                 query: {
-                    kind: 'box',
-                    space: 'cartesian',
-                    bottomLeft: [-58.055, -33.175, -26.281],
-                    topRight: [98.77, 63.525, 49.694]
+                    kind: 'cell'
                 },
                 params: {
-                    forcedSamplingLevel: 2,
+                    //detail: 4,
+                    forcedSamplingLevel: 1,
                     asBinary: true
                 },
                 outputFolder: 'g:/test/local-test'
             };
-            LocalApi.run([job]);
+            LocalApi.run([job1]);
             return [2 /*return*/];
         });
     });

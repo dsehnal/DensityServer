@@ -136,6 +136,10 @@ function getHeader(req, res) {
                     return [4 /*yield*/, Api.getHeaderJson(filename, id)];
                 case 2:
                     header = _b.sent();
+                    if (!header) {
+                        res.writeHead(404);
+                        return [2 /*return*/];
+                    }
                     res.writeHead(200, {
                         'Content-Type': 'application/json; charset=utf-8',
                         'Access-Control-Allow-Origin': '*',

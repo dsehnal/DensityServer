@@ -102,6 +102,10 @@ async function getHeader(req: express.Request, res: express.Response) {
     try {
         const { filename, id } = getSourceInfo(req);
         const header = await Api.getHeaderJson(filename, id);
+        if (!header) {
+            res.writeHead(404);
+            return;
+        }
         res.writeHead(200, {
             'Content-Type': 'application/json; charset=utf-8',
             'Access-Control-Allow-Origin': '*',

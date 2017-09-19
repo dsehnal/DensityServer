@@ -96,7 +96,7 @@ export function createHeader(ctx: Context): DataFormat.Header {
 
     return {
         formatVersion: FORMAT_VERSION,
-        valueType: header.mode === CCP4.Mode.Float32 ? DataFormat.ValueType.Float32 : DataFormat.ValueType.Int8,
+        valueType: CCP4.getValueType(header),
         blockSize: ctx.blockSize,
         axisOrder: header.axisOrder,
         origin: normalize(header.origin),

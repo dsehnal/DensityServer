@@ -1,3 +1,7 @@
+# 0.9.4
+* Support for CCP4 Mode 1.
+* Asking for summary for a non-existing entry will now correctly return 404.
+
 # 0.9.3
 * Fixed a bug in CIFTools (BinaryCIF encoding).
 
