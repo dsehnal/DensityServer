@@ -46,13 +46,13 @@ export function getValueType(header: Header) {
     return DataFormat.ValueType.Int8;
 }
 
-function createSliceBuffer(header: Header, blockSize: number): SliceBuffer {
-    const { extent } = header;
-    const valueType = getValueType(header);
+export function assignSliceBuffer(data: Data, blockSize: number) {
+    const { extent } = data.header;
+    const valueType = getValueType(data.header);
     const sliceSize = extent[0] * extent[1] * DataFormat.getValueByteSize(valueType);
     const sliceCapacity = Math.max(1, Math.floor(Math.min(64 * 1024 * 1024, sliceSize * extent[2]) / sliceSize));
     const buffer = File.createTypedArrayBufferContext(sliceCapacity * extent[0] * extent[1], valueType);
-    return {
+    data.slices = {
         buffer,
         sliceCapacity,        
         slicesRead: 0,
@@ -148,12 +148,12 @@ export async function readSlices(data: Data) {
     }
 }
 
-export async function open(name: string, filename: string, blockSize: number): Promise<Data> {
+export async function open(name: string, filename: string): Promise<Data> {
     const file = await File.openRead(filename);
     const header = await readHeader(name, file);
     return { 
         header, 
         file, 
-        slices: createSliceBuffer(header, blockSize)
+        slices: void 0 as any
     };
 }

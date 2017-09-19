@@ -48,13 +48,13 @@ function getValueType(header) {
     return DataFormat.ValueType.Int8;
 }
 exports.getValueType = getValueType;
-function createSliceBuffer(header, blockSize) {
-    var extent = header.extent;
-    var valueType = getValueType(header);
+function assignSliceBuffer(data, blockSize) {
+    var extent = data.header.extent;
+    var valueType = getValueType(data.header);
     var sliceSize = extent[0] * extent[1] * DataFormat.getValueByteSize(valueType);
     var sliceCapacity = Math.max(1, Math.floor(Math.min(64 * 1024 * 1024, sliceSize * extent[2]) / sliceSize));
     var buffer = File.createTypedArrayBufferContext(sliceCapacity * extent[0] * extent[1], valueType);
-    return {
+    data.slices = {
         buffer: buffer,
         sliceCapacity: sliceCapacity,
         slicesRead: 0,
@@ -63,6 +63,7 @@ function createSliceBuffer(header, blockSize) {
         isFinished: false
     };
 }
+exports.assignSliceBuffer = assignSliceBuffer;
 function compareProp(a, b) {
     if (a instanceof Array && b instanceof Array) {
         if (a.length !== b.length)
@@ -164,7 +165,7 @@ function readSlices(data) {
     });
 }
 exports.readSlices = readSlices;
-function open(name, filename, blockSize) {
+function open(name, filename) {
     return __awaiter(this, void 0, void 0, function () {
         var file, header;
         return __generator(this, function (_a) {
@@ -178,7 +179,7 @@ function open(name, filename, blockSize) {
                     return [2 /*return*/, {
                             header: header,
                             file: file,
-                            slices: createSliceBuffer(header, blockSize)
+                            slices: void 0
                         }];
             }
         });

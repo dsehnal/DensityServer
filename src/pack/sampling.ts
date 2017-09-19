@@ -14,9 +14,10 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
     const samplingCounts = getSamplingCounts(channels[0].header.extent, blockSize);
     const valueType = CCP4.getValueType(header); 
     const cubeBuffer = new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
+    
     const litteEndianCubeBuffer = File.IsNativeEndianLittle 
-        ? cubeBuffer
-        : new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
+    ? cubeBuffer
+    : new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
     
     // The data can be periodic iff the extent is the same as the grid and origin is 0.
     if (header.grid.some((v, i) => v !== header.extent[i]) || header.origin.some(v => v !== 0) ) {
@@ -37,6 +38,7 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
         totalByteSize: 0,
         progress: { current: 0, max: 0 }
     };
+
     
     let byteOffset = 0;
     for (const s of ctx.sampling) {

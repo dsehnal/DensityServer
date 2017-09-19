@@ -24,11 +24,11 @@ function printHelp() {
         "",
         "  node pack -xray main.ccp4 diff.ccp4 output.mdb [-blockSize 96]",
         "    Pack main and diff density into a single block file.",
-        "    Optionally specify block size.",
+        "    Optionally specify maximum block size.",
         "",
         "  node pack -em density.map output.mdb [-blockSize 96]",
         "    Pack single density into a block file.",
-        "    Optionally specify block size."
+        "    Optionally specify maximum block size."
     ];
     console.log(help.join('\n'));
 }

@@ -96,6 +96,19 @@ function allocateFile(ctx) {
         });
     });
 }
+function determineBlockSize(data, blockSize) {
+    var extent = data.header.extent;
+    var maxLayerSize = 1024 * 1024 * 1024;
+    var valueCount = extent[0] * extent[1];
+    if (valueCount * blockSize <= maxLayerSize)
+        return blockSize;
+    while (blockSize > 0) {
+        blockSize -= 4;
+        if (valueCount * blockSize <= maxLayerSize)
+            return blockSize;
+    }
+    throw new Error('Could not determine a valid block size.');
+}
 function writeHeader(ctx) {
     return __awaiter(this, void 0, void 0, function () {
         var header;
@@ -114,36 +127,35 @@ function writeHeader(ctx) {
         });
     });
 }
-function create(filename, sourceDensities, blockSize, isPeriodic) {
+function create(filename, sourceDensities, sourceBlockSize, isPeriodic) {
     return __awaiter(this, void 0, void 0, function () {
-        var startedTime, files, channels_1, _i, sourceDensities_1, s, _a, _b, isOk, context, _c, channels_2, s, time, _d, files_1, f;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
+        var startedTime, files, channels_1, _i, sourceDensities_1, s, _a, _b, isOk, blockSize, _c, channels_2, ch, context, _d, channels_3, s, time, _e, files_1, f;
+        return __generator(this, function (_f) {
+            switch (_f.label) {
                 case 0:
                     startedTime = getTime();
-                    if (blockSize % 4 !== 0 || blockSize < 4) {
+                    if (sourceBlockSize % 4 !== 0 || sourceBlockSize < 4) {
                         throw Error('Block size must be a positive number divisible by 4.');
                     }
                     if (!sourceDensities.length) {
                         throw Error('Specify at least one source density.');
                     }
-                    console.log("Block Size: " + blockSize + ".");
                     process.stdout.write('Initializing... ');
                     files = [];
-                    _e.label = 1;
+                    _f.label = 1;
                 case 1:
-                    _e.trys.push([1, , 10, 11]);
+                    _f.trys.push([1, , 10, 11]);
                     channels_1 = [];
                     _i = 0, sourceDensities_1 = sourceDensities;
-                    _e.label = 2;
+                    _f.label = 2;
                 case 2:
                     if (!(_i < sourceDensities_1.length)) return [3 /*break*/, 5];
                     s = sourceDensities_1[_i];
                     _b = (_a = channels_1).push;
-                    return [4 /*yield*/, CCP4.open(s.name, s.filename, blockSize)];
+                    return [4 /*yield*/, CCP4.open(s.name, s.filename)];
                 case 3:
-                    _b.apply(_a, [_e.sent()]);
-                    _e.label = 4;
+                    _b.apply(_a, [_f.sent()]);
+                    _f.label = 4;
                 case 4:
                     _i++;
                     return [3 /*break*/, 2];
@@ -152,26 +164,32 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
                     if (!isOk) {
                         throw new Error('Input file headers are not compatible (different grid, etc.).');
                     }
+                    blockSize = determineBlockSize(channels_1[0], sourceBlockSize);
+                    for (_c = 0, channels_2 = channels_1; _c < channels_2.length; _c++) {
+                        ch = channels_2[_c];
+                        CCP4.assignSliceBuffer(ch, blockSize);
+                    }
                     return [4 /*yield*/, Sampling.createContext(filename, channels_1, blockSize, isPeriodic)];
                 case 6:
-                    context = _e.sent();
-                    for (_c = 0, channels_2 = channels_1; _c < channels_2.length; _c++) {
-                        s = channels_2[_c];
+                    context = _f.sent();
+                    for (_d = 0, channels_3 = channels_1; _d < channels_3.length; _d++) {
+                        s = channels_3[_d];
                         files.push(s.file);
                     }
                     files.push(context.file);
                     process.stdout.write('   done.\n');
+                    console.log("Block size: " + blockSize);
                     // Step 2: Allocate disk space.        
                     process.stdout.write('Allocating...      0%');
                     return [4 /*yield*/, allocateFile(context)];
                 case 7:
-                    _e.sent();
+                    _f.sent();
                     process.stdout.write('\rAllocating...      done.\n');
                     // Step 3: Process and write the data 
                     process.stdout.write('Writing data...    0%');
                     return [4 /*yield*/, Sampling.processData(context)];
                 case 8:
-                    _e.sent();
+                    _f.sent();
                     process.stdout.write('\rWriting data...    done.\n');
                     // Step 4: Write the header at the start of the file.
                     // The header is written last because the sigma/min/max values are computed 
@@ -179,14 +197,14 @@ function create(filename, sourceDensities, blockSize, isPeriodic) {
                     process.stdout.write('Writing header...  ');
                     return [4 /*yield*/, writeHeader(context)];
                 case 9:
-                    _e.sent();
+                    _f.sent();
                     process.stdout.write('done.\n');
                     time = getTime() - startedTime;
                     console.log("[Done] " + time.toFixed(0) + "ms.");
                     return [3 /*break*/, 11];
                 case 10:
-                    for (_d = 0, files_1 = files; _d < files_1.length; _d++) {
-                        f = files_1[_d];
+                    for (_e = 0, files_1 = files; _e < files_1.length; _e++) {
+                        f = files_1[_e];
                         File.close(f);
                     }
                     return [7 /*endfinally*/];
