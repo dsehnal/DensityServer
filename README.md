@@ -29,7 +29,7 @@ Installing the Server
 Preparing the Data
 ------------------
 
-For the server to work, CCP4/MAP (in mode 2, 32-bit floats) input data need to be converted into a custom block format. 
+For the server to work, CCP4/MAP (models 0, 1, 2 are supported) input data need to be converted into a custom block format. 
 To achieve this, use the ``build/pack`` application.
 
 - To prepare data from x-ray based methods, use: 

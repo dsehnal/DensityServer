@@ -64,7 +64,7 @@ Downsampling the data results in changing of absolute contour levels. To mitigat
 ## Compression Analysis
 
 - Downsampling: ``i-th`` level (starting from zero) reduces the size by approximate factor ``1/[(2^i)^3]`` (i.e. "cubic" of the frequency).
-- BinaryCIF: CCP4 mode 2 (32 bit floats) is reduced by factor of 4, CCP4 mode 0 (just bytes) is not reduced. This is done by single byte quantization, but smarter than CCP4 mode 0
+- BinaryCIF: CCP4 mode 2 (32 bit floats) is reduced by factor of 4, CCP4 mode 1 (16bit integers) by factor of 2, CCP4 mode 0 (just bytes) is not reduced. This is done by single byte quantization, but smarter than CCP4 mode 0
 - Gzip, from observation:
   - Gzipping BinaryCIF reduces the size by factor ~2 - ~7 (2 for "dense" data such as x-ray density, 7 for sparse data such such an envelope of a virus)
   - Gzipping CCP4 reduces the size by 10-25% (be it mode 2 or 0)
