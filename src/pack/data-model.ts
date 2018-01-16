@@ -65,18 +65,18 @@ export interface Kernel {
 
 export interface Context {
     /** Output file handle  */
-    file: number, 
+    file: number,
 
     /** Periodic are x-ray density files that cover the entire grid and have [0,0,0] origin */
     isPeriodic: boolean,
-    
-    channels: CCP4.Data[],    
+
+    channels: CCP4.Data[],
     valueType: DataFormat.ValueType,
-    blockSize: number,    
+    blockSize: number,
     /** Able to store channels.length * blockSize^3 values. */
-    cubeBuffer: Buffer, 
+    cubeBuffer: Buffer,
     /** All values are stored in little endian format which might not be the native endian of the system  */
-    litteEndianCubeBuffer: Buffer,   
+    litteEndianCubeBuffer: Buffer,
 
     kernel: Kernel,
     sampling: Sampling[],
@@ -92,7 +92,7 @@ export function createHeader(ctx: Context): DataFormat.Header {
 
     function normalize(data: number[]) {
         return [data[0] / grid[0], data[1] / grid[1], data[2] / grid[2]];
-    } 
+    }
 
     return {
         formatVersion: FORMAT_VERSION,
@@ -103,7 +103,7 @@ export function createHeader(ctx: Context): DataFormat.Header {
         dimensions: normalize(header.extent),
         spacegroup: { number: header.spacegroupNumber, size: header.cellSize, angles: header.cellAngles, isPeriodic: ctx.isPeriodic },
         channels: ctx.channels.map(c => c.header.name),
-        sampling: ctx.sampling.map(s => { 
+        sampling: ctx.sampling.map(s => {
             const N = s.sampleCount[0] * s.sampleCount[1] * s.sampleCount[2];
             const valuesInfo = [];
             for (const { sum, sqSum, min, max } of s.valuesInfo) {
@@ -112,7 +112,7 @@ export function createHeader(ctx: Context): DataFormat.Header {
                 valuesInfo.push({ mean, sigma, min, max });
             }
             return {
-                byteOffset: s.byteOffset, 
+                byteOffset: s.byteOffset,
                 rate: s.rate,
                 valuesInfo,
                 sampleCount: s.sampleCount,

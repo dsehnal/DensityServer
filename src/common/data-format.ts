@@ -18,7 +18,7 @@ export type ValueArray = Float32Array | Int8Array | Int16Array
 export interface Spacegroup {
     number: number,
     size: number[],
-    angles: number[],    
+    angles: number[],
     /** Determine if the data should be treated as periodic or not. (e.g. X-ray = periodic, EM = not periodic) */
     isPeriodic: boolean,
 }
@@ -55,7 +55,7 @@ export interface Header {
     dimensions: number[],
 
     spacegroup: Spacegroup,
-    channels: string[],    
+    channels: string[],
 
     /** Determines the data type of the values */
     valueType: ValueType,
@@ -65,7 +65,7 @@ export interface Header {
     sampling: Sampling[]
 }
 
-module _schema {
+namespace _schema {
     const { array, obj, int, bool, float, str } = Schema
 
     export const schema = obj<Header>([
@@ -90,7 +90,7 @@ module _schema {
                 ['sigma', float],
                 ['min', float],
                 ['max', float]
-            ]))],            
+            ]))],
             ['sampleCount', array(int)]
         ]))]
     ]);

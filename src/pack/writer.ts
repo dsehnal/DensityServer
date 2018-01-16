@@ -28,15 +28,15 @@ function fillCubeBuffer(ctx: Data.Context, sampling: Data.Sampling, u: number, v
     const { blockSize, cubeBuffer } = ctx;
     const { sampleCount } = sampling;
     const { buffers, slicesWritten } = sampling.blocks;
-    const elementSize = DataFormat.getValueByteSize(ctx.valueType);   
+    const elementSize = DataFormat.getValueByteSize(ctx.valueType);
     const sizeH = sampleCount[0], sizeHK = sampleCount[0] * sampleCount[1];
-    const offsetH = u * blockSize, 
-          offsetK = v * blockSize;
-    const copyH = Math.min(blockSize, sampleCount[0] - offsetH) * elementSize, 
-          maxK = offsetK + Math.min(blockSize, sampleCount[1] - offsetK), 
-          maxL = slicesWritten;
-    
-    let writeOffset = 0;    
+    const offsetH = u * blockSize,
+        offsetK = v * blockSize;
+    const copyH = Math.min(blockSize, sampleCount[0] - offsetH) * elementSize,
+        maxK = offsetK + Math.min(blockSize, sampleCount[1] - offsetK),
+        maxL = slicesWritten;
+
+    let writeOffset = 0;
     for (const src of buffers) {
         for (let l = 0; l < maxL; l++) {
             for (let k = offsetK; k < maxK; k++) {

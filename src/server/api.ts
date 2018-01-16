@@ -15,7 +15,7 @@ export function getOutputFilename(source: string, id: string, { asBinary, box, d
     const det = forcedSamplingLevel !== void 0
         ? `l${forcedSamplingLevel}`
         : `d${Math.min(Math.max(0, detail | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1)}`;
-    const boxInfo = box.kind === 'Cell' 
+    const boxInfo = box.kind === 'Cell'
         ? 'cell'
         : `${box.kind === 'Cartesian' ? 'cartn' : 'frac'}_${r(box.a[0])}_${r(box.a[1])}_${r(box.a[2])}_${r(box.b[0])}_${r(box.b[1])}_${r(box.b[2])}`;
     return `${n(source)}_${n(id)}-${boxInfo}_${det}.${asBinary ? 'bcif' : 'cif'}`;
@@ -38,18 +38,18 @@ export async function getHeaderJson(filename: string | undefined, sourceId: stri
         for (const p of precisions) {
             availablePrecisions.push(p);
             if (p.maxVoxels > maxVoxelCount) break;
-        }       
+        }
         (header as any).availablePrecisions = availablePrecisions;
         (header as any).isAvailable = true;
         return JSON.stringify(header, null, 2);
     } catch (e) {
         Logger.errorPlain(`Header ${sourceId}`, e);
         return void 0;
-    } 
+    }
 }
 
-export async function queryBox(params: Data.QueryParams, outputProvider: () => Data.QueryOutputStream) {    
-    return await execute(params, outputProvider);        
+export async function queryBox(params: Data.QueryParams, outputProvider: () => Data.QueryOutputStream) {
+    return await execute(params, outputProvider);
 }
 
 async function readHeader(filename: string | undefined, sourceId: string) {

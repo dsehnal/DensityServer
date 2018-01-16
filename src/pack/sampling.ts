@@ -12,15 +12,15 @@ import * as DataFormat from '../common/data-format'
 export async function createContext(filename: string, channels: CCP4.Data[], blockSize: number, isPeriodic: boolean): Promise<Data.Context> {
     const header = channels[0].header;
     const samplingCounts = getSamplingCounts(channels[0].header.extent, blockSize);
-    const valueType = CCP4.getValueType(header); 
+    const valueType = CCP4.getValueType(header);
     const cubeBuffer = new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
-    
-    const litteEndianCubeBuffer = File.IsNativeEndianLittle 
-    ? cubeBuffer
-    : new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
-    
+
+    const litteEndianCubeBuffer = File.IsNativeEndianLittle
+        ? cubeBuffer
+        : new Buffer(new ArrayBuffer(channels.length * blockSize * blockSize * blockSize * DataFormat.getValueByteSize(valueType)));
+
     // The data can be periodic iff the extent is the same as the grid and origin is 0.
-    if (header.grid.some((v, i) => v !== header.extent[i]) || header.origin.some(v => v !== 0) ) {
+    if (header.grid.some((v, i) => v !== header.extent[i]) || header.origin.some(v => v !== 0)) {
         isPeriodic = false;
     }
 
@@ -32,14 +32,14 @@ export async function createContext(filename: string, channels: CCP4.Data[], blo
         blockSize,
         cubeBuffer,
         litteEndianCubeBuffer,
-        kernel: { size: 5, coefficients: [1,4,6,4,1], coefficientSum: 16 },
+        kernel: { size: 5, coefficients: [1, 4, 6, 4, 1], coefficientSum: 16 },
         sampling: samplingCounts.map((__, i) => createSampling(i, valueType, channels.length, samplingCounts, blockSize)),
         dataByteOffset: 0,
         totalByteSize: 0,
         progress: { current: 0, max: 0 }
     };
 
-    
+
     let byteOffset = 0;
     for (const s of ctx.sampling) {
         // Max progress = total number of blocks that need to be written.
@@ -63,14 +63,14 @@ export async function processData(ctx: Data.Context) {
         await processSlices(ctx);
     }
 }
- 
+
 /** Determine the suitable sampling rates for the input data */
 function getSamplingCounts(baseSampleCount: number[], blockSize: number) {
     const ret = [baseSampleCount];
     let prev = baseSampleCount;
     let hasSingleBoxSampling = false;
     while (true) {
-        let next = [0, 0, 0];        
+        let next = [0, 0, 0];
         let max = 0;
         for (let i = 0; i < 3; i++) {
             const s = Math.floor((prev[i] + 1) / 2);
@@ -119,7 +119,7 @@ function createSampling(index: number, valueType: DataFormat.ValueType, numChann
             sum: 0.0,
             sqSum: 0.0,
             max: Number.NEGATIVE_INFINITY,
-            min: Number.POSITIVE_INFINITY           
+            min: Number.POSITIVE_INFINITY
         }
     }
     return {
@@ -149,7 +149,7 @@ function copyLayer(ctx: Data.Context, sliceIndex: number) {
         for (let i = 0; i < size; i++) {
             const v = src[srcOffset + i];
             target[targetOffset + i] = v;
-        }   
+        }
     }
 
     blocks.slicesWritten++;
@@ -169,7 +169,7 @@ function updateValuesInfo(sampling: Data.Sampling) {
             sqSum += v * v;
             if (v > max) max = v;
             else if (v < min) min = v;
-        }   
+        }
         valuesInfo.sum = sum;
         valuesInfo.sqSum = sqSum;
         valuesInfo.max = max;
@@ -194,7 +194,7 @@ async function writeBlocks(ctx: Data.Context, isDataFinished: boolean) {
 async function processSlices(ctx: Data.Context) {
     const channel = ctx.channels[0];
     const sliceCount = channel.slices.sliceCount;
-    for (let i = 0; i < sliceCount; i++) {        
+    for (let i = 0; i < sliceCount; i++) {
         copyLayer(ctx, i);
         Downsampling.downsampleLayer(ctx);
 

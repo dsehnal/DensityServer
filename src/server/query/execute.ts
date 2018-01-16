@@ -21,13 +21,13 @@ export default async function execute(params: Data.QueryParams, outputProvider: 
     State.pendingQueries++;
 
     const guid = generateUUID();
-    params.detail = Math.min(Math.max(0, params.detail | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);        
+    params.detail = Math.min(Math.max(0, params.detail | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1);
     Logger.log(guid, 'Info', `id=${params.sourceId},encoding=${params.asBinary ? 'binary' : 'text'},detail=${params.detail},${queryBoxToString(params.box)}`);
-    
+
     let sourceFile: number | undefined = void 0;
     try {
         sourceFile = await File.openRead(params.sourceFilename);
-        await _execute(sourceFile, params, guid, outputProvider);     
+        await _execute(sourceFile, params, guid, outputProvider);
         return true;
     } catch (e) {
         Logger.error(guid, e);
@@ -45,11 +45,11 @@ function getTime() {
 }
 
 function generateUUID() {
-    var d = getTime();    
-    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = (d + Math.random()*16)%16 | 0;
-        d = Math.floor(d/16);
-        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+    let d = getTime();
+    let uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        let r = (d + Math.random() * 16) % 16 | 0;
+        d = Math.floor(d / 16);
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
     });
     return uuid;
 }
@@ -77,7 +77,7 @@ function createSampling(header: DataFormat.Header, index: number, dataOffset: nu
     });
     return {
         index,
-        rate: sampling.rate, 
+        rate: sampling.rate,
         byteOffset: sampling.byteOffset + dataOffset,
         dataDomain,
         blockDomain: blockDomain(dataDomain, header.blockSize)
@@ -111,11 +111,11 @@ function createQuerySampling(data: Data.DataContext, sampling: Data.Sampling, qu
     return ret;
 }
 
-function pickSampling(data: Data.DataContext, queryBox: Box.Fractional, forcedLevel: number, precision: number): Data.QuerySamplingInfo {    
+function pickSampling(data: Data.DataContext, queryBox: Box.Fractional, forcedLevel: number, precision: number): Data.QuerySamplingInfo {
     if (forcedLevel > 0) {
         return createQuerySampling(data, data.sampling[Math.min(data.sampling.length, forcedLevel) - 1], queryBox);
     }
-    
+
     const sizeLimit = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel[precision] || (2 * 1024 * 1024);
     for (const s of data.sampling) {
         const gridBox = Box.fractionalToGrid(queryBox, s.dataDomain);
@@ -132,13 +132,13 @@ function pickSampling(data: Data.DataContext, queryBox: Box.Fractional, forcedLe
 }
 
 function emptyQueryContext(data: Data.DataContext, params: Data.QueryParams, guid: string): Data.QueryContext {
-    return { kind: 'Empty', guid, params, data }    
+    return { kind: 'Empty', guid, params, data }
 }
 
 function getQueryBox(data: Data.DataContext, queryBox: Data.QueryParamsBox) {
     switch (queryBox.kind) {
         case 'Cartesian': return Box.fractionalBoxReorderAxes(Box.cartesianToFractional(queryBox, data.spacegroup), data.header.axisOrder);
-        case 'Fractional': return Box.fractionalBoxReorderAxes(queryBox, data.header.axisOrder);            
+        case 'Fractional': return Box.fractionalBoxReorderAxes(queryBox, data.header.axisOrder);
         default: return data.dataBox;
     }
 }
@@ -200,7 +200,7 @@ async function _execute(file: number, params: Data.QueryParams, guid: string, ou
             // Step 3b: Compose the result data
             await compose(query);
         }
-        
+
         // Step 4: Encode the result
         output = outputProvider();
         encode(query, output);

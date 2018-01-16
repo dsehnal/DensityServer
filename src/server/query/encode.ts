@@ -3,14 +3,14 @@
  */
 
 import * as CIF from '../../lib/cif-tools'
-import * as Data from  './data-model'
-import * as Coords from  '../algebra/coordinate'
+import * as Data from './data-model'
+import * as Coords from '../algebra/coordinate'
 import VERSION from '../version'
 import * as DataFormat from '../../common/data-format'
 
 export default function encode(query: Data.QueryContext, output: CIF.OutputStream) {
-    let w = query.params.asBinary 
-        ? new CIF.Binary.Writer<ResultContext>(`DensityServer ${VERSION}`) 
+    let w = query.params.asBinary
+        ? new CIF.Binary.Writer<ResultContext>(`DensityServer ${VERSION}`)
         : new CIF.Text.Writer<ResultContext>();
     write(w, query);
     w.encode();
@@ -28,18 +28,18 @@ type CategoryInstance<T> = CIF.CategoryInstance<T>
 
 import E = CIF.Binary.Encoder
 
-function string<T>(name: string, string: (data: T, i: number) => string, isSpecified?: (data: T, i: number) => boolean): FieldDesc<T> {
+function string<T>(name: string, str: (data: T, i: number) => string, isSpecified?: (data: T, i: number) => boolean): FieldDesc<T> {
     if (isSpecified) {
-        return { name, string, presence: (data, i) => isSpecified(data, i) ? CIF.ValuePresence.Present : CIF.ValuePresence.NotSpecified };
-    } return  { name, string }
+        return { name, string: str, presence: (data, i) => isSpecified(data, i) ? CIF.ValuePresence.Present : CIF.ValuePresence.NotSpecified };
+    } return { name, string: str }
 }
 
-function int32<T>(name: string, number: (data: T, i: number) => number): FieldDesc<T> {
-    return { name, string: (data, i) => '' + number(data, i), number: number, typedArray: Int32Array, encoder: E.by(E.byteArray) };
+function int32<T>(name: string, num: (data: T, i: number) => number): FieldDesc<T> {
+    return { name, string: (data, i) => '' + num(data, i), number: num, typedArray: Int32Array, encoder: E.by(E.byteArray) };
 }
 
-function float64<T>(name: string, number: (data: T, i: number) => number, precision = 1000000): FieldDesc<T> {
-    return { name, string: (data, i) => '' + Math.round(precision * number(data, i)) / precision, number, typedArray: Float64Array, encoder: E.by(E.byteArray) };
+function float64<T>(name: string, num: (data: T, i: number) => number, precision = 1000000): FieldDesc<T> {
+    return { name, string: (data, i) => '' + Math.round(precision * num(data, i)) / precision, number: num, typedArray: Float64Array, encoder: E.by(E.byteArray) };
 }
 
 interface _vd3d_Ctx {
@@ -53,7 +53,7 @@ interface _vd3d_Ctx {
 
 const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
     string<_vd3d_Ctx>('name', ctx => ctx.header.channels[ctx.channelIndex]),
-        
+
     int32<_vd3d_Ctx>('axis_order[0]', ctx => ctx.header.axisOrder[0]),
     int32<_vd3d_Ctx>('axis_order[1]', ctx => ctx.header.axisOrder[1]),
     int32<_vd3d_Ctx>('axis_order[2]', ctx => ctx.header.axisOrder[2]),
@@ -82,10 +82,10 @@ const _volume_data_3d_info_fields: FieldDesc<_vd3d_Ctx>[] = [
     float64<_vd3d_Ctx>('spacegroup_cell_angles[2]', ctx => ctx.header.spacegroup.angles[2], 1000),
 
     float64<_vd3d_Ctx>('mean_source', ctx => ctx.globalValuesInfo.mean),
-    float64<_vd3d_Ctx>('mean_sampled', ctx => ctx.sampledValuesInfo.mean),    
+    float64<_vd3d_Ctx>('mean_sampled', ctx => ctx.sampledValuesInfo.mean),
     float64<_vd3d_Ctx>('sigma_source', ctx => ctx.globalValuesInfo.sigma),
     float64<_vd3d_Ctx>('sigma_sampled', ctx => ctx.sampledValuesInfo.sigma),
-    float64<_vd3d_Ctx>('min_source', ctx => ctx.globalValuesInfo.min),    
+    float64<_vd3d_Ctx>('min_source', ctx => ctx.globalValuesInfo.min),
     float64<_vd3d_Ctx>('min_sampled', ctx => ctx.sampledValuesInfo.min),
     float64<_vd3d_Ctx>('max_source', ctx => ctx.globalValuesInfo.max),
     float64<_vd3d_Ctx>('max_sampled', ctx => ctx.sampledValuesInfo.max)
@@ -98,7 +98,7 @@ function _volume_data_3d_info(result: ResultContext) {
         grid: result.query.samplingInfo.gridDomain,
         sampleRate: result.query.samplingInfo.sampling.rate,
         globalValuesInfo: result.query.data.header.sampling[0].valuesInfo[result.channelIndex],
-        sampledValuesInfo: result.query.data.header.sampling[result.query.samplingInfo.sampling.index].valuesInfo[result.channelIndex]   
+        sampledValuesInfo: result.query.data.header.sampling[result.query.samplingInfo.sampling.index].valuesInfo[result.channelIndex]
     };
 
     return <CategoryInstance<typeof ctx>>{
@@ -142,11 +142,11 @@ function _volume_data_3d(ctx: ResultContext) {
         encoder = E.by(E.byteArray)
     }
 
-    let fields: FieldDesc<typeof data>[] = [{ 
-        name: 'values', 
-        string: _volume_data_3d_str, 
-        number: _volume_data_3d_number, 
-        typedArray, 
+    let fields: FieldDesc<typeof data>[] = [{
+        name: 'values',
+        string: _volume_data_3d_str,
+        number: _volume_data_3d_number,
+        typedArray,
         encoder
     }];
 
@@ -175,7 +175,7 @@ function queryBoxDimension(e: 'a' | 'b', d: number) {
 }
 
 const _density_server_result_fields: FieldDesc<Data.QueryContext>[] = [
-    string<Data.QueryContext>('server_version', ctx => VERSION),        
+    string<Data.QueryContext>('server_version', ctx => VERSION),
     string<Data.QueryContext>('datetime_utc', ctx => new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '')),
     string<Data.QueryContext>('guid', ctx => ctx.guid),
     string<Data.QueryContext>('is_empty', ctx => ctx.kind === 'Empty' || ctx.kind === 'Error' ? 'yes' : 'no'),
@@ -208,7 +208,7 @@ function write(writer: Writer, query: Data.QueryContext) {
     writer.writeCategory(_density_server_result, [query]);
 
     switch (query.kind) {
-        case 'Data': 
+        case 'Data':
     }
 
     if (query.kind === 'Data') {

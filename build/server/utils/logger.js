@@ -8,7 +8,7 @@ function formatTime(t) {
         return 'n/a';
     var h = Math.floor(t / (60 * 60 * 1000)), m = Math.floor(t / (60 * 1000) % 60), s = Math.floor(t / 1000 % 60), ms = Math.floor(t % 1000).toString();
     while (ms.length < 3)
-        ms = "0" + ms;
+        ms = '0' + ms;
     if (h > 0)
         return h + "h" + m + "m" + s + "." + ms + "s";
     if (m > 0)

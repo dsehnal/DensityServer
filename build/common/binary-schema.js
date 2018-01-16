@@ -9,6 +9,7 @@ exports.bool = { kind: 'bool' };
 exports.int = { kind: 'int' };
 exports.float = { kind: 'float' };
 exports.str = { kind: 'string' };
+// tslint:disable-next-line:array-type
 function array(element) { return { kind: 'array', element: element }; }
 exports.array = array;
 function obj(schema) {

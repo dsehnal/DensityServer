@@ -11,7 +11,7 @@ import { FastMap } from '../utils/collections'
 export default function findUniqueBlocks(data: Data.DataContext, sampling: Data.Sampling, queryBox: Box.Fractional) {
     const translations = data.header.spacegroup.isPeriodic
         // find all query box translations that overlap with the unit cell.
-        ? findDataOverlapTranslationList(queryBox, sampling.dataDomain) 
+        ? findDataOverlapTranslationList(queryBox, sampling.dataDomain)
         // no translations
         : [Coords.fractional(0, 0, 0)];
 
@@ -19,7 +19,7 @@ export default function findUniqueBlocks(data: Data.DataContext, sampling: Data.
     for (const t of translations) {
         findUniqueBlocksOffset(data, sampling, queryBox, t, blocks);
     }
-    
+
     const blockList = blocks.forEach((b, _, ctx) => { ctx!.push(b) }, [] as Data.QueryBlock[]);
 
     // sort the data so that the first coodinate changes the fastest 
@@ -42,8 +42,7 @@ type Translations = Coords.Fractional[]
  * [a + k, b + k] intersects with (u, v)
  */
 function overlapMultiplierRange(a: number, b: number, u: number, v: number): number[] | undefined {
-    let x = Math.ceil(u - b) | 0, y =  Math.floor(v - a) | 0;
-    //console.log(x, y, { a, b, u, v });
+    let x = Math.ceil(u - b) | 0, y = Math.floor(v - a) | 0;
     if (Coords.round(b + x) <= Coords.round(u)) x++;
     if (Coords.round(a + y) >= Coords.round(v)) y--;
     if (x > y) return void 0;
@@ -62,7 +61,7 @@ function findDataOverlapTranslationList(box: Box.Fractional, domain: Coords.Grid
 
     for (let i = 0; i < 3; i++) {
         const range = overlapMultiplierRange(
-            box.a[i], box.b[i], 
+            box.a[i], box.b[i],
             origin[i], origin[i] + dimensions[i]);
         if (!range) return translations;
         ranges[i] = range;
@@ -106,14 +105,14 @@ function findUniqueBlocksOffset(data: Data.DataContext, sampling: Data.Sampling,
     // with the query region.
     //
     // Clamping the data makes sure we avoid silly rounding errors (hopefully :))
-    const { a: min, b: max } 
+    const { a: min, b: max }
         = Box.clampGridToSamples(Box.fractionalToGrid(intersection, blockDomain));
 
     for (let i = min[0]; i < max[0]; i++) {
         for (let j = min[1]; j < max[1]; j++) {
             for (let k = min[2]; k < max[2]; k++) {
                 addUniqueBlock(blocks, Coords.grid(blockDomain, i, j, k), offset);
-            }                   
-        }    
+            }
+        }
     }
 }

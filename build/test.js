@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // import * as Api from './server/api'
 // import * as Coordinate from './server/algebra/coordinate'
 var LocalApi = require("./server/local-api");
-//import * as fs from 'fs'
+// import * as fs from 'fs'
 // function wrapResponse(fn: string) {
 //     const w = {
 //         open(this: any) {
@@ -102,7 +102,7 @@ function run() {
                     kind: 'cell'
                 },
                 params: {
-                    //detail: 4,
+                    // detail: 4,
                     forcedSamplingLevel: 1,
                     asBinary: true
                 },

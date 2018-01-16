@@ -16,18 +16,18 @@ function encode(query, output) {
 }
 exports.default = encode;
 var E = CIF.Binary.Encoder;
-function string(name, string, isSpecified) {
+function string(name, str, isSpecified) {
     if (isSpecified) {
-        return { name: name, string: string, presence: function (data, i) { return isSpecified(data, i) ? 0 /* Present */ : 1 /* NotSpecified */; } };
+        return { name: name, string: str, presence: function (data, i) { return isSpecified(data, i) ? 0 /* Present */ : 1 /* NotSpecified */; } };
     }
-    return { name: name, string: string };
+    return { name: name, string: str };
 }
-function int32(name, number) {
-    return { name: name, string: function (data, i) { return '' + number(data, i); }, number: number, typedArray: Int32Array, encoder: E.by(E.byteArray) };
+function int32(name, num) {
+    return { name: name, string: function (data, i) { return '' + num(data, i); }, number: num, typedArray: Int32Array, encoder: E.by(E.byteArray) };
 }
-function float64(name, number, precision) {
+function float64(name, num, precision) {
     if (precision === void 0) { precision = 1000000; }
-    return { name: name, string: function (data, i) { return '' + Math.round(precision * number(data, i)) / precision; }, number: number, typedArray: Float64Array, encoder: E.by(E.byteArray) };
+    return { name: name, string: function (data, i) { return '' + Math.round(precision * num(data, i)) / precision; }, number: num, typedArray: Float64Array, encoder: E.by(E.byteArray) };
 }
 var _volume_data_3d_info_fields = [
     string('name', function (ctx) { return ctx.header.channels[ctx.channelIndex]; }),

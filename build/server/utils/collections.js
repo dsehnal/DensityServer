@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 function createMapObject() {
     var map = Object.create(null);
     // to cause deoptimization as we don't want to create hidden classes
-    map["__"] = void 0;
-    delete map["__"];
+    map['__'] = void 0;
+    delete map['__'];
     return map;
 }
 var FastMap;

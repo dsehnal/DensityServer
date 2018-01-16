@@ -8,7 +8,7 @@
 
 import * as LocalApi from './server/local-api'
 
-//import * as fs from 'fs'
+// import * as fs from 'fs'
 
 // function wrapResponse(fn: string) {
 //     const w = {
@@ -103,7 +103,7 @@ async function run() {
             kind: 'cell'
         },
         params: {
-            //detail: 4,
+            // detail: 4,
             forcedSamplingLevel: 1,
             asBinary: true
         },
@@ -140,7 +140,7 @@ async function run() {
     // await query('emd', '8116', true, { kind: 'Cell' }, 0, 4);
     // await query('emd', '8116', true, { kind: 'Cell' }, 0, 5);
 
-    //await query('emd', '8116', false, { kind: 'Cell' });
+    // await query('emd', '8116', false, { kind: 'Cell' });
     // await query('emd', '8116', true, { kind: 'Cell' }, 0);
     // await query('emd', '8116', true, { kind: 'Cell' }, 1);
     // await query('emd', '8116', true, { kind: 'Cell' }, 2);

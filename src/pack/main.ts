@@ -47,7 +47,7 @@ async function allocateFile(ctx: Data.Context) {
 
 function determineBlockSize(data: CCP4.Data, blockSize: number) {
     const { extent } = data.header;
-    const maxLayerSize = 1024 * 1024 * 1024;    
+    const maxLayerSize = 1024 * 1024 * 1024;
     const valueCount = extent[0] * extent[1];
     if (valueCount * blockSize <= maxLayerSize) return blockSize;
 
@@ -75,7 +75,7 @@ async function create(filename: string, sourceDensities: { name: string, filenam
     if (!sourceDensities.length) {
         throw Error('Specify at least one source density.');
     }
-    
+
     process.stdout.write('Initializing... ');
     const files: number[] = [];
     try {
@@ -89,13 +89,13 @@ async function create(filename: string, sourceDensities: { name: string, filenam
         }
         const blockSize = determineBlockSize(channels[0], sourceBlockSize);
         for (const ch of channels) CCP4.assignSliceBuffer(ch, blockSize);
-        
+
         // Step 1c: Create data context.
         const context = await Sampling.createContext(filename, channels, blockSize, isPeriodic);
         for (const s of channels) files.push(s.file);
         files.push(context.file);
         process.stdout.write('   done.\n');
-        
+
         console.log(`Block size: ${blockSize}`);
 
         // Step 2: Allocate disk space.        

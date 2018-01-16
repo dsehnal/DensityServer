@@ -21,11 +21,11 @@ async function readBlock(query: Data.QueryContext.Data, coord: Coords.Grid<'Bloc
     const { valueType, blockSize } = query.data.header;
     const dataSampleCount = query.data.header.sampling[query.samplingInfo.sampling.index].sampleCount;
     const buffer = File.createTypedArrayBufferContext(size, valueType);
-    const byteOffset = query.samplingInfo.sampling.byteOffset 
-        + DataFormat.getValueByteSize(valueType) * numChannels * blockSize 
-          * (blockSampleCount[1] * blockSampleCount[2] * coord[0]
-           + dataSampleCount[0] * blockSampleCount[2] * coord[1]
-           + dataSampleCount[0] * dataSampleCount[1] * coord[2]);  
+    const byteOffset = query.samplingInfo.sampling.byteOffset
+        + DataFormat.getValueByteSize(valueType) * numChannels * blockSize
+        * (blockSampleCount[1] * blockSampleCount[2] * coord[0]
+            + dataSampleCount[0] * blockSampleCount[2] * coord[1]
+            + dataSampleCount[0] * dataSampleCount[1] * coord[2]);
 
     const values = await File.readTypedArray(buffer, query.data.file, byteOffset, size, 0);
     return {
@@ -46,13 +46,13 @@ function fillData(query: Data.QueryContext.Data, blockData: Data.BlockData, bloc
 
     for (let channelIndex = 0, _ii = query.data.header.channels.length; channelIndex < _ii; channelIndex++) {
         const target = query.values[channelIndex];
-        const offsetSource = channelIndex * blockGridBox.a.domain.sampleVolume 
+        const offsetSource = channelIndex * blockGridBox.a.domain.sampleVolume
             + blockGridBox.a[0] + blockGridBox.a[1] * sSizeH + blockGridBox.a[2] * sSizeHK;
 
         for (let l = 0; l < maxL; l++) {
             for (let k = 0; k < maxK; k++) {
                 for (let h = 0; h < maxH; h++) {
-                    target[offsetTarget + h + k * tSizeH + l * tSizeHK] 
+                    target[offsetTarget + h + k * tSizeH + l * tSizeHK]
                         = source[offsetSource + h + k * sSizeH + l * sSizeHK];
                 }
             }
@@ -74,7 +74,7 @@ async function fillBlock(query: Data.QueryContext.Data, block: Data.QueryBlock) 
     const blockGridDomain = createBlockGridDomain(block.coord, query.samplingInfo.sampling.dataDomain);
 
     const blockData: Data.BlockData = await readBlock(query, block.coord, baseBox);
-        
+
     for (const offset of block.offsets) {
         const offsetQueryBox = Box.shift(query.samplingInfo.fractionalBox, offset);
         const dataBox = Box.intersect(baseBox, offsetQueryBox);

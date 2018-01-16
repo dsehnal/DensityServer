@@ -11,7 +11,7 @@ import * as path from 'path'
 
 export interface JobEntry {
     source: {
-        filename: string,    
+        filename: string,
         name: string,
         id: string
     },
@@ -62,7 +62,7 @@ async function query(job: JobEntry) {
 
     if (job.query.kind.toLocaleLowerCase() === 'cell') {
         box = { kind: 'Cell' };
-    } else if (job.query.space === 'fractional') {        
+    } else if (job.query.space === 'fractional') {
         box = {
             kind: 'Fractional',
             a: Coordinate.fractional(job.query.bottomLeft![0], job.query.bottomLeft![1], job.query.bottomLeft![2]),
@@ -127,7 +127,7 @@ function wrapFile(fn: string) {
         },
         end(this: any) {
             if (!this.opened || this.ended) return;
-            fs.close(this.file, function() { });
+            fs.close(this.file, function () { });
             this.ended = true;
         },
         file: 0,

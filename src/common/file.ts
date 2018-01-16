@@ -16,7 +16,7 @@ export async function openRead(filename: string) {
                 return;
             }
 
-            try {                
+            try {
                 res(file);
             } catch (e) {
                 fs.close(file);
@@ -87,11 +87,11 @@ export function createFile(filename: string) {
         fs.open(filename, 'w', (err, file) => {
             if (err) rej(err);
             else res(file);
-        }) 
+        })
     });
 }
 
-const __emptyFunc = function() {};
+const __emptyFunc = function () { };
 export function close(file: number | undefined) {
     try {
         if (file !== void 0) fs.close(file, __emptyFunc);
@@ -101,7 +101,7 @@ export function close(file: number | undefined) {
 }
 
 const smallBuffer = new Buffer(8);
-export async function writeInt(file: number, value: number, position: number) {    
+export async function writeInt(file: number, value: number, position: number) {
     smallBuffer.writeInt32LE(value, 0);
     await writeBuffer(file, position, smallBuffer, 4);
 }
@@ -112,7 +112,7 @@ export interface TypedArrayBufferContext {
     readBuffer: Buffer,
     valuesBuffer: Uint8Array,
     values: DataFormat.ValueArray
-} 
+}
 
 function getElementByteSize(type: DataFormat.ValueType) {
     if (type === DataFormat.ValueType.Float32) return 4;
@@ -128,8 +128,8 @@ function makeTypedArray(type: DataFormat.ValueType, buffer: ArrayBuffer): DataFo
 
 export function createTypedArrayBufferContext(size: number, type: DataFormat.ValueType): TypedArrayBufferContext {
     let elementByteSize = getElementByteSize(type);
-    let arrayBuffer = new ArrayBuffer(elementByteSize * size);    
-    let readBuffer = new Buffer(arrayBuffer); 
+    let arrayBuffer = new ArrayBuffer(elementByteSize * size);
+    let readBuffer = new Buffer(arrayBuffer);
     let valuesBuffer = IsNativeEndianLittle ? arrayBuffer : new ArrayBuffer(elementByteSize * size);
     return {
         type,
@@ -142,7 +142,7 @@ export function createTypedArrayBufferContext(size: number, type: DataFormat.Val
 
 function flipByteOrder(source: Buffer, target: Uint8Array, byteCount: number, elementByteSize: number, offset: number) {
     for (let i = 0, n = byteCount; i < n; i += elementByteSize) {
-        for (let j = 0; j < elementByteSize; j++) { 
+        for (let j = 0; j < elementByteSize; j++) {
             target[offset + i + elementByteSize - j - 1] = source[offset + i + j];
         }
     }
@@ -151,8 +151,8 @@ function flipByteOrder(source: Buffer, target: Uint8Array, byteCount: number, el
 export async function readTypedArray(ctx: TypedArrayBufferContext, file: number, position: number, count: number, valueOffset: number, littleEndian?: boolean) {
     let byteCount = ctx.elementByteSize * count;
     let byteOffset = ctx.elementByteSize * valueOffset;
-    
-    await readBuffer(file, position, ctx.readBuffer, byteCount, byteOffset);    
+
+    await readBuffer(file, position, ctx.readBuffer, byteCount, byteOffset);
     if (ctx.elementByteSize > 1 && ((littleEndian !== void 0 && littleEndian !== IsNativeEndianLittle) || !IsNativeEndianLittle)) {
         // fix the endian 
         flipByteOrder(ctx.readBuffer, ctx.valuesBuffer, byteCount, ctx.elementByteSize, byteOffset);

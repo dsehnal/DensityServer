@@ -51,7 +51,7 @@ export function finalize(ctx: Data.Context) {
 
 
 function conv(w: number, c: number[], src: DataFormat.ValueArray, b: number, i0: number, i1: number, i2: number, i3: number, i4: number) {
-    return  w * (c[0] * src[b + i0] + c[1] * src[b + i1] + c[2] * src[b + i2] + c[3] * src[b + i3] + c[4] * src[b + i4]);
+    return w * (c[0] * src[b + i0] + c[1] * src[b + i1] + c[2] * src[b + i2] + c[3] * src[b + i3] + c[4] * src[b + i4]);
 }
 
 /**
@@ -70,13 +70,13 @@ function downsampleH(kernel: Data.Kernel, srcDims: number[], src: DataFormat.Val
     for (let k = 0; k < sizeK; k++) {
         let srcOffset = srcBaseOffset + k * sizeH;
         let targetOffset = k;
-        target[targetOffset] = conv(w, c, src, srcOffset, 0, 0, 0, 1, 2);        
+        target[targetOffset] = conv(w, c, src, srcOffset, 0, 0, 0, 1, 2);
         for (let h = 1; h < targetH - 1; h++) {
-            srcOffset += 2; 
+            srcOffset += 2;
             targetOffset += sizeK;
             target[targetOffset] = conv(w, c, src, srcOffset, -2, -1, 0, 1, 2);
-        }        
-        srcOffset += 2; 
+        }
+        srcOffset += 2;
         targetOffset += sizeK;
         if (isEven) target[targetOffset] = conv(w, c, src, srcOffset, -2, -1, 0, 1, 1);
         else target[targetOffset] = conv(w, c, src, srcOffset, -2, -1, 0, 0, 0);
@@ -101,8 +101,8 @@ function downsampleHK(kernel: Data.Kernel, dimsX: number[], buffer: Data.Downsam
     const c = kernel.coefficients;
 
     for (let k = 0; k < sizeK; k++) {
-        let sourceOffset = k * sizeH;        
-        let targetOffset = targetBaseOffset + k * kernelSize;        
+        let sourceOffset = k * sizeH;
+        let targetOffset = targetBaseOffset + k * kernelSize;
         target[targetOffset] = conv(w, c, src, sourceOffset, 0, 0, 0, 1, 2);
         for (let h = 1; h < targetH - 1; h++) {
             sourceOffset += 2; targetOffset += targetSliceSize;
@@ -121,7 +121,7 @@ function downsampleSlice(ctx: Data.Context, sampling: Data.Sampling) {
     for (let i = 0, _ii = sampling.blocks.values.length; i < _ii; i++) {
         downsampleH(ctx.kernel, sampling.sampleCount, sampling.blocks.values[i], sampling.blocks.slicesWritten - 1, sampling.downsampling![i]);
         downsampleHK(ctx.kernel, dimsU, sampling.downsampling![i]);
-    }    
+    }
 }
 
 /** Determine if a buffer has enough data to be downsampled */
@@ -136,7 +136,7 @@ function downsampleBuffer(kernel: Data.Kernel, source: Data.Sampling, target: Da
     const downsampling = source.downsampling!;
     const { slicesWritten, startSliceIndex } = downsampling[0];
     const sizeH = target.sampleCount[0], sizeK = target.sampleCount[1], sizeHK = sizeH * sizeK;
-    
+
     const kernelSize = kernel.size;
     const w = 1.0 / kernel.coefficientSum;
     const c = kernel.coefficients;
@@ -147,7 +147,7 @@ function downsampleBuffer(kernel: Data.Kernel, source: Data.Sampling, target: Da
     const i2 = startSliceIndex % kernelSize;
     const i3 = Math.min(slicesWritten, startSliceIndex + 1) % kernelSize;
     const i4 = Math.min(slicesWritten, startSliceIndex + 2) % kernelSize;
-    
+
     const channelCount = downsampling.length;
     const valuesBaseOffset = target.blocks.slicesWritten * sizeHK;
 

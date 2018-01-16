@@ -27,7 +27,7 @@ const Config = {
             4 * 1024 * 1024,
             8 * 1024 * 1024,
             16 * 1024 * 1024, // ~ 256*256*256
-            24 * 1024 * 1024 
+            24 * 1024 * 1024
         ]
     },
 
@@ -67,12 +67,12 @@ const Config = {
      */
     mapFile(source: string, id: string) {
         switch (source.toLowerCase()) {
-            //case 'x-ray': return `g:/test/mdb/xray-${id.toLowerCase()}.mdb`;
-            //case 'em': return `g:/test/mdb/${id.toLowerCase()}.mdb`;
+            // case 'x-ray': return `g:/test/mdb/xray-${id.toLowerCase()}.mdb`;
+            // case 'em': return `g:/test/mdb/${id.toLowerCase()}.mdb`;
             case 'x-ray': return `D:/Data/DenistyServer/x-ray/${id.toLowerCase()}.mdb`;
             case 'em': return `D:/Data/DenistyServer/emd/emd_${id.split('-')[1].toLowerCase()}.mdb`;
             case 'emd': return `D:/Data/DenistyServer/emd/emd_${id}.mdb`;
-            //case 'emd': return `g:/test/mdb/emd-${id}.mdb`;
+            // case 'emd': return `g:/test/mdb/emd-${id}.mdb`;
             default: return void 0;
         }
     }

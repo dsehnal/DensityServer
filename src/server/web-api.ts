@@ -30,7 +30,7 @@ export default function init(app: express.Express) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(Docs);
     });
-} 
+}
 
 function mapFile(type: string, id: string) {
     return ServerConfig.mapFile(type || '', id || '');
@@ -112,7 +112,7 @@ async function getHeader(req: express.Request, res: express.Response) {
             'Access-Control-Allow-Headers': 'X-Requested-With'
         });
         headerWritten = true;
-        res.write(header);        
+        res.write(header);
     } catch (e) {
         Logger.errorPlain(`Header ${req.params.source}/${req.params.id}`, e);
         if (!headerWritten) {
@@ -124,7 +124,7 @@ async function getHeader(req: express.Request, res: express.Response) {
 }
 
 function getQueryParams(req: express.Request, isCell: boolean): Data.QueryParams {
-    const a = [+req.params.a1, +req.params.a2, +req.params.a3]; 
+    const a = [+req.params.a1, +req.params.a2, +req.params.a3];
     const b = [+req.params.b1, +req.params.b2, +req.params.b3];
 
     const detail = Math.min(Math.max(0, (+req.query.detail) | 0), ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel.length - 1)
@@ -132,36 +132,36 @@ function getQueryParams(req: express.Request, isCell: boolean): Data.QueryParams
 
     const box: Data.QueryParamsBox = isCell
         ? { kind: 'Cell' }
-        : ( isCartesian
+        : (isCartesian
             ? { kind: 'Cartesian', a: Coords.cartesian(a[0], a[1], a[2]), b: Coords.cartesian(b[0], b[1], b[2]) }
             : { kind: 'Fractional', a: Coords.fractional(a[0], a[1], a[2]), b: Coords.fractional(b[0], b[1], b[2]) });
 
     const asBinary = (req.query.encoding || '').toLowerCase() !== 'cif';
     const sourceFilename = mapFile(req.params.source, req.params.id)!;
 
-    return { 
+    return {
         sourceFilename,
         sourceId: `${req.params.source}/${req.params.id}`,
-        asBinary, 
-        box, 
+        asBinary,
+        box,
         detail
-    };    
+    };
 }
 
-async function queryBox(req: express.Request, res: express.Response, params: Data.QueryParams) {   
+async function queryBox(req: express.Request, res: express.Response, params: Data.QueryParams) {
     if (validateSourndAndId(req, res)) {
         return;
     }
 
     const outputFilename = Api.getOutputFilename(req.params.source, req.params.id, params);
     const response = wrapResponse(outputFilename, res);
-    
+
     try {
         if (!params.sourceFilename) {
             response.do404();
             return;
         }
-        
+
         let ok = await Api.queryBox(params, () => response);
         if (!ok) {
             response.do404();
@@ -169,7 +169,7 @@ async function queryBox(req: express.Request, res: express.Response, params: Dat
         }
     } catch (e) {
         Logger.errorPlain(`Query Box ${JSON.stringify(req.params || {})} | ${JSON.stringify(req.query || {})}`, e);
-        response.do404();           
+        response.do404();
     } finally {
         response.end();
         queryDone();

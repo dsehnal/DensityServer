@@ -125,7 +125,7 @@ function readHeader(name, file) {
                         spacegroupNumber: readInt(22),
                         cellSize: getArray(readFloat, 10, 3),
                         cellAngles: getArray(readFloat, 13, 3),
-                        //mean: readFloat(21),
+                        // mean: readFloat(21),
                         littleEndian: littleEndian,
                         dataOffset: headerSize + readInt(23) /* symBytes */
                     };

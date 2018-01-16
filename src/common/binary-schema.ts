@@ -12,21 +12,23 @@ export type String = { kind: 'string' }
 export type Array = { kind: 'array', element: Element }
 export type Prop = { element: Element, prop: string }
 export type Obj = { kind: 'object', props: Prop[] }
+// tslint:disable-next-line:array-type
 export type Element = Bool | Int | Float | String | Array | Obj
 
 export const bool: Bool = { kind: 'bool' };
 export const int: Int = { kind: 'int' };
 export const float: Float = { kind: 'float' };
-export const str: String = { kind: 'string' }; 
+export const str: String = { kind: 'string' };
+// tslint:disable-next-line:array-type
 export function array(element: Element): Array { return { kind: 'array', element }; }
-export function obj<T>(schema: ((keyof T) | Element)[][]): Obj { 
-    return { 
-        kind: 'object', 
+export function obj<T>(schema: ((keyof T) | Element)[][]): Obj {
+    return {
+        kind: 'object',
         props: schema.map(s => ({
             element: s[1] as Element,
             prop: s[0] as string
         }))
-    }; 
+    };
 }
 
 function byteCount(e: Element, src: any) {
@@ -45,7 +47,7 @@ function byteCount(e: Element, src: any) {
         }
         case 'object': {
             for (const p of e.props) {
-                size += byteCount(p.element, src[p.prop]); 
+                size += byteCount(p.element, src[p.prop]);
             }
             break;
         }
@@ -61,7 +63,7 @@ function writeElement(e: Element, buffer: Buffer, src: any, offset: number) {
         case 'string': {
             const val = '' + src;
             const size = MsgPack.utf8ByteCount(val);
-            buffer.writeInt32LE(size, offset); 
+            buffer.writeInt32LE(size, offset);
             offset += 4; // str len
             const str = new Uint8Array(size);
             MsgPack.utf8Write(str, 0, val);
@@ -117,15 +119,15 @@ function decodeElement(e: Element, buffer: Buffer, offset: number, target: { val
             break;
         }
         case 'array': {
-            const array:any[] = [];
-            const count = buffer.readInt32LE(offset); 
+            const array: any[] = [];
+            const count = buffer.readInt32LE(offset);
             const element = { value: void 0 };
-            offset += 4; 
+            offset += 4;
             for (let i = 0; i < count; i++) {
                 offset = decodeElement(e.element, buffer, offset, element);
                 array.push(element.value);
-            }    
-            target.value = array;      
+            }
+            target.value = array;
             break;
         }
         case 'object': {
@@ -135,7 +137,7 @@ function decodeElement(e: Element, buffer: Buffer, offset: number, target: { val
                 offset = decodeElement(p.element, buffer, offset, element);
                 t[p.prop] = element.value;
             }
-            target.value = t;      
+            target.value = t;
             break;
         }
     }

@@ -10,7 +10,7 @@ export function formatTime(t: number) {
         s = Math.floor(t / 1000 % 60),
         ms = Math.floor(t % 1000).toString();
 
-    while (ms.length < 3) ms = "0" + ms;
+    while (ms.length < 3) ms = '0' + ms;
 
     if (h > 0) return `${h}h${m}m${s}.${ms}s`;
     if (m > 0) return `${m}m${s}.${ms}s`;

@@ -48,8 +48,8 @@ export interface FastSet<T extends string | number> {
 function createMapObject() {
     let map = Object.create(null);
     // to cause deoptimization as we don't want to create hidden classes
-    map["__"] = void 0;
-    delete map["__"];
+    map['__'] = void 0;
+    delete map['__'];
     return map;
 }
 

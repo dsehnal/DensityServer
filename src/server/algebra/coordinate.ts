@@ -21,7 +21,7 @@ export interface GridInfo {
     /** Grid delta in fractional coordinates along each axis (in axis order) */
     delta: Fractional,
     /** Sample count of the grid box */
-    sampleCount: number[] 
+    sampleCount: number[]
 }
 
 /** 
@@ -35,7 +35,7 @@ export interface GridDomain<K> extends GridInfo { kind: K, sampleVolume: number 
 export const enum Space { Cartesian, Fractional, Grid }
 export interface Coord<S extends Space> { kind: S, '0': number, '1': number, '2': number, [index: number]: number }
 export interface Cartesian extends Coord<Space.Cartesian> { }
-export interface Fractional extends Coord<Space.Fractional> {  }
+export interface Fractional extends Coord<Space.Fractional> { }
 export interface Grid<K> extends Coord<Space.Grid> { domain: GridDomain<K> }
 
 /** Constructs spacegroup skew matrix from supplied info */
@@ -73,12 +73,12 @@ export function spacegroup(info: SpacegroupInfo): Spacegroup {
 
 export function domain<K>(kind: K, info: GridInfo): GridDomain<K> {
     const sc = info.sampleCount;
-    return { 
-        kind, 
-        delta: info.delta, 
-        dimensions: info.dimensions, 
-        origin: info.origin, 
-        sampleCount: info.sampleCount, 
+    return {
+        kind,
+        delta: info.delta,
+        dimensions: info.dimensions,
+        origin: info.origin,
+        sampleCount: info.sampleCount,
         sampleVolume: sc[0] * sc[1] * sc[2]
     };
 }
@@ -177,8 +177,8 @@ export function gridMetrics(dimensions: { [i: number]: number }) {
 
 export function sampleCounts(dimensions: Fractional, delta: Fractional) {
     return [
-        Helpers.snap(dimensions[0] / delta[0], 'top'), 
-        Helpers.snap(dimensions[1] / delta[1], 'top'), 
+        Helpers.snap(dimensions[0] / delta[0], 'top'),
+        Helpers.snap(dimensions[1] / delta[1], 'top'),
         Helpers.snap(dimensions[2] / delta[2], 'top')
     ];
 }
@@ -188,7 +188,7 @@ export function round(v: number) {
     return Math.round(10000000 * v) / 10000000;
 }
 
-module Helpers {
+namespace Helpers {
     import applyTransform = LA.Matrix4.transformVector3;
     export function transform(x: { [index: number]: number }, matrix: number[]) {
         return applyTransform([0.1, 0.1, 0.1], x, matrix);
@@ -196,8 +196,8 @@ module Helpers {
 
     export function snap(v: number, to: 'bottom' | 'top') {
         switch (to) {
-            case 'bottom': return Math.floor(round(v)) | 0; 
-            case 'top': return Math.ceil(round(v)) | 0; 
+            case 'bottom': return Math.floor(round(v)) | 0;
+            case 'top': return Math.ceil(round(v)) | 0;
         }
     }
 }

@@ -39,7 +39,6 @@ exports.default = findUniqueBlocks;
  */
 function overlapMultiplierRange(a, b, u, v) {
     var x = Math.ceil(u - b) | 0, y = Math.floor(v - a) | 0;
-    //console.log(x, y, { a, b, u, v });
     if (Coords.round(b + x) <= Coords.round(u))
         x++;
     if (Coords.round(a + y) >= Coords.round(v))

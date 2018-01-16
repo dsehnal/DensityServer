@@ -18,18 +18,18 @@ export interface Header {
     cellSize: number[],
     cellAngles: number[],
     littleEndian: boolean,
-    dataOffset: number 
+    dataOffset: number
 }
 
 /** Represents a circular buffer for 2 * blockSize layers */
-export interface SliceBuffer {   
+export interface SliceBuffer {
     buffer: File.TypedArrayBufferContext,
     sliceCapacity: number,
     slicesRead: number,
 
     values: DataFormat.ValueArray,
     sliceCount: number,
-    
+
     /** Have all the input slice been read? */
     isFinished: boolean
 }
@@ -54,7 +54,7 @@ export function assignSliceBuffer(data: Data, blockSize: number) {
     const buffer = File.createTypedArrayBufferContext(sliceCapacity * extent[0] * extent[1], valueType);
     data.slices = {
         buffer,
-        sliceCapacity,        
+        sliceCapacity,
         slicesRead: 0,
         values: buffer.values,
         sliceCount: 0,
@@ -74,14 +74,14 @@ function compareProp(a: any, b: any) {
 }
 
 export function compareHeaders(a: Header, b: Header) {
-    for (const p of [ 'grid', 'axisOrder', 'extent', 'origin', 'spacegroupNumber', 'cellSize', 'cellAngles', 'mode' ]) {
+    for (const p of ['grid', 'axisOrder', 'extent', 'origin', 'spacegroupNumber', 'cellSize', 'cellAngles', 'mode']) {
         if (!compareProp((a as any)[p], (b as any)[p])) return false;
     }
     return true;
 }
 
 function getArray(r: (offset: number) => number, offset: number, count: number) {
-    const ret:number[] = [];
+    const ret: number[] = [];
     for (let i = 0; i < count; i++) {
         ret[i] = r(offset + i);
     }
@@ -90,7 +90,7 @@ function getArray(r: (offset: number) => number, offset: number, count: number) 
 
 async function readHeader(name: string, file: number) {
     const headerSize = 1024;
-    const { buffer: data } = await File.readBuffer(file, 0, headerSize);        
+    const { buffer: data } = await File.readBuffer(file, 0, headerSize);
 
     let littleEndian = true;
 
@@ -103,7 +103,7 @@ async function readHeader(name: string, file: number) {
         }
     }
 
-    const readInt = littleEndian ? (o: number) => data.readInt32LE(o * 4) : (o: number) => data.readInt32BE(o * 4); 
+    const readInt = littleEndian ? (o: number) => data.readInt32LE(o * 4) : (o: number) => data.readInt32BE(o * 4);
     const readFloat = littleEndian ? (o: number) => data.readFloatLE(o * 4) : (o: number) => data.readFloatBE(o * 4);
 
     const origin2k = getArray(readFloat, 49, 3);
@@ -118,7 +118,7 @@ async function readHeader(name: string, file: number) {
         spacegroupNumber: readInt(22),
         cellSize: getArray(readFloat, 10, 3),
         cellAngles: getArray(readFloat, 13, 3),
-        //mean: readFloat(21),
+        // mean: readFloat(21),
         littleEndian,
         dataOffset: headerSize + readInt(23) /* symBytes */
     };
@@ -129,12 +129,12 @@ async function readHeader(name: string, file: number) {
 
 export async function readSlices(data: Data) {
     const { slices, header } = data;
-    if (slices.isFinished) { 
-        return; 
+    if (slices.isFinished) {
+        return;
     }
 
     const { extent } = header;
-    const sliceSize = extent[0] * extent[1];    
+    const sliceSize = extent[0] * extent[1];
     const sliceByteOffset = slices.buffer.elementByteSize * sliceSize * slices.slicesRead;
     const sliceCount = Math.min(slices.sliceCapacity, extent[2] - slices.slicesRead);
     const sliceByteCount = sliceCount * sliceSize;
@@ -151,9 +151,9 @@ export async function readSlices(data: Data) {
 export async function open(name: string, filename: string): Promise<Data> {
     const file = await File.openRead(filename);
     const header = await readHeader(name, file);
-    return { 
-        header, 
-        file, 
+    return {
+        header,
+        file,
         slices: void 0 as any
     };
 }
