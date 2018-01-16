@@ -1,3 +1,6 @@
+# 0.9.5
+* Better query response box resolution.
+
 # 0.9.4
 * Support for CCP4 Mode 1.
 * Asking for summary for a non-existing entry will now correctly return 404.

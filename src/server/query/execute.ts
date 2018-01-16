@@ -100,7 +100,7 @@ async function createDataContext(file: number): Promise<Data.DataContext> {
 }
 
 function createQuerySampling(data: Data.DataContext, sampling: Data.Sampling, queryBox: Box.Fractional): Data.QuerySamplingInfo {
-    const fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+    const fractionalBox = Box.gridToFractional(Box.expandGridBox(Box.fractionalToGrid(queryBox, sampling.dataDomain), 1));
     const blocks = identify(data, sampling, fractionalBox);
     let ret = {
         sampling,

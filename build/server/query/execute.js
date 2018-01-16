@@ -145,7 +145,7 @@ function createDataContext(file) {
     });
 }
 function createQuerySampling(data, sampling, queryBox) {
-    var fractionalBox = Box.gridToFractional(Box.fractionalToGrid(queryBox, sampling.dataDomain));
+    var fractionalBox = Box.gridToFractional(Box.expandGridBox(Box.fractionalToGrid(queryBox, sampling.dataDomain), 1));
     var blocks = identify_1.default(data, sampling, fractionalBox);
     var ret = {
         sampling: sampling,

@@ -38,6 +38,14 @@ function fractionalBoxReorderAxes(box, axisOrder) {
     };
 }
 exports.fractionalBoxReorderAxes = fractionalBoxReorderAxes;
+function expandGridBox(box, by) {
+    var a = box.a, b = box.b;
+    return {
+        a: Coords.withCoord(a, a[0] - by, a[1] - by, a[2] - by),
+        b: Coords.withCoord(b, b[0] + by, b[1] + by, b[2] + by)
+    };
+}
+exports.expandGridBox = expandGridBox;
 ///////////////////////////////////////////
 // MISC
 ///////////////////////////////////////////
