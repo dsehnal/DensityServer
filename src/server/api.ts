@@ -29,7 +29,7 @@ export async function getHeaderJson(filename: string | undefined, sourceId: stri
             Logger.errorPlain(`Header ${sourceId}`, 'File not found.');
             return void 0;
         }
-        const header = { ...await readHeader(filename, sourceId) };
+        const header = { ...await readHeader(filename, sourceId) } as DataFormat.Header;
         const { sampleCount } = header!.sampling[0];
         const maxVoxelCount = sampleCount[0] * sampleCount[1] * sampleCount[2];
         const precisions = ServerConfig.limits.maxOutputSizeInVoxelCountByPrecisionLevel

@@ -9,7 +9,9 @@ var collections_1 = require("../utils/collections");
 /** Find a list of unique blocks+offsets that overlap with the query region. */
 function findUniqueBlocks(data, sampling, queryBox) {
     var translations = data.header.spacegroup.isPeriodic
+        // find all query box translations that overlap with the unit cell.
         ? findDataOverlapTranslationList(queryBox, sampling.dataDomain)
+        // no translations
         : [Coords.fractional(0, 0, 0)];
     var blocks = collections_1.FastMap.create();
     for (var _i = 0, translations_1 = translations; _i < translations_1.length; _i++) {

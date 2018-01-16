@@ -106,11 +106,11 @@ span.id  { color: #DE4D4E; font-family: Menlo,Monaco,Consolas,"Courier New",mono
     </tr>
     <tr>
     <td class="cs-docs-param-name">a,b,c</td>
-    <td>Bottom left corner of the query region in Cartesian coordinates.</td>
+    <td>Bottom left corner of the query region in Cartesian or fractional coordinates (determined by the <span class='id'>&amp;space</span> query parameter).</td>
     </tr>
     <tr>
     <td class="cs-docs-param-name">u,v,w</td>
-    <td>Top right corner of the query region in Cartesian coordinates.</td>
+    <td>Top right corner of the query region in Cartesian or fractional coordinates (determined by the <span class='id'>&amp;space</span> query parameter).</td>
     </tr>
     <tr>
     <td class="cs-docs-param-name">encoding</td>
